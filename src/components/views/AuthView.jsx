@@ -1,289 +1,353 @@
-import React, { useState } from 'react';
-import { 
-  Shield, 
-  ArrowRight, 
-  Lock, 
-  Mail, 
-  User, 
-  CheckCircle2, 
-  Sparkles, 
-  TrendingUp, 
-  Database,
-  Globe
-} from 'lucide-react';
+import { useState } from "react";
+import {
+  Activity,
+  ArrowRight,
+  Globe,
+  LockKeyhole,
+  Mail,
+  Search,
+  UserRound,
+} from "lucide-react";
+import Brand from "../common/Brand";
+import { authenticate, request } from "../../lib/api";
 
-export default function AuthView({ onAuthenticate }) {
-  const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
-  const [name, setName] = useState('Ada Okafor');
-  const [email, setEmail] = useState('ada@sentinel.africa');
-  const [password, setPassword] = useState('••••••••••••');
-  const [confirmPassword, setConfirmPassword] = useState('••••••••••••');
-  const [keepSignedIn, setKeepSignedIn] = useState(true);
-  const [agreedTerms, setAgreedTerms] = useState(true);
+export default function AuthView({
+  onAuthenticate,
+  onDemo,
+  initialMode = "signin",
+  notice,
+}) {
+  const [mode, setMode] = useState(initialMode);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [remember, setRemember] = useState(true);
+  const [terms, setTerms] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const signup = mode === "signup";
+  const forgot = mode === "forgot";
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onAuthenticate({ name: name || 'Ada Okafor', email });
-  };
+  function changeMode(next) {
+    setMode(next);
+    setError("");
+    setMessage("");
+    setPassword("");
+    setConfirmation("");
+    window.history.replaceState(
+      null,
+      "",
+      next === "signup" ? "/signup" : "/signin",
+    );
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    if (busy) return;
+    setError("");
+    setMessage("");
+    if (signup && !name.trim()) {
+      setError("Enter your full name.");
+      return;
+    }
+    if (signup && password !== confirmation) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (forgot) {
+        const result = await request("/auth/forgot-password", {
+          method: "POST",
+          body: { email: email.trim() },
+        });
+        setMessage(result.message);
+      } else {
+        const fields = {
+          email: email.trim(),
+          password,
+          device_name: "Sentinel web",
+        };
+        if (signup)
+          Object.assign(fields, {
+            name: name.trim(),
+            password_confirmation: confirmation,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          });
+        const session = await authenticate(mode, fields);
+        await onAuthenticate(session, remember);
+      }
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <div className="min-h-screen w-full bg-[#f5f7f5] flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-300">
-      <div className="w-full max-w-6xl bg-surface rounded-3xl border border-surface-border shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[720px]">
-        
-        {/* Left Column: Brand & Context Preview (7 cols) */}
-        <div className="lg:col-span-7 bg-brand-900 text-white p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden">
-          {/* Subtle background glow */}
-          <div className="absolute -top-24 -left-24 w-96 h-96 bg-brand-700/30 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl pointer-events-none" />
-
-          {/* Top Brand Logo */}
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md">
-              <Shield className="w-5 h-5 fill-current text-white/95" />
+    <div className="auth-page">
+      <aside className="auth-story">
+        <Brand />
+        <div className="auth-pitch">
+          <span className="discovery-badge">
+            <Activity size={13} /> Continuous public-web discovery
+          </span>
+          <h1>
+            Know what’s being said.
+            <br />
+            Understand what matters.
+          </h1>
+          <p>
+            Search, organize and monitor relevant public information across
+            news, websites, social discussions, blogs and forums.
+          </p>
+          <div
+            className="intelligence-preview"
+            aria-label="Example intelligence preview"
+          >
+            <div className="preview-query">
+              <Search size={15} />
+              <span>MTN Nigeria</span>
+              <small>4,821 results</small>
             </div>
-            <div>
-              <div className="font-display font-extrabold text-base tracking-wider">
-                SENTINEL
+            <div className="preview-signal">
+              <i className="signal-dot orange" />
+              <div>
+                <strong>Network performance</strong>
+                <small>342 mentions across 46 sources</small>
               </div>
-              <div className="text-[11px] text-brand-200 font-medium">
-                Web Intelligence
-              </div>
+              <b>+18%</b>
             </div>
-          </div>
-
-          {/* Middle Pitch & Live Preview Cards */}
-          <div className="relative z-10 my-10 space-y-6">
-            <div className="space-y-3">
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-brand-800 text-brand-200 border border-brand-700">
-                Continuous public-web discovery
+            <div className="preview-signal">
+              <i className="signal-dot" />
+              <div>
+                <strong>New service initiative</strong>
+                <small>127 mentions across 18 sources</small>
+              </div>
+              <b>+52%</b>
+            </div>
+            <div className="preview-footer">
+              <span>
+                <Globe size={12} /> 328 sources indexed
               </span>
-              <h1 className="font-display font-extrabold text-2xl sm:text-4xl text-white tracking-tight leading-tight">
-                Know what's being said. Understand what matters.
-              </h1>
-              <p className="text-sm text-brand-100/80 leading-relaxed max-w-lg">
-                Search, organize and monitor relevant public information across news, websites, social discussions, blogs and forums.
-              </p>
+              <span>Updated just now</span>
             </div>
-
-            {/* Figma Mock Cards Preview */}
-            <div className="space-y-2.5 max-w-md pt-2">
-              <div className="p-3.5 rounded-xl bg-brand-800/80 border border-brand-700/60 backdrop-blur-md flex items-center justify-between text-xs">
-                <div>
-                  <div className="font-bold text-white">MTN Nigeria</div>
-                  <div className="text-[11px] text-brand-200">Network performance</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold text-emerald-400 flex items-center gap-1 justify-end">
-                    <TrendingUp className="w-3 h-3" />
-                    <span>+18%</span>
-                  </div>
-                  <div className="text-[10px] text-brand-300">342 mentions</div>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-brand-800/60 border border-brand-700/40 backdrop-blur-md flex items-center justify-between text-xs">
-                <div>
-                  <div className="font-bold text-white">New service initiative</div>
-                  <div className="text-[11px] text-brand-200">127 mentions across 18 sources</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold text-emerald-400">+52%</div>
-                  <div className="text-[10px] text-brand-300">Infrastructure</div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-brand-300 px-1 pt-1 font-medium">
-                <span className="flex items-center gap-1.5">
-                  <Database className="w-3.5 h-3.5 text-brand-400" />
-                  328 sources indexed
-                </span>
-                <span>Updated just now</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Trust Badges */}
-          <div className="relative z-10 pt-4 border-t border-brand-800/80 flex flex-wrap items-center gap-4 text-xs font-semibold text-brand-200">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              Public-web intelligence
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              Human-centered research
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              Secure workspace
-            </span>
           </div>
         </div>
-
-        {/* Right Column: Interactive Sign In / Sign Up Form (5 cols) */}
-        <div className="lg:col-span-5 p-8 sm:p-12 flex flex-col justify-between bg-surface">
-          <div>
-            {/* Header */}
-            <div className="space-y-1">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-brand-700">
-                {mode === 'signin' ? 'WELCOME BACK' : 'CREATE WORKSPACE'}
-              </div>
-              <h2 className="font-display font-extrabold text-2xl text-ink-heading">
-                {mode === 'signin' ? 'Sign in to your workspace' : 'Start discovering what matters'}
-              </h2>
-              <p className="text-xs text-ink-muted">
-                {mode === 'signin' 
-                  ? 'Continue discovering and monitoring what matters online.' 
-                  : 'Create your research workspace in less than a minute.'}
-              </p>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-              {mode === 'signup' && (
-                <div>
-                  <label className="block text-xs font-semibold text-ink-darker mb-1.5">
-                    Full name
-                  </label>
+        <p className="auth-trust">
+          PUBLIC-WEB INTELLIGENCE <span>•</span> HUMAN-CENTRED RESEARCH{" "}
+          <span>•</span> SECURE WORKSPACES
+        </p>
+      </aside>
+      <main className="auth-main">
+        <div className="auth-form-wrap">
+          <span className="eyebrow">
+            {forgot
+              ? "RESET YOUR PASSWORD"
+              : signup
+                ? "CREATE WORKSPACE"
+                : "WELCOME BACK"}
+          </span>
+          <h2>
+            {forgot
+              ? "Let’s get you back in"
+              : signup
+                ? "Start discovering what matters"
+                : "Sign in to your workspace"}
+          </h2>
+          <p className="form-subtitle">
+            {forgot
+              ? "Enter your email and we’ll send a password reset link."
+              : signup
+                ? "Create your research workspace in less than a minute."
+                : "Continue discovering and monitoring what matters online."}
+          </p>
+          {notice && (
+            <p className="form-message" role="status">
+              {notice}
+            </p>
+          )}
+          <form
+            onSubmit={submit}
+            className="auth-form"
+            aria-label={
+              signup ? "Create account" : forgot ? "Reset password" : "Sign in"
+            }
+          >
+            {signup && (
+              <label className="field-label" htmlFor="full-name">
+                Full name
+                <div className="input-shell">
+                  <UserRound />
                   <input
-                    type="text"
+                    id="full-name"
+                    autoComplete="name"
                     required
+                    maxLength={120}
+                    placeholder="Ada Okafor"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Ada Okafor"
-                    className="w-full px-3.5 py-2.5 text-sm bg-surface-muted border border-surface-border focus:border-brand-600 focus:bg-surface focus:outline-none rounded-xl text-ink"
                   />
                 </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-ink-darker mb-1.5">
-                  Work email
-                </label>
+              </label>
+            )}
+            <label className="field-label" htmlFor="email">
+              {signup || forgot ? "Email" : "Work email"}
+              <div className="input-shell">
+                <Mail />
                 <input
+                  id="email"
                   type="email"
+                  autoComplete="email"
                   required
+                  maxLength={255}
+                  placeholder="ada@sentinel.africa"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ada@sentinel.africa"
-                  className="w-full px-3.5 py-2.5 text-sm bg-surface-muted border border-surface-border focus:border-brand-600 focus:bg-surface focus:outline-none rounded-xl text-ink"
                 />
               </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-semibold text-ink-darker">
-                    Password
-                  </label>
-                  {mode === 'signin' && (
-                    <a href="#forgot" onClick={(e) => e.preventDefault()} className="text-[11px] text-brand-700 hover:underline font-medium">
+            </label>
+            {!forgot && (
+              <div className="field-label">
+                <span className="field-heading">
+                  <label htmlFor="password">Password</label>
+                  {!signup && (
+                    <button
+                      type="button"
+                      className="text-link"
+                      onClick={() => changeMode("forgot")}
+                    >
                       Forgot password?
-                    </a>
+                    </button>
                   )}
-                </div>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Use at least 8 characters"
-                  className="w-full px-3.5 py-2.5 text-sm bg-surface-muted border border-surface-border focus:border-brand-600 focus:bg-surface focus:outline-none rounded-xl text-ink"
-                />
-              </div>
-
-              {mode === 'signup' && (
-                <div>
-                  <label className="block text-xs font-semibold text-ink-darker mb-1.5">
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Use at least 8 characters"
-                    className="w-full px-3.5 py-2.5 text-sm bg-surface-muted border border-surface-border focus:border-brand-600 focus:bg-surface focus:outline-none rounded-xl text-ink"
-                  />
-                </div>
-              )}
-
-              {mode === 'signin' ? (
-                <label className="flex items-center gap-2 cursor-pointer pt-1">
-                  <input
-                    type="checkbox"
-                    checked={keepSignedIn}
-                    onChange={(e) => setKeepSignedIn(e.target.checked)}
-                    className="rounded text-brand-600 focus:ring-brand-500"
-                  />
-                  <span className="text-xs text-ink-muted">Keep me signed in on this device</span>
-                </label>
-              ) : (
-                <label className="flex items-center gap-2 cursor-pointer pt-1">
-                  <input
-                    type="checkbox"
-                    checked={agreedTerms}
-                    onChange={(e) => setAgreedTerms(e.target.checked)}
-                    className="rounded text-brand-600 focus:ring-brand-500"
-                  />
-                  <span className="text-[11px] text-ink-muted">I agree to the Terms of Service and Privacy Policy</span>
-                </label>
-              )}
-
-              <button
-                type="submit"
-                className="w-full py-3 px-4 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-              >
-                {mode === 'signin' ? 'Sign in' : 'Create workspace'}
-              </button>
-            </form>
-
-            {/* Social Continue */}
-            <div className="mt-6 space-y-4">
-              <div className="relative flex items-center justify-center">
-                <div className="border-t border-surface-border w-full" />
-                <span className="bg-surface px-3 text-[11px] text-ink-subtle uppercase font-semibold">
-                  or continue with
                 </span>
+                <div className="input-shell">
+                  <LockKeyhole />
+                  <input
+                    id="password"
+                    type="password"
+                    autoComplete={signup ? "new-password" : "current-password"}
+                    required
+                    minLength={signup ? 8 : undefined}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                {signup && (
+                  <small className="field-hint">
+                    Use at least 8 characters.
+                  </small>
+                )}
               </div>
-
-              <button
-                onClick={() => onAuthenticate({ name: 'Ada Okafor', email: 'ada@sentinel.africa' })}
-                className="w-full py-2.5 px-4 bg-surface hover:bg-surface-muted border border-surface-border text-ink text-xs sm:text-sm font-semibold rounded-xl flex items-center justify-center gap-2.5 transition-colors shadow-2xs"
-              >
-                <span className="font-bold text-red-500">G</span>
-                <span>Google</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Bottom Switcher */}
-          <div className="mt-8 text-center text-xs text-ink-muted pt-4 border-t border-surface-border">
-            {mode === 'signin' ? (
-              <span>
-                Don't have a workspace?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('signup')}
-                  className="font-bold text-brand-700 hover:underline"
-                >
-                  Sign Up
-                </button>
-              </span>
-            ) : (
-              <span>
-                Already have a workspace?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('signin')}
-                  className="font-bold text-brand-700 hover:underline"
-                >
-                  Sign In
-                </button>
-              </span>
             )}
-          </div>
+            {signup && (
+              <div className="field-label">
+                <label htmlFor="confirmation">Confirm Password</label>
+                <div className="input-shell">
+                  <LockKeyhole />
+                  <input
+                    id="confirmation"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    value={confirmation}
+                    onChange={(e) => setConfirmation(e.target.value)}
+                  />
+                </div>
+                <small className="field-hint">Use at least 8 characters.</small>
+              </div>
+            )}
+            {!forgot && (
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={signup ? terms : remember}
+                  required={signup}
+                  onChange={(e) =>
+                    signup
+                      ? setTerms(e.target.checked)
+                      : setRemember(e.target.checked)
+                  }
+                />
+                {signup
+                  ? "I agree to the Terms of Service and Privacy Policy"
+                  : "Keep me signed in on this device"}
+              </label>
+            )}
+            {error && (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            )}
+            {message && (
+              <p className="form-message" role="status">
+                {message}
+              </p>
+            )}
+            <button className="primary-button" disabled={busy} type="submit">
+              {busy
+                ? "Please wait…"
+                : forgot
+                  ? "Send reset link"
+                  : signup
+                    ? "Create account"
+                    : "Sign in"}
+            </button>
+          </form>
+          {!signup && !forgot && (
+            <>
+              <div className="auth-divider">
+                <span>or continue with</span>
+              </div>
+              <div className="social-buttons">
+                <button
+                  type="button"
+                  disabled
+                  title="Google sign-in is not available yet"
+                >
+                  <b>G</b> Google
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  title="Microsoft sign-in is not available yet"
+                >
+                  <b>▦</b> Microsoft
+                </button>
+              </div>
+            </>
+          )}
+          <p className="auth-switch">
+            {forgot
+              ? ""
+              : signup
+                ? "Already have an account?"
+                : "New to Sentinel?"}{" "}
+            <button
+              type="button"
+              className="text-link"
+              disabled={busy}
+              onClick={() => changeMode(signup || forgot ? "signin" : "signup")}
+            >
+              {signup || forgot ? "Sign in" : "Create an account"}
+            </button>
+          </p>
+          {!signup && !forgot && (
+            <button type="button" className="demo-link" onClick={onDemo}>
+              Explore the demo workspace <ArrowRight size={13} />
+            </button>
+          )}
         </div>
-
-      </div>
+        <footer className="auth-legal">
+          © {new Date().getFullYear()} Sentinel Intelligence{" "}
+          <span>Privacy</span>
+          <span>Terms</span>
+          <span>Help</span>
+        </footer>
+      </main>
     </div>
   );
 }

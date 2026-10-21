@@ -1,18 +1,11 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { 
-  Radio, 
+
   Plus, 
-  Activity, 
-  Clock, 
   CheckCircle2, 
   Search, 
   Trash2, 
-  MoreVertical, 
-  ChevronRight,
-  ExternalLink,
-  ShieldCheck,
-  Pause,
-  Play
+  ChevronRight
 } from 'lucide-react';
 import { INITIAL_MONITORS } from '../../data/mockData';
 

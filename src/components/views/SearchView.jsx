@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { 
   Search, 
-  Filter, 
   Radio, 
-  ExternalLink, 
   Bookmark, 
   SlidersHorizontal, 
   Calendar, 
@@ -11,10 +9,7 @@ import {
   MapPin, 
   Languages, 
   Smile, 
-  ArrowUpDown,
-  Check,
-  ChevronDown,
-  Sparkles
+  ArrowUpDown
 } from 'lucide-react';
 import { SEARCH_RESULTS } from '../../data/mockData';
 

@@ -1,14 +1,10 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { 
   Bell, 
-  AlertTriangle, 
-  AlertCircle, 
   CheckCircle2, 
   Clock, 
   Settings, 
-  Check, 
-  ExternalLink,
-  ChevronRight
+  Check
 } from 'lucide-react';
 import { ALERTS_DATA } from '../../data/mockData';
 
