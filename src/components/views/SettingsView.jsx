@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { 
   Search, 
   Radio, 
@@ -6,10 +6,7 @@ import {
   Globe, 
   User, 
   Check, 
-  Save, 
-  Sparkles,
-  Shield,
-  Sliders
+  Save
 } from 'lucide-react';
 
 export default function SettingsView({ initialTab = 'Search & discovery' }) {

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, ArrowRight, Clock, Globe, Sparkles } from 'lucide-react';
+import  { useState, useEffect, useRef } from 'react';
+import { Search, X, ArrowRight, Clock, Sparkles } from 'lucide-react';
 import { RECENT_SEARCHES, SEARCH_RESULTS } from '../../data/mockData';
 
 export default function GlobalSearchModal({ 

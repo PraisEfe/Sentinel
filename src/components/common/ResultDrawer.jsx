@@ -1,14 +1,11 @@
-import React from 'react';
+import 'react';
 import { 
   X, 
   ExternalLink, 
   Radio, 
   TrendingUp, 
-  Share2, 
-  Calendar, 
   User, 
   Layers, 
-  CheckCircle2, 
   Globe 
 } from 'lucide-react';
 

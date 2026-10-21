@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Check, ArrowRight, ArrowLeft, Radio, Globe, Bell, Shield, Sparkles } from 'lucide-react';
+import  { useState } from 'react';
+import { X, ArrowRight, ArrowLeft, Radio } from 'lucide-react';
 
 export default function AddMonitorModal({ 
   isOpen, 

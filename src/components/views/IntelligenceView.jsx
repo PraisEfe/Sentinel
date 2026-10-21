@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { 
   Sparkles, 
   TrendingUp, 
   Flame, 
   Layers, 
-  Radio, 
-  Compass, 
-  ExternalLink, 
-  ChevronRight,
+  Compass,
   Info
 } from 'lucide-react';
 import { STORY_CLUSTERS } from '../../data/mockData';

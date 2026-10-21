@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { 
-  BarChart2, 
-  TrendingUp, 
+
+
   Globe, 
-  Smile, 
   Share2, 
-  Newspaper, 
-  Calendar,
-  Layers,
+  Newspaper,
   ArrowUpRight
 } from 'lucide-react';
 import { ANALYTICS_DATA } from '../../data/mockData';
