@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -326,7 +327,18 @@ function SettingsPanel({ tab }) {
   );
 }
 export default function SettingsView({ initialTab = "Search & discovery" }) {
-  const [tab, setTab] = useState(initialTab);
+  const [params, setParams] = useSearchParams();
+  const sectionKeys = {
+    "Search & discovery": "discovery",
+    "Monitoring defaults": "monitoring",
+    Notifications: "notifications",
+    "Sources & languages": "sources",
+    Account: "account",
+  };
+  const tab =
+    tabs.find(([name]) => sectionKeys[name] === params.get("section"))?.[0] ||
+    initialTab;
+  const setTab = (name) => setParams({ section: sectionKeys[name] });
   return (
     <PageMotion className="research-page">
       <div className="research-heading">

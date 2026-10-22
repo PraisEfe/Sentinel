@@ -10,6 +10,9 @@ import {
   LogOut,
   X,
 } from "lucide-react";
+import { NavLink, Link } from "react-router-dom";
+import { useWorkspace } from "../../lib/workspace";
+import { workspacePathFor } from "../../routing/paths";
 import Brand from "./Brand";
 const navigation = [
   ["dashboard", "Home", Home],
@@ -21,8 +24,6 @@ const navigation = [
   ["settings", "Settings", Settings],
 ];
 export default function Sidebar({
-  currentView,
-  onSelectView,
   isOpen,
   onClose,
   unreadAlertsCount = 0,
@@ -32,6 +33,7 @@ export default function Sidebar({
   workspaces = [],
   onWorkspaceChange,
 }) {
+  const { demo } = useWorkspace();
   const initials = (user?.name || "Your account")
     .split(" ")
     .map((part) => part[0])
@@ -76,33 +78,31 @@ export default function Sidebar({
         <div className="nav-caption">EXPLORE</div>
         <nav aria-label="Main navigation">
           {navigation.map(([id, label, Icon]) => (
-            <button
+            <NavLink
               key={id}
-              className={`nav-item ${currentView === id ? "active" : ""} ${id === "settings" ? "nav-settings" : ""}`}
-              aria-current={currentView === id ? "page" : undefined}
-              onClick={() => {
-                onSelectView(id);
-                onClose();
-              }}
+              to={workspacePathFor(id, demo)}
+              end={id === "dashboard"}
+              className={({ isActive }) =>
+                `nav-item ${isActive ? "active" : ""} ${id === "settings" ? "nav-settings" : ""}`
+              }
+              onClick={onClose}
             >
               <Icon size={17} />
               <span>{label}</span>
               {id === "alerts" && unreadAlertsCount > 0 && (
                 <span className="alert-count">{unreadAlertsCount}</span>
               )}
-            </button>
+            </NavLink>
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <button
+          <Link
             className="nav-item"
-            onClick={() => {
-              onSelectView("settings");
-              onClose();
-            }}
+            to={workspacePathFor("settings", demo)}
+            onClick={onClose}
           >
             <CircleHelp size={17} /> Help & resources
-          </button>
+          </Link>
           <div className="sidebar-profile">
             <span className="user-avatar">{initials}</span>
             <div>

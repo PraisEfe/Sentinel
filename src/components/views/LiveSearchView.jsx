@@ -18,11 +18,13 @@ export default function LiveSearchView({
   onSelectResult,
   onMonitor,
   initialFilters = {},
+  onFilterChange,
+  channel = "all",
+  onChannelChange,
 }) {
   const { api, preferences } = useWorkspace();
   const [input, setInput] = useState(query);
-  const [channel, setChannel] = useState("all");
-  const [filters, setFilters] = useState({
+  const filters = {
     date: "",
     source_id: "",
     country_code: "",
@@ -30,7 +32,7 @@ export default function LiveSearchView({
     sentiment: "",
     sort: "relevance",
     ...initialFilters,
-  });
+  };
   const [saving, setSaving] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saveOpen, setSaveOpen] = useState(false);
@@ -71,7 +73,7 @@ export default function LiveSearchView({
     (item) => channel === "all" || item.source?.type === channel,
   );
   function filter(key, value) {
-    setFilters((previous) => ({ ...previous, [key]: value }));
+    onFilterChange(key, value);
   }
   async function save(event) {
     event.preventDefault();
@@ -192,7 +194,7 @@ export default function LiveSearchView({
       <Tabs
         label="Search channels"
         value={channel}
-        onChange={setChannel}
+        onChange={onChannelChange}
         items={channels.map(([id, label]) => ({
           id,
           label: `${label}${id === "all" && results.length ? `  ${number(results.length)}` : ""}`,

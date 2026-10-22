@@ -1,3 +1,4 @@
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   Activity,
@@ -17,7 +18,9 @@ export default function AuthView({
   initialMode = "signin",
   notice,
 }) {
-  const [mode, setMode] = useState(initialMode);
+  const mode = initialMode;
+  const navigate = useNavigate();
+  const location = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,15 +34,17 @@ export default function AuthView({
   const forgot = mode === "forgot";
 
   function changeMode(next) {
-    setMode(next);
     setError("");
     setMessage("");
     setPassword("");
     setConfirmation("");
-    window.history.replaceState(
-      null,
-      "",
-      next === "signup" ? "/signup" : "/signin",
+    navigate(
+      next === "signup"
+        ? "/signup"
+        : next === "forgot"
+          ? "/forgot-password"
+          : "/signin",
+      { state: location.state },
     );
   }
 

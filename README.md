@@ -11,11 +11,30 @@ npm ci
 npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-The app starts at sign-in. `/signin` and `/signup` can be opened directly. Use your existing backend account, create an account through the UI, or choose **Explore the demo workspace**. Demo mode is explicitly marked, never calls the backend, and does not persist demo changes.
+The app starts at sign-in. `/signin` and `/signup` can be opened directly. Use your existing backend account, create an account through the UI, or choose **Explore the demo workspace**. Demo mode is explicitly marked under `/demo`, never calls the backend, and does not persist demo changes. It never authorizes access to the real private routes.
 
-The supplied API contract is preserved in [docs/openapi.json](docs/openapi.json). Development calls `/api/v1` through Vite's HTTPS-verifying proxy to `https://sentinel-api.absg-ohos.cloud`. This avoids the production backend's CORS restriction to `https://sentinel.absg-ohos.cloud` without weakening that policy. The proxy respects existing HTTPS_PROXY/HTTP_PROXY/NO_PROXY settings, including this cloud environment’s egress proxy; TLS verification stays enabled.
+The supplied API contract is preserved in [docs/openapi.json](docs/openapi.json). The documentation URL requires authentication (401), so the uploaded contract remains the source for field and endpoint mappings.
 
-Optional local overrides are documented in [.env.example](.env.example). To use a local backend, set `API_PROXY_TARGET=http://127.0.0.1:8000` in `.env.local`, then restart Vite. Override `VITE_API_BASE_URL` only if you intend to bypass the development proxy. `VITE_` values are public, build-time configuration; never store credentials in them.
+Browser requests use **same-origin `/api/v1` in every mode**. Vite handles the proxy in development and preview; `npm start` runs the production server with the same API proxy and SPA history fallback. The upstream defaults to `https://sentinel-api.absg-ohos.cloud`. TLS verification remains enabled, and existing HTTPS_PROXY/HTTP_PROXY/NO_PROXY settings are respected. A local backend on loopback uses a direct local connection.
+
+Optional overrides are documented in [.env.example](.env.example). Set `API_PROXY_TARGET=http://127.0.0.1:8000` in `.env.local` for a local backend. Set `VITE_API_BASE_URL` only when intentionally using a different browser API URL; an absolute URL requires the backend to allow your frontend's origin. `VITE_` values are public build-time configuration, never credentials.
+
+## Routes and shared state
+
+React Router handles navigation, deep links, refreshes, query parameters, and browser back/forward.
+
+| Routes | Access |
+| --- | --- |
+| `/signin`, `/signup`, `/forgot-password` | Public account forms; authenticated users return to their destination |
+| `/`, `/search`, `/monitors`, `/intelligence`, `/analytics`, `/alerts`, `/settings` | Protected, server-verified session and selected workspace required |
+| `/workspaces/new` | Protected account without a workspace can create one |
+| `/demo` and matching `/demo/*` screens | Public sample workspace, isolated from live data and authentication |
+
+`ProtectedRoute` redirects signed-out visitors to sign-in and restores the intended internal URL afterwards. A stored token is verified using `/auth/me` before private pages render. Unauthorized API responses expire the session and clear private state. Logout clears device access even if server-side revocation is temporarily unreachable. Client guards improve navigation; backend bearer authentication and authorization still enforce access to every resource.
+
+Zustand owns the session lifecycle, user, authorized workspaces, selected workspace, monitoring summaries, per-workspace discovery preferences, and shared navigation/drawer/wizard state. Persistence explicitly whitelists only non-secret preferences and workspace selections. Bearer tokens retain the existing remember-me behavior in `sentinel_session` (local storage when checked, session storage otherwise); passwords are never stored. Form drafts and per-page request loading/error states remain local. Aborted/stale session and workspace responses cannot overwrite a newer session or workspace.
+
+Search queries and filters are URL parameters (`/search?q=MTN&sentiment=positive`), monitor pagination uses `page`, and settings sections use `section` (e.g. `/settings?section=notifications`).
 
 ## Connected features
 
@@ -56,17 +75,26 @@ npm run build
 npm test
 ```
 
-The browser tests use Playwright and API fixtures matched to the supplied OpenAPI routes and required request fields. They cover account forms, persistent and session-only storage, expiration, loading/empty/error states, history clearing, workspace creation, monitor wizard creation/pagination and partial-failure retry, search filters and saved views, result/cluster drawers, alert read state, server settings and failure feedback, local preferences, analytics periods, demo isolation, and mobile navigation with reduced motion. These tests do not prove production credentials or production data are valid.
+The browser tests use Playwright with contract-based API fixtures, route/guard tests, and real HTTP proxy tests against a controlled backend. They cover account forms, storage, session verification/expiration, safe redirects, logout, browser history and refresh, workspace switching, onboarding, filters, saved views, drawers, mutations, analytics, and mobile/reduced-motion behavior. Production tests deliberately use an upstream whose CORS header allows a different origin, confirming that browser requests remain on the frontend origin while JSON bodies, bearer headers, and error status codes pass through the proxy.
+
+The opt-in external check runs separately:
+
+```sh
+npm run test:live
+```
+
+It sends an unauthenticated account request and an empty login request through the production proxy to the **real Sentinel API**, verifying expected 401/422 JSON responses with no CORS failures. It creates no accounts or application data. This external check is skipped in the default suite to keep normal tests deterministic. Successful authenticated production operations require a real account and are not claimed as verified by these checks.
 
 Tests use system Chromium when available. Otherwise run `npx playwright install chromium`, or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to your browser executable. Screenshots and traces from failed runs are saved under ignored `test-results/`.
 
 ## Production
 
 ```sh
+npm ci --include=dev
 npm run build
-npm run preview -- --host 127.0.0.1 --port 4173 --strictPort
+npm start
 ```
 
-Production builds default to `https://sentinel-api.absg-ohos.cloud/api/v1`, whose CORS policy currently permits `https://sentinel.absg-ohos.cloud`. Hosting elsewhere requires allowing that frontend origin on the backend, or setting `VITE_API_BASE_URL=/api/v1` at build time and configuring a same-origin reverse proxy. A Vite development proxy is not a production deployment server. Configure SPA fallback to `index.html` for direct auth URLs.
+The Node production server serves `dist`, proxies `/api/v1` to the configured backend, and serves `index.html` for frontend deep links. It listens on `PORT` (3000 by default) and `HOST` (0.0.0.0 by default). `.env.local` supplies optional runtime settings. A production deployment can install only production dependencies after the build; the server and proxy packages are declared as production dependencies.
 
-Live verification during implementation confirmed that JSON requests to `/auth/me` return 401 without authentication, and empty login requests return documented 422 validation errors. Both checks also passed from a real browser through the development proxy. Successful account and workspace operations are covered by browser fixtures; production authentication requires a real account and has not been claimed as verified.
+Deploying **only static `dist` files** requires your hosting platform to supply both SPA fallback and a same-origin `/api/v1` reverse proxy. Alternatively build with an explicit absolute `VITE_API_BASE_URL`, in which case the API must allow your exact frontend origin. The API currently advertises `https://sentinel.absg-ohos.cloud`; frontend code cannot change that server policy. Do not disable browser security or TLS checks to work around CORS.

@@ -1,9 +1,12 @@
+// Same-origin in development, preview, and the production server.
+// An absolute URL is an explicit deployment override and needs backend CORS.
 export const API_BASE_URL = (
-  import.meta.env?.VITE_API_BASE_URL ||
-  (import.meta.env?.DEV
-    ? "/api/v1"
-    : "https://sentinel-api.absg-ohos.cloud/api/v1")
+  import.meta.env?.VITE_API_BASE_URL || "/api/v1"
 ).replace(/\/$/, "");
+let unauthorizedHandler = null;
+export function onUnauthorized(handler) {
+  unauthorizedHandler = handler;
+}
 const SESSION_KEY = "sentinel_session";
 
 export class ApiError extends Error {
@@ -69,8 +72,7 @@ export async function request(
   if (response.status === 204) return null;
   const json = await response.json().catch(() => null);
   if (!response.ok) {
-    if (response.status === 401 && token && typeof window !== "undefined")
-      window.dispatchEvent(new Event("sentinel:unauthorized"));
+    if (response.status === 401 && token) unauthorizedHandler?.(token);
     const errors = json?.errors || {};
     const detail = Object.values(errors)
       .flat()

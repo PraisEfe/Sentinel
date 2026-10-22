@@ -1,37 +1,71 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
-export const WorkspaceContext = createContext(null);
+import { useEffect, useState, useCallback } from "react";
+import { useLocation } from "react-router-dom";
+import { useShallow } from "zustand/react/shallow";
+import { defaultPreferences, useAppStore } from "../stores/appStore";
+
 export function useWorkspace() {
-  return useContext(WorkspaceContext);
+  const { pathname } = useLocation();
+  const demo = pathname === "/demo" || pathname.startsWith("/demo/");
+  const state = useAppStore(
+    useShallow((store) => ({
+      api: demo ? store.demoApi : store.api,
+      user: demo ? store.demoUser : store.user,
+      workspaceId: store.workspaceId,
+      authVersion: store.authVersion,
+      preferences: store.preferences,
+      save: store.savePreferences,
+      updateUser: store.updateUser,
+      onRefresh: demo ? store.refreshDemo : store.refreshWorkspace,
+    })),
+  );
+  const { save, updateUser } = state;
+  const savePreferences = useCallback((next) => save(next, demo), [save, demo]);
+  const onUserUpdate = useCallback(
+    (user) => updateUser(user, demo),
+    [updateUser, demo],
+  );
+  const key = demo ? "demo" : `${state.user?.id}:${state.workspaceId}`;
+  return {
+    api: state.api,
+    demo,
+    user: state.user,
+    scopeKey: demo ? "demo" : `${state.authVersion}:${state.workspaceId}`,
+    preferences: state.preferences[key] || defaultPreferences,
+    savePreferences,
+    onUserUpdate,
+    onRefresh: state.onRefresh,
+  };
 }
 export function useResource(path, { list = false } = {}) {
-  const { api } = useWorkspace();
+  const { api, scopeKey } = useWorkspace();
+  const key = `${scopeKey}:${path}`;
   const [state, setState] = useState({
+    key: "",
     data: null,
     loading: !!path,
     error: "",
   });
   const [version, setVersion] = useState(0);
-  const reload = useCallback(() => setVersion((v) => v + 1), []);
+  const reload = useCallback(() => setVersion((value) => value + 1), []);
   useEffect(() => {
     if (!path) return;
     let active = true;
     const controller = new AbortController();
     async function load() {
-      setState((previous) => ({ ...previous, loading: true, error: "" }));
+      setState((previous) => ({
+        key,
+        data: previous.key === key ? previous.data : null,
+        loading: true,
+        error: "",
+      }));
       try {
         const result = await api(path, { signal: controller.signal });
         if (list && !Array.isArray(result?.data))
           throw Error("This data is not available in a supported format yet.");
-        if (active) setState({ data: result, loading: false, error: "" });
+        if (active) setState({ key, data: result, loading: false, error: "" });
       } catch (error) {
         if (active)
-          setState({ data: null, loading: false, error: error.message });
+          setState({ key, data: null, loading: false, error: error.message });
       }
     }
     load();
@@ -39,8 +73,13 @@ export function useResource(path, { list = false } = {}) {
       active = false;
       controller.abort();
     };
-  }, [api, path, list, version]);
-  return { ...state, reload };
+  }, [api, scopeKey, path, list, version, key]);
+  return {
+    ...(path && state.key === key
+      ? state
+      : { data: null, loading: !!path, error: "" }),
+    reload,
+  };
 }
 export const number = (value) => {
   if (value == null || value === "") return "—";
