@@ -1,334 +1,360 @@
-import  { useState } from 'react';
-import { 
-  Search, 
-  Radio, 
-  Bell, 
-  Globe, 
-  User, 
-  Check, 
-  Save
-} from 'lucide-react';
-
-export default function SettingsView({ initialTab = 'Search & discovery' }) {
-  const [activeTab, setActiveTab] = useState(initialTab);
-  const [saveToast, setSaveToast] = useState(false);
-
-  // Settings state
-  const [settings, setSettings] = useState({
-    // Search & discovery
-    groupStories: true,
-    includeSocial: true,
-    aiSummaries: true,
-    detectTone: true,
-
-    // Monitoring defaults
-    scanInterval20: true,
-    trackRelatedKeywords: true,
-    discoverEmerging: true,
-    includeHistory30: true,
-
-    // Notifications
-    highVelocityAlerts: true,
-    majorSourceAlerts: true,
-    resultDigest: true,
-    emailNotifications: true,
-
-    // Sources & languages
-    newsMedia: true,
-    publicSocial: true,
-    blogsForums: true,
-    frenchLanguage: false,
-
-    // Account
-    weeklySummary: true,
-    personalHistory: true,
-    compactDensity: false,
-    researchParticipation: true
-  });
-
-  const tabs = [
-    { id: 'Search & discovery', label: 'Search & discovery', icon: Search },
-    { id: 'Monitoring defaults', label: 'Monitoring defaults', icon: Radio },
-    { id: 'Notifications', label: 'Notifications', icon: Bell },
-    { id: 'Sources & languages', label: 'Sources & languages', icon: Globe },
-    { id: 'Account', label: 'Account', icon: User },
+import { useState } from "react";
+import {
+  ArrowRight,
+  Bell,
+  Globe,
+  Radio,
+  Search,
+  UserRound,
+} from "lucide-react";
+import { PageMotion, ResourceState, Toggle } from "../common/WorkspaceUI";
+import { enabled, useResource, useWorkspace } from "../../lib/workspace";
+const tabs = [
+  ["Search & discovery", "Set default sources and views", Search],
+  ["Monitoring defaults", "Manage monitoring behaviour", Radio],
+  ["Notifications", "Receive updates", Bell],
+  ["Sources & languages", "Manage sources and languages", Globe],
+  ["Account", "Manage account", UserRound],
+];
+function SettingsPanel({ tab }) {
+  const { api, preferences, savePreferences, user, onUserUpdate } =
+    useWorkspace();
+  const path =
+    tab === "Monitoring defaults"
+      ? "/settings/monitoring-defaults"
+      : tab === "Notifications"
+        ? "/settings/notifications"
+        : tab === "Sources & languages"
+          ? "/settings/sources"
+          : tab === "Account"
+            ? "/auth/me"
+            : null;
+  const resource = useResource(path);
+  const [changes, setChanges] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const response = resource.data;
+  const raw = response?.data ?? response;
+  const data = raw && !Array.isArray(raw) ? raw : {};
+  const get = (name, fallback) => (name in changes ? changes[name] : fallback);
+  function change(name, value) {
+    setChanges((previous) => ({ ...previous, [name]: value }));
+    setMessage("");
+  }
+  async function save(event) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      if (!path) {
+        savePreferences({ ...preferences, ...changes });
+        setMessage("Preferences saved on this device.");
+      } else {
+        let body = changes;
+        if (tab === "Sources & languages")
+          body = {
+            sources: (Array.isArray(raw) ? raw : [])
+              .filter((source) => `source_${source.id}` in changes)
+              .map((source) => ({
+                source_id: source.id,
+                enabled: changes[`source_${source.id}`],
+              })),
+          };
+        if (!Object.keys(changes).length) {
+          setMessage("No changes to save.");
+          return;
+        }
+        if (tab === "Account" && "name" in body && !body.name.trim())
+          throw Error("Enter your full name.");
+        const result = await api(path, { method: "PATCH", body });
+        if (tab === "Account")
+          onUserUpdate(result.data || result.user || { ...user, ...changes });
+        setMessage("Changes saved.");
+        resource.reload();
+      }
+      setChanges({});
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const locked = busy || resource.loading || !!resource.error;
+  const searchRows = [
+    [
+      "groupStories",
+      "Group similar stories automatically",
+      "Combine duplicate and highly similar reports into a single story.",
+    ],
+    [
+      "includeSocial",
+      "Include public social sources",
+      "Include public social mentions in your search results.",
+    ],
+    [
+      "aiSummaries",
+      "Show AI-generated summaries",
+      "Display available summaries when you open a story.",
+    ],
+    [
+      "detectTone",
+      "Detect discussion tone",
+      "Show the sentiment supplied for each result.",
+    ],
   ];
-
-  const handleToggle = (key) => {
-    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const handleSave = () => {
-    setSaveToast(true);
-    setTimeout(() => setSaveToast(false), 2500);
-  };
-
   return (
-    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8 space-y-6 animate-in fade-in duration-300">
-      {/* Save Toast */}
-      {saveToast && (
-        <div className="fixed bottom-6 right-6 z-50 p-4 bg-brand-800 dark:bg-brand-900 text-white rounded-xl shadow-xl flex items-center gap-3 text-xs font-semibold animate-in slide-in-from-bottom duration-200 border border-brand-700">
-          <Check className="w-4 h-4 text-emerald-400" />
-          <span>Workspace preferences saved successfully.</span>
+    <form className="settings-panel" onSubmit={save}>
+      <div className="settings-panel-heading">
+        <div>
+          <h2>{tab}</h2>
+          <p>
+            {tab === "Search & discovery"
+              ? "Set the defaults used on this device."
+              : "Manage preferences for your workspace."}
+          </p>
         </div>
-      )}
-
-      {/* Header */}
-      <div>
-        <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-ink-heading dark:text-dark-text">
-          Settings
-        </h1>
-        <p className="text-xs sm:text-sm text-ink-muted dark:text-dark-muted mt-1">
-          Configure discovery, monitoring and notification preferences.
+        <button className="primary-button" disabled={locked}>
+          {busy ? "Saving…" : "Save changes"}
+        </button>
+      </div>
+      <ResourceState resource={resource} />
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
         </p>
-      </div>
-
-      {/* Settings Grid: Left Nav + Right Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Sub-nav */}
-        <div className="lg:col-span-1 space-y-1">
-          {tabs.map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all text-left
-                  ${isActive 
-                    ? 'bg-brand-50 dark:bg-dark-elevated text-brand-700 dark:text-brand-300 shadow-2xs border border-brand-200 dark:border-brand-800' 
-                    : 'text-ink-muted dark:text-dark-muted hover:text-ink dark:hover:text-dark-text hover:bg-surface dark:hover:bg-dark-surface border border-transparent'}
-                `}
+      )}
+      {message && (
+        <p className="inline-success" role="status">
+          {message}
+        </p>
+      )}
+      <fieldset disabled={locked}>
+        {tab === "Search & discovery" &&
+          searchRows.map(([key, label, description]) => (
+            <Toggle
+              key={key}
+              label={label}
+              description={description}
+              checked={get(key, preferences[key])}
+              onChange={(value) => change(key, value)}
+            />
+          ))}
+        {tab === "Monitoring defaults" && (
+          <>
+            <label className="settings-field">
+              Monitoring frequency
+              <select
+                aria-label="Default monitoring frequency"
+                value={get("frequency", data.frequency || "")}
+                onChange={(e) => change("frequency", e.target.value)}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-brand-600 dark:text-brand-400' : 'text-ink-subtle dark:text-dark-subtle'}`} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Right Form Container */}
-        <div className="lg:col-span-3 bg-surface dark:bg-dark-surface rounded-2xl p-6 sm:p-8 border border-surface-border dark:border-dark-border shadow-xs space-y-6">
-          {/* Header of Active Section */}
-          <div className="flex items-center justify-between border-b border-surface-border dark:border-dark-border pb-4">
-            <div>
-              <h2 className="font-display font-bold text-lg sm:text-xl text-ink-heading dark:text-dark-text">
-                {activeTab}
-              </h2>
-              <p className="text-xs text-ink-muted dark:text-dark-muted mt-0.5">
-                {activeTab === 'Search & discovery' && 'Set the defaults used across your workspace.'}
-                {activeTab === 'Monitoring defaults' && 'Choose how newly created monitors scan for information.'}
-                {activeTab === 'Notifications' && 'Decide which discoveries should notify you and where.'}
-                {activeTab === 'Sources & languages' && 'Choose the public sources and languages included in discovery.'}
-                {activeTab === 'Account' && 'Manage workspace behavior and account-level preferences.'}
+                <option value="" disabled>
+                  Choose frequency
+                </option>
+                {[
+                  ["5m", "5 minutes"],
+                  ["10m", "10 minutes"],
+                  ["20m", "20 minutes"],
+                  ["30m", "30 minutes"],
+                  ["1h", "1 hour"],
+                  ["24h", "24 hours"],
+                ].map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Toggle
+              label="Track related keywords"
+              description="Include related terms when creating monitors."
+              checked={get(
+                "include_related_terms",
+                data.include_related_terms || false,
+              )}
+              onChange={(value) => change("include_related_terms", value)}
+            />
+            <label className="settings-field">
+              History to include (days)
+              <input
+                aria-label="History days"
+                type="number"
+                min="1"
+                max="30"
+                value={get("history_days", data.history_days || "")}
+                onChange={(e) => change("history_days", Number(e.target.value))}
+              />
+            </label>
+            {Array.isArray(raw) && (
+              <p className="field-hint">
+                Choose values to set your defaults. Existing defaults were not
+                supplied as named fields.
               </p>
-            </div>
-
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>Save changes</span>
-            </button>
-          </div>
-
-          {/* Tab 1: Search & discovery */}
-          {activeTab === 'Search & discovery' && (
-            <div className="divide-y divide-surface-border/60 dark:divide-dark-border/60">
-              <ToggleRow
-                title="Group similar stories automatically"
-                desc="Combine reposts and highly similar reports into one story cluster."
-                checked={settings.groupStories}
-                onChange={() => handleToggle('groupStories')}
+            )}
+          </>
+        )}
+        {tab === "Notifications" && (
+          <>
+            <label className="settings-field">
+              Digest frequency
+              <select
+                aria-label="Digest frequency"
+                value={get("digest_cadence", data.digest_cadence || "20m")}
+                onChange={(e) => change("digest_cadence", e.target.value)}
+              >
+                <option value="20m">Every 20 minutes</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </label>
+            {[
+              [
+                "notify_high_relevance",
+                "High-relevance results",
+                data.alerts?.high_relevance,
+              ],
+              ["notify_velocity", "Trending topics", data.alerts?.velocity],
+              [
+                "notify_high_authority",
+                "Major source alerts",
+                data.alerts?.high_authority,
+              ],
+              ["channel_email", "Email notifications", data.channels?.email],
+              [
+                "channel_web_push",
+                "Web push delivery preference",
+                data.channels?.web_push,
+              ],
+            ].map(([key, label, value]) => (
+              <Toggle
+                key={key}
+                label={label}
+                description={
+                  key === "channel_web_push"
+                    ? "Delivery requires a browser subscription registered for your account."
+                    : key === "channel_email" && !data.email_available
+                      ? "Email delivery is not available yet."
+                      : undefined
+                }
+                checked={get(key, value)}
+                disabled={
+                  key === "channel_email" && data.email_available === false
+                }
+                onChange={(next) => change(key, next)}
               />
-              <ToggleRow
-                title="Include public social sources"
-                desc="Apply this preference to new searches and monitors."
-                checked={settings.includeSocial}
-                onChange={() => handleToggle('includeSocial')}
+            ))}
+            <label className="settings-field">
+              Daily digest hour
+              <input
+                aria-label="Daily digest hour"
+                type="number"
+                min="0"
+                max="23"
+                value={get("digest_hour", data.digest_hour ?? 9)}
+                onChange={(e) => change("digest_hour", Number(e.target.value))}
               />
-              <ToggleRow
-                title="Show AI-generated summaries"
-                desc="Apply this preference to new searches and monitors."
-                checked={settings.aiSummaries}
-                onChange={() => handleToggle('aiSummaries')}
+            </label>
+          </>
+        )}
+        {tab === "Sources & languages" && (
+          <>
+            {(Array.isArray(raw) ? raw : []).map((source) => (
+              <Toggle
+                key={source.id}
+                label={source.name}
+                description={`${source.type} · ${Array.isArray(source.language_codes) ? source.language_codes.join(", ") : source.language_codes || "All available languages"}`}
+                checked={get(
+                  `source_${source.id}`,
+                  enabled(source.enabled_for_workspace),
+                )}
+                disabled={!source.is_active}
+                onChange={(value) => change(`source_${source.id}`, value)}
               />
-              <ToggleRow
-                title="Detect discussion tone"
-                desc="Apply this preference to new searches and monitors."
-                checked={settings.detectTone}
-                onChange={() => handleToggle('detectTone')}
+            ))}
+            {Array.isArray(raw) && !raw.length && (
+              <p className="workspace-empty">
+                No sources have been configured for this workspace.
+              </p>
+            )}
+          </>
+        )}
+        {tab === "Account" && (
+          <>
+            <label className="settings-field">
+              Full name
+              <input
+                aria-label="Full name"
+                required
+                maxLength={120}
+                value={get(
+                  "name",
+                  data.user?.name || data.name || user?.name || "",
+                )}
+                onChange={(e) => change("name", e.target.value)}
               />
-            </div>
-          )}
-
-          {/* Tab 2: Monitoring defaults */}
-          {activeTab === 'Monitoring defaults' && (
-            <div className="divide-y divide-surface-border/60 dark:divide-dark-border/60">
-              <ToggleRow
-                title="Scan every 20 minutes"
-                desc="Use a twenty-minute discovery interval for new monitors."
-                checked={settings.scanInterval20}
-                onChange={() => handleToggle('scanInterval20')}
+            </label>
+            <label className="settings-field">
+              Timezone
+              <input
+                aria-label="Timezone"
+                maxLength={64}
+                value={get(
+                  "timezone",
+                  data.user?.timezone || data.timezone || "",
+                )}
+                onChange={(e) => change("timezone", e.target.value)}
+                placeholder="Africa/Lagos"
               />
-              <ToggleRow
-                title="Track related keywords"
-                desc="Automatically include closely related terms and common name variations."
-                checked={settings.trackRelatedKeywords}
-                onChange={() => handleToggle('trackRelatedKeywords')}
+            </label>
+            <label className="settings-field">
+              Locale
+              <input
+                aria-label="Locale"
+                maxLength={10}
+                value={get("locale", data.user?.locale || data.locale || "")}
+                onChange={(e) => change("locale", e.target.value)}
+                placeholder="en"
               />
-              <ToggleRow
-                title="Discover emerging topics"
-                desc="Surface low-volume discussions that are beginning to accelerate."
-                checked={settings.discoverEmerging}
-                onChange={() => handleToggle('discoverEmerging')}
-              />
-              <ToggleRow
-                title="Include historical matches"
-                desc="Search up to thirty days of available history when a monitor is created."
-                checked={settings.includeHistory30}
-                onChange={() => handleToggle('includeHistory30')}
-              />
-            </div>
-          )}
-
-          {/* Tab 3: Notifications */}
-          {activeTab === 'Notifications' && (
-            <div className="divide-y divide-surface-border/60 dark:divide-dark-border/60">
-              <ToggleRow
-                title="High-velocity topic alerts"
-                desc="Notify me when discussion grows substantially above its normal baseline."
-                checked={settings.highVelocityAlerts}
-                onChange={() => handleToggle('highVelocityAlerts')}
-              />
-              <ToggleRow
-                title="Major source alerts"
-                desc="Notify me when a high-authority publication mentions a monitored topic."
-                checked={settings.majorSourceAlerts}
-                onChange={() => handleToggle('majorSourceAlerts')}
-              />
-              <ToggleRow
-                title="New result digest"
-                desc="Send a concise digest of newly discovered results every twenty minutes."
-                checked={settings.resultDigest}
-                onChange={() => handleToggle('resultDigest')}
-              />
-              <ToggleRow
-                title="Email notifications"
-                desc="Also deliver selected alerts to ada@sentinel.africa."
-                checked={settings.emailNotifications}
-                onChange={() => handleToggle('emailNotifications')}
-              />
-            </div>
-          )}
-
-          {/* Tab 4: Sources & languages */}
-          {activeTab === 'Sources & languages' && (
-            <div className="divide-y divide-surface-border/60 dark:divide-dark-border/60">
-              <ToggleRow
-                title="News and media"
-                desc="Search public articles from local, regional and international publishers."
-                checked={settings.newsMedia}
-                onChange={() => handleToggle('newsMedia')}
-              />
-              <ToggleRow
-                title="Public social content"
-                desc="Include publicly accessible social posts and conversations."
-                checked={settings.publicSocial}
-                onChange={() => handleToggle('publicSocial')}
-              />
-              <ToggleRow
-                title="Blogs and forums"
-                desc="Include specialist blogs, community forums and public discussions."
-                checked={settings.blogsForums}
-                onChange={() => handleToggle('blogsForums')}
-              />
-              <ToggleRow
-                title="French-language results"
-                desc="Include relevant French sources alongside English results."
-                checked={settings.frenchLanguage}
-                onChange={() => handleToggle('frenchLanguage')}
-              />
-            </div>
-          )}
-
-          {/* Tab 5: Account */}
-          {activeTab === 'Account' && (
-            <div className="space-y-6">
-              {/* Account Profile Card */}
-              <div className="p-4 bg-surface-muted dark:bg-dark-elevated rounded-xl border border-surface-border dark:border-dark-border flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-brand-600 text-white font-bold flex items-center justify-center text-sm shadow-2xs">
-                    AO
-                  </div>
-                  <div>
-                    <div className="font-semibold text-sm text-ink-heading dark:text-dark-text">Ada Okafor</div>
-                    <div className="text-xs text-ink-subtle dark:text-dark-muted">ada@sentinel.africa</div>
-                    <div className="text-[11px] font-medium text-brand-700 dark:text-brand-400 mt-0.5">Enterprise Web Intelligence Plan</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="divide-y divide-surface-border/60 dark:divide-dark-border/60">
-                <ToggleRow
-                  title="Weekly research summary"
-                  desc="Receive a weekly overview of your monitored topics and discoveries."
-                  checked={settings.weeklySummary}
-                  onChange={() => handleToggle('weeklySummary')}
-                />
-                <ToggleRow
-                  title="Personal search history"
-                  desc="Keep recent searches available on the Home screen."
-                  checked={settings.personalHistory}
-                  onChange={() => handleToggle('personalHistory')}
-                />
-                <ToggleRow
-                  title="Compact result density"
-                  desc="Show more search results on screen with reduced vertical spacing."
-                  checked={settings.compactDensity}
-                  onChange={() => handleToggle('compactDensity')}
-                />
-                <ToggleRow
-                  title="Product research participation"
-                  desc="Allow the team to request feedback about new discovery features."
-                  checked={settings.researchParticipation}
-                  onChange={() => handleToggle('researchParticipation')}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+            </label>
+          </>
+        )}
+      </fieldset>
+    </form>
   );
 }
-
-function ToggleRow({ title, desc, checked, onChange }) {
+export default function SettingsView({ initialTab = "Search & discovery" }) {
+  const [tab, setTab] = useState(initialTab);
   return (
-    <div className="py-4 flex items-center justify-between gap-4">
-      <div className="space-y-0.5">
-        <div className="text-xs sm:text-sm font-semibold text-ink-heading dark:text-dark-text">{title}</div>
-        <p className="text-xs text-ink-muted dark:text-dark-muted leading-relaxed">{desc}</p>
+    <PageMotion className="research-page">
+      <div className="research-heading">
+        <div>
+          <h1>Settings</h1>
+          <p>Configure discovery, monitoring and notification preferences.</p>
+        </div>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={onChange}
-        className={`
-          relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500
-          ${checked ? 'bg-brand-600' : 'bg-surface-border dark:bg-dark-border'}
-        `}
-      >
-        <span
-          className={`
-            pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
-            ${checked ? 'translate-x-5' : 'translate-x-0'}
-          `}
-        />
-      </button>
-    </div>
+      <div className="settings-layout">
+        <nav aria-label="Settings sections" className="settings-nav">
+          {tabs.map(([name, subtitle, Icon]) => (
+            <button
+              key={name}
+              aria-current={tab === name ? "page" : undefined}
+              className={tab === name ? "active" : ""}
+              onClick={() => setTab(name)}
+            >
+              <Icon size={15} />
+              <span>
+                <strong>{name}</strong>
+                <small>{subtitle}</small>
+              </span>
+              <ArrowRight size={13} />
+            </button>
+          ))}
+        </nav>
+        <SettingsPanel key={tab} tab={tab} />
+      </div>
+    </PageMotion>
   );
 }

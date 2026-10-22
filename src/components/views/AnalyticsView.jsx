@@ -1,213 +1,297 @@
-import  { useState } from 'react';
-import { 
-
-
-  Globe, 
-  Share2, 
-  Newspaper,
-  ArrowUpRight
-} from 'lucide-react';
-import { ANALYTICS_DATA } from '../../data/mockData';
-
+import { useMemo, useState } from "react";
+import { ArrowUpRight } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { ANALYTICS_DATA } from "../../data/mockData";
+import { useResource, useWorkspace, number } from "../../lib/workspace";
+import { PageMotion, ResourceState, Tabs } from "../common/WorkspaceUI";
+const EMPTY = [];
+const ignored = new Set([
+  "about",
+  "across",
+  "after",
+  "their",
+  "there",
+  "these",
+  "those",
+  "which",
+  "would",
+  "could",
+  "should",
+  "while",
+  "where",
+  "public",
+  "sources",
+  "information",
+  "through",
+  "during",
+]);
 export default function AnalyticsView() {
-  const [timeframe, setTimeframe] = useState('24 hours');
-  const data = ANALYTICS_DATA[timeframe] || ANALYTICS_DATA['24 hours'];
-
-  const timeframes = ['24 hours', '7 days', '30 days', '90 days'];
-
-  // Normalize volume values for bar chart heights
-  const maxVolume = Math.max(...data.volumeValues);
-
+  const [period, setPeriod] = useState("7 days");
+  const { demo } = useWorkspace();
+  const reduced = useReducedMotion();
+  const range = useMemo(() => {
+    const to = new Date();
+    const days = period === "24 hours" ? 1 : parseInt(period);
+    return {
+      from: new Date(to - days * 86400000).toISOString(),
+      to: to.toISOString(),
+      days,
+    };
+  }, [period]);
+  const mentions = useResource(
+    `/search?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`,
+    { list: true },
+  );
+  const clusters = useResource("/explore", { list: true });
+  const rows = mentions.data?.data || EMPTY;
+  const data = useMemo(() => {
+    if (demo) return ANALYTICS_DATA[period];
+    const values = Array(7).fill(0);
+    const tone = { positive: 0, neutral: 0, negative: 0 };
+    const sources = {};
+    const keywords = {};
+    const locations = {};
+    const start = new Date(range.from).getTime();
+    const duration = new Date(range.to) - start;
+    for (const item of rows) {
+      const index = Math.min(
+        6,
+        Math.max(
+          0,
+          Math.floor(((new Date(item.published_at) - start) / duration) * 7),
+        ),
+      );
+      if (Number.isFinite(index)) values[index]++;
+      if (item.sentiment in tone) tone[item.sentiment]++;
+      const type = item.source?.type || "web";
+      sources[type] = (sources[type] || 0) + 1;
+      const location = item.location_name || item.country_code;
+      if (location) locations[location] = (locations[location] || 0) + 1;
+      for (const word of (item.title || "").toLowerCase().match(/[a-z]{4,}/g) ||
+        [])
+        if (!ignored.has(word)) keywords[word] = (keywords[word] || 0) + 1;
+    }
+    return {
+      mentionVolume: rows.length,
+      activeSources: new Set(
+        rows.map((item) => item.source_id || item.source?.id).filter(Boolean),
+      ).size,
+      volumeValues: values,
+      timeLabels: values.map((_, i) =>
+        new Date(start + (duration * i) / 7).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
+      ),
+      tone,
+      sources,
+      keywords: Object.entries(keywords)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8),
+      locations: Object.entries(locations)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4),
+    };
+  }, [demo, period, rows, range]);
+  const max = Math.max(1, ...data.volumeValues);
+  const toneTotal = Object.values(data.tone).reduce((sum, n) => sum + n, 0);
+  const sourceTotal = Object.values(data.sources).reduce(
+    (sum, n) => sum + n,
+    0,
+  );
+  const positive = toneTotal
+    ? Math.round((data.tone.positive / toneTotal) * 100)
+    : 0;
+  const keywords = data.keywords || [
+    ["network", 1],
+    ["connectivity", 1],
+    ["new tariff", 1],
+    ["5G", 1],
+    ["customer experience", 1],
+    ["data plans", 1],
+    ["Lagos", 1],
+    ["coverage", 1],
+  ];
+  const locations = data.locations || [
+    ["Lagos", 36],
+    ["Abuja", 23],
+    ["Port Harcourt", 14],
+    ["Other Nigeria", 27],
+  ];
+  const locationTotal = locations.reduce((sum, [, n]) => sum + n, 0);
   return (
-    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8 space-y-6 animate-in fade-in duration-300">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <PageMotion className="research-page">
+      <div className="research-heading">
         <div>
-          <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-ink-heading dark:text-dark-text">
-            Analytics
-          </h1>
-          <p className="text-xs sm:text-sm text-ink-muted dark:text-dark-muted mt-1">
-            Understand patterns across information collected from your searches and monitors.
+          <h1>Analytics</h1>
+          <p>
+            Understand patterns across information collected from your searches
+            and monitors.
           </p>
         </div>
-
-        {/* Timeframe Selector Pills */}
-        <div className="flex items-center gap-1 bg-surface dark:bg-dark-surface p-1.5 rounded-xl border border-surface-border dark:border-dark-border shadow-2xs self-start sm:self-auto">
-          {timeframes.map(tf => (
-            <button
-              key={tf}
-              onClick={() => setTimeframe(tf)}
-              className={`
-                px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
-                ${timeframe === tf 
-                  ? 'bg-brand-600 text-white shadow-2xs' 
-                  : 'text-ink-muted dark:text-dark-muted hover:text-ink dark:hover:text-dark-text hover:bg-surface-muted dark:hover:bg-dark-elevated'}
-              `}
-            >
-              {tf}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          label="Analytics time period"
+          items={["24 hours", "7 days", "30 days", "90 days"]}
+          value={period}
+          onChange={setPeriod}
+        />
       </div>
-
-      {/* Comparison Subhead */}
-      <div className="text-xs text-ink-subtle dark:text-dark-muted px-1">
-        All monitored topics · <span className="font-medium text-ink-darker dark:text-dark-text">{data.comparisonText}</span>
-      </div>
-
-      {/* Main Grid: Mention Volume Chart & Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Mention Volume Chart */}
-        <div className="lg:col-span-2 bg-surface dark:bg-dark-surface rounded-2xl p-6 border border-surface-border dark:border-dark-border shadow-xs space-y-6">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-ink-subtle dark:text-dark-muted">
-                Mention Volume · {timeframe}
-              </div>
-              <div className="flex items-baseline gap-3">
-                <span className="font-display font-extrabold text-3xl sm:text-4xl text-ink-heading dark:text-dark-text">
-                  {data.mentionVolume}
-                </span>
-                <span className="inline-flex items-center gap-0.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/60 px-2.5 py-1 rounded-md border border-brand-200/50 dark:border-brand-800/40">
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                  {data.growth}
-                </span>
-              </div>
-              <p className="text-xs text-ink-muted dark:text-dark-muted">
-                Public mentions across {data.activeSources} sources
-              </p>
-            </div>
+      <ResourceState resource={mentions} />
+      <div className="analytics-grid">
+        <section className="chart-card volume-card">
+          <div className="metric-caption">Mention volume</div>
+          <div className="volume-number">
+            <strong>{mentions.error ? "—" : number(data.mentionVolume)}</strong>
+            {demo && (
+              <span>
+                <ArrowUpRight size={12} />
+                {data.growth.replace(/[^0-9.%+-]/g, "")}
+              </span>
+            )}
           </div>
-
-          {/* Interactive Bar Chart */}
-          <div className="pt-6 space-y-3">
-            <div className="h-48 flex items-end gap-2 sm:gap-4 justify-between border-b border-surface-border dark:border-dark-border pb-2">
-              {data.volumeValues.map((val, idx) => {
-                const heightPercent = Math.round((val / maxVolume) * 100);
-                return (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
-                    {/* Tooltip */}
-                    <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-ink-heading dark:bg-dark-elevated text-white dark:text-dark-text text-[10px] px-2 py-0.5 rounded pointer-events-none whitespace-nowrap shadow border border-transparent dark:border-dark-border">
-                      {val.toLocaleString()} mentions
-                    </div>
-                    {/* Bar */}
-                    <div 
-                      className="w-full bg-brand-100 dark:bg-brand-900/40 group-hover:bg-brand-600 dark:group-hover:bg-brand-500 rounded-t-md transition-all duration-300"
-                      style={{ height: `${heightPercent}%` }}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Labels */}
-            <div className="flex items-center justify-between text-[11px] text-ink-subtle dark:text-dark-muted font-medium">
-              {data.timeLabels.map((lbl, idx) => (
-                <span key={idx} className="text-center flex-1">{lbl}</span>
+          <p className="metric-subtitle">
+            {demo ? "Public mentions" : "Returned mentions"} across{" "}
+            {number(data.activeSources)} sources
+          </p>
+          <div
+            className="bar-chart"
+            role="img"
+            aria-label={`Mention volume for ${period}: ${data.volumeValues.join(", ")}`}
+            key={period}
+          >
+            {data.volumeValues.map((value, i) => (
+              <div className="bar-track" key={i}>
+                <motion.div
+                  className={
+                    i > data.volumeValues.length - 4 ? "bar recent" : "bar"
+                  }
+                  initial={{ height: 0 }}
+                  animate={{ height: `${(value / max) * 100}%` }}
+                  transition={{
+                    duration: reduced ? 0 : 0.45,
+                    delay: reduced ? 0 : i * 0.025,
+                    ease: "easeOut",
+                  }}
+                  title={`${data.timeLabels[i] || i + 1}: ${value}`}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="chart-labels">
+            {data.timeLabels.map((label, i) => (
+              <span key={i}>{label}</span>
+            ))}
+          </div>
+          {!demo && (
+            <p className="list-note">
+              Based on mentions returned for the selected period.
+            </p>
+          )}
+        </section>
+        <div className="analytics-side">
+          <section className="chart-card">
+            <div className="metric-caption">Source distribution</div>
+            <strong className="card-big-number">
+              {number(data.activeSources)}
+            </strong>
+            <p className="metric-subtitle">Active sources in this view</p>
+            <div className="source-legend">
+              {Object.entries(data.sources).map(([name, value], i) => (
+                <span key={name}>
+                  <i className={`legend-dot color-${i % 3}`} />
+                  {name}{" "}
+                  {sourceTotal ? Math.round((value / sourceTotal) * 100) : 0}%
+                </span>
               ))}
             </div>
-          </div>
+          </section>
+          <section className="chart-card">
+            <div className="metric-caption">Discussion tone</div>
+            <div className="tone-head">
+              <strong>{positive}%</strong>
+              <span className="small-badge">
+                {toneTotal
+                  ? positive >= 50
+                    ? "Mostly positive"
+                    : "Mixed discussion"
+                  : "No tone data"}
+              </span>
+            </div>
+            <div className="sentiment-track">
+              {Object.entries(data.tone).map(([name, value]) => (
+                <span
+                  key={name}
+                  className={name}
+                  style={{
+                    width: `${toneTotal ? (value / toneTotal) * 100 : 0}%`,
+                  }}
+                />
+              ))}
+            </div>
+            <div className="tone-legend">
+              {Object.entries(data.tone).map(([name, value]) => (
+                <span key={name}>
+                  {name} {toneTotal ? Math.round((value / toneTotal) * 100) : 0}
+                  %
+                </span>
+              ))}
+            </div>
+          </section>
         </div>
-
-        {/* Right 1 Col: Distribution & Tone */}
-        <div className="space-y-6">
-          {/* Source Distribution */}
-          <div className="bg-surface dark:bg-dark-surface rounded-2xl p-6 border border-surface-border dark:border-dark-border shadow-xs space-y-4">
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-ink-subtle dark:text-dark-muted">
-                Source Distribution
-              </div>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="font-display font-extrabold text-2xl text-ink-heading dark:text-dark-text">
-                  {data.activeSources}
+        <section className="chart-card">
+          <h2>Trending topics</h2>
+          <ResourceState
+            resource={clusters}
+            empty={!clusters.data?.data?.length}
+          />
+          {[...(clusters.data?.data || [])]
+            .sort((a, b) => Number(b.velocity) - Number(a.velocity))
+            .slice(0, 4)
+            .map((item, i) => (
+              <div className="analytics-topic" key={item.id}>
+                <span>
+                  {String(i + 1).padStart(2, "0")} · {item.title}
                 </span>
-                <span className="text-xs text-ink-muted dark:text-dark-muted">Active sources</span>
+                <strong>{number(item.mention_count)}</strong>
+                <small>{number(item.velocity)}%</small>
               </div>
-            </div>
-
-            {/* Source percentage bars */}
-            <div className="space-y-3 pt-2">
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-semibold text-ink-darker dark:text-dark-text">
-                  <span className="flex items-center gap-1.5">
-                    <Newspaper className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
-                    <span>News</span>
-                  </span>
-                  <span>{data.sources.news}%</span>
-                </div>
-                <div className="h-2 w-full bg-surface-muted dark:bg-dark-elevated rounded-full overflow-hidden">
-                  <div className="h-full bg-brand-600 dark:bg-brand-500 rounded-full" style={{ width: `${data.sources.news}%` }} />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-semibold text-ink-darker dark:text-dark-text">
-                  <span className="flex items-center gap-1.5">
-                    <Share2 className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Social</span>
-                  </span>
-                  <span>{data.sources.social}%</span>
-                </div>
-                <div className="h-2 w-full bg-surface-muted dark:bg-dark-elevated rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full" style={{ width: `${data.sources.social}%` }} />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-semibold text-ink-darker dark:text-dark-text">
-                  <span className="flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Web & Blogs</span>
-                  </span>
-                  <span>{data.sources.web}%</span>
-                </div>
-                <div className="h-2 w-full bg-surface-muted dark:bg-dark-elevated rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-500 rounded-full" style={{ width: `${data.sources.web}%` }} />
-                </div>
-              </div>
-            </div>
+            ))}
+        </section>
+        <section className="chart-card">
+          <h2>Top keywords</h2>
+          <div className="keyword-tags">
+            {keywords.map(([word]) => (
+              <span key={word}>{word}</span>
+            ))}
           </div>
-
-          {/* Discussion Tone */}
-          <div className="bg-surface dark:bg-dark-surface rounded-2xl p-6 border border-surface-border dark:border-dark-border shadow-xs space-y-4">
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-ink-subtle dark:text-dark-muted">
-                Discussion Tone
+          {!keywords.length && (
+            <p className="metric-subtitle">No keywords available.</p>
+          )}
+        </section>
+        <section className="chart-card">
+          <h2>Geographic activity</h2>
+          {locations.map(([location, value]) => (
+            <div className="geo-row" key={location}>
+              <span>{location}</span>
+              <div>
+                <motion.i
+                  initial={{ width: 0 }}
+                  animate={{
+                    width: `${locationTotal ? (value / locationTotal) * 100 : 0}%`,
+                  }}
+                  transition={{ duration: reduced ? 0 : 0.4 }}
+                />
               </div>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="font-display font-extrabold text-2xl text-ink-heading dark:text-dark-text">
-                  {data.tone.positive}%
-                </span>
-                <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Mostly positive</span>
-              </div>
+              <b>
+                {locationTotal ? Math.round((value / locationTotal) * 100) : 0}%
+              </b>
             </div>
-
-            {/* Tone visual bar */}
-            <div className="space-y-2 pt-2">
-              <div className="h-2.5 w-full bg-surface-muted dark:bg-dark-elevated rounded-full overflow-hidden flex">
-                <div className="bg-emerald-500 h-full" style={{ width: `${data.tone.positive}%` }} />
-                <div className="bg-slate-300 dark:bg-dark-border h-full" style={{ width: `${data.tone.neutral}%` }} />
-                <div className="bg-rose-500 h-full" style={{ width: `${data.tone.negative}%` }} />
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-ink-subtle dark:text-dark-muted pt-1 font-medium">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  Positive {data.tone.positive}%
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-slate-400" />
-                  Neutral {data.tone.neutral}%
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-rose-500" />
-                  Critical {data.tone.negative}%
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+          ))}
+          {!locations.length && (
+            <p className="metric-subtitle">No location data is available.</p>
+          )}
+        </section>
       </div>
-    </div>
+    </PageMotion>
   );
 }

@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, MotionConfig } from "framer-motion";
+import WorkspaceProvider from "./components/common/WorkspaceProvider";
+import ResultPanel from "./components/common/ResultPanel";
+import MonitorsView from "./components/views/MonitorsView";
+import { createDemoService } from "./data/demoWorkspace";
 import Header from "./components/common/Header";
 import Sidebar from "./components/common/Sidebar";
 import CreateMonitorDialog from "./components/common/CreateMonitorDialog";
@@ -81,6 +86,24 @@ export default function App() {
   const [workspaceName, setWorkspaceName] = useState("");
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const token = session?.token;
+  const demoService = useRef(null);
+  if (demoService.current == null) {
+    demoService.current = createDemoService();
+  }
+  const [selection, setSelection] = useState(null);
+  const [monitorSeed, setMonitorSeed] = useState("");
+  const [searchFilters, setSearchFilters] = useState({});
+  const [settingsTab, setSettingsTab] = useState("Search & discovery");
+  const api = useCallback(
+    (path, options = {}) => {
+      if (demo) return demoService.current.call(path, options);
+      return request(
+        path.startsWith("/auth/") ? path : workspacePath(workspaceId, path),
+        { ...options, token },
+      );
+    },
+    [demo, token, workspaceId],
+  );
 
   const expire = useCallback(() => {
     clearSession();
@@ -185,7 +208,8 @@ export default function App() {
             : {}),
         })),
         history: value(1)?.data || [],
-        sourcesCount: value(2)?.data?.filter((source) => source.available).length,
+        sourcesCount: value(2)?.data?.filter((source) => source.available)
+          .length,
         unread: value(3)?.unread || 0,
         monitorTotal: value(0)?.meta?.total ?? monitors.length,
         lastPage: value(0)?.meta?.last_page || 1,
@@ -205,12 +229,23 @@ export default function App() {
     };
   }, [token, workspaceId, demo, revision, monitorPage]);
 
-  const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  const refresh = useCallback(() => {
+    if (demo)
+      setData((previous) => ({
+        ...previous,
+        monitors: [...demoService.current.store.monitors],
+        monitorTotal: demoService.current.store.monitors.length,
+        unread: demoService.current.store.alerts.filter((item) => !item.read_at)
+          .length,
+      }));
+    else setRevision((value) => value + 1);
+  }, [demo]);
   function navigate(view) {
     setCurrentView(view);
     setSidebarOpen(false);
   }
-  function search(text) {
+  function search(text, filters = {}) {
+    setSearchFilters(filters);
     setQuery(text);
     setCurrentView("search");
   }
@@ -229,7 +264,12 @@ export default function App() {
     setUser(demoUser);
     setWorkspaces([demoWorkspace]);
     setWorkspaceId("demo");
-    setData(demoData());
+    demoService.current = createDemoService();
+    setData({
+      ...demoData(),
+      monitors: demoService.current.store.monitors,
+      monitorTotal: 4,
+    });
     setBoot({ loading: false, error: "" });
     setDataStatus({ loading: false, error: "" });
     setCurrentView("dashboard");
@@ -268,27 +308,33 @@ export default function App() {
   }
   async function createMonitor(fields) {
     if (demo) {
-      setData((previous) => ({
-        ...previous,
-        monitors: [
-          ...previous.monitors,
-          {
-            ...fields,
-            id: crypto.randomUUID(),
-            is_active: true,
-            mention_count: 0,
-          },
-        ],
-        monitorTotal: previous.monitorTotal + 1,
-      }));
-      return;
+      const monitor = {
+        ...fields,
+        id: crypto.randomUUID(),
+        is_active: true,
+        mention_count: 0,
+        latest_scan: null,
+      };
+      demoService.current.store.monitors.push(monitor);
+      refresh();
+      return monitor;
     }
-    await request(workspacePath(workspaceId, "/monitors"), {
+    const result = await request(workspacePath(workspaceId, "/monitors"), {
       token,
       method: "POST",
       body: fields,
     });
     refresh();
+    return result.data;
+  }
+  function openMonitor(topic = "") {
+    setSelection(null);
+    setMonitorSeed(topic);
+    setCreateOpen(true);
+  }
+  function openRelated(text, filters = {}) {
+    setSelection(null);
+    search(text, filters);
   }
   async function createWorkspace(event) {
     event.preventDefault();
@@ -391,99 +437,148 @@ export default function App() {
     .filter(Boolean)
     .sort()
     .at(-1);
-  const prototype = !["dashboard", "search", "monitors"].includes(currentView);
   return (
-    <div className="workspace-shell">
-      <Sidebar
-        currentView={currentView}
-        onSelectView={navigate}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        unreadAlertsCount={data.unread}
-        onSignOut={signOut}
-        user={user}
-        workspace={workspace}
-        workspaces={workspaces}
-        onWorkspaceChange={(id) => {
-          setWorkspaceId(id);
-          setMonitorPage(1);
-          setData(emptyData);
-          setDataStatus({ loading: true, error: "" });
-          setQuery("");
-          setCurrentView("dashboard");
-        }}
-      />
-      <div className="workspace-main">
-        <Header
-          onToggleSidebar={() => setSidebarOpen(true)}
-          monitorsCount={data.monitorTotal}
-          sourcesCount={data.sourcesCount}
-          lastScan={lastScan}
-          onAlerts={() => navigate("alerts")}
-          demo={demo}
-        />
-        {notice && (
-          <div role="alert" className="load-error">
-            {notice}
-          </div>
-        )}
-        <main>
-          {prototype && (
-            <p className="prototype-notice">
-              Design preview — this section uses sample data. Live integration
-              currently covers account access, home, monitors, and search.
-            </p>
-          )}
-          {(currentView === "dashboard" || currentView === "monitors") && (
-            <DashboardView
-              onSearch={search}
-              onSelectTopic={search}
-              onOpenAddMonitor={() => setCreateOpen(true)}
-              monitors={data.monitors}
-              history={data.history}
-              loading={dataStatus.loading}
-              error={dataStatus.error}
-              onRetry={refresh}
-              onClearHistory={clearHistory}
-              monitorTotal={data.monitorTotal}
-              monitorPage={monitorPage}
-              lastPage={data.lastPage || 1}
-              onPageChange={setMonitorPage}
-              monitorsOnly={currentView === "monitors"}
-            />
-          )}
-          {currentView === "search" && (
-            <LiveSearchView
-              key={`${workspaceId}-${query}`}
-              query={query}
-              token={token}
-              workspaceId={workspaceId}
+    <WorkspaceProvider
+      key={workspaceId}
+      workspaceId={workspaceId}
+      api={api}
+      demo={demo}
+      user={user}
+      onUserUpdate={setUser}
+      onRefresh={refresh}
+    >
+      <MotionConfig reducedMotion="user">
+        <div className="workspace-shell">
+          <Sidebar
+            currentView={currentView}
+            onSelectView={navigate}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            unreadAlertsCount={data.unread}
+            onSignOut={signOut}
+            user={user}
+            workspace={workspace}
+            workspaces={workspaces}
+            onWorkspaceChange={(id) => {
+              setWorkspaceId(id);
+              setSelection(null);
+              setCreateOpen(false);
+              setMonitorPage(1);
+              setData(emptyData);
+              setDataStatus({ loading: true, error: "" });
+              setQuery("");
+              setCurrentView("dashboard");
+            }}
+          />
+          <div className="workspace-main">
+            <Header
+              onToggleSidebar={() => setSidebarOpen(true)}
+              monitorsCount={data.monitorTotal}
+              sourcesCount={data.sourcesCount}
+              lastScan={lastScan}
+              onAlerts={() => navigate("alerts")}
               demo={demo}
-              onSearch={search}
-              onSearched={refresh}
             />
-          )}
-          {currentView === "analytics" && <AnalyticsView />}
-          {currentView === "alerts" && (
-            <AlertsView
-              onNavigateSettings={() => navigate("settings")}
-              onInspectTopic={search}
-            />
-          )}
-          {currentView === "intelligence" && (
-            <IntelligenceView
-              onSelectCluster={(item) => search(item.name || item.title)}
-            />
-          )}
-          {currentView === "settings" && <SettingsView />}
-        </main>
-      </div>
-      {createOpen && (
-        <CreateMonitorDialog
-          onClose={() => setCreateOpen(false)}
-          onCreate={createMonitor}
-        />
-      )}
-    </div>
+            {notice && (
+              <div role="alert" className="load-error">
+                {notice}
+              </div>
+            )}
+            <main>
+              <AnimatePresence mode="wait" initial={false}>
+                {currentView === "dashboard" && (
+                  <DashboardView
+                    key="dashboard"
+                    onSearch={search}
+                    onSelectTopic={search}
+                    onOpenAddMonitor={() => openMonitor()}
+                    monitors={data.monitors}
+                    history={data.history}
+                    loading={dataStatus.loading}
+                    error={dataStatus.error}
+                    onRetry={refresh}
+                    onClearHistory={clearHistory}
+                    monitorTotal={data.monitorTotal}
+                    monitorPage={monitorPage}
+                    lastPage={data.lastPage || 1}
+                    onPageChange={setMonitorPage}
+                  />
+                )}
+                {currentView === "monitors" && (
+                  <MonitorsView
+                    key="monitors"
+                    monitors={data.monitors}
+                    loading={dataStatus.loading}
+                    error={dataStatus.error}
+                    onRetry={refresh}
+                    onCreate={() => openMonitor()}
+                    onSelect={search}
+                    page={monitorPage}
+                    lastPage={data.lastPage || 1}
+                    onPageChange={setMonitorPage}
+                    total={data.monitorTotal}
+                  />
+                )}
+                {currentView === "search" && (
+                  <LiveSearchView
+                    key={`${workspaceId}-${query}-${searchFilters.cluster_id || ""}`}
+                    query={query}
+                    token={token}
+                    workspaceId={workspaceId}
+                    demo={demo}
+                    onSearch={search}
+                    onSearched={refresh}
+                    onSelectResult={setSelection}
+                    onMonitor={openMonitor}
+                    initialFilters={searchFilters}
+                  />
+                )}
+                {currentView === "analytics" && (
+                  <AnalyticsView key="analytics" />
+                )}
+                {currentView === "alerts" && (
+                  <AlertsView
+                    key="alerts"
+                    onNavigateSettings={() => {
+                      setSettingsTab("Notifications");
+                      navigate("settings");
+                    }}
+                    onInspectTopic={search}
+                    onSelectResult={setSelection}
+                  />
+                )}
+                {currentView === "intelligence" && (
+                  <IntelligenceView
+                    key="intelligence"
+                    onSelectCluster={setSelection}
+                  />
+                )}
+                {currentView === "settings" && (
+                  <SettingsView
+                    key={`settings-${settingsTab}`}
+                    initialTab={settingsTab}
+                  />
+                )}
+              </AnimatePresence>
+            </main>
+          </div>
+          <ResultPanel
+            selection={selection}
+            onClose={() => setSelection(null)}
+            onMonitor={openMonitor}
+            onRelated={openRelated}
+          />
+          <AnimatePresence>
+            {createOpen && (
+              <CreateMonitorDialog
+                onClose={() => setCreateOpen(false)}
+                onCreate={createMonitor}
+                initialTopic={monitorSeed}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+      </MotionConfig>
+    </WorkspaceProvider>
   );
 }

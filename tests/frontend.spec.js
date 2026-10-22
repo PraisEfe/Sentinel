@@ -28,6 +28,59 @@ async function mockApi(page, options = {}) {
   let searches = options.empty ? [] : [...history];
   let workspaces = options.noWorkspace ? [] : [workspace];
   let historyDeletes = 0;
+  let preferenceAttempts = 0;
+  let alerts = [
+    {
+      id: "alert-1",
+      title: "Network outage is trending",
+      body: "New reports from Lagos.",
+      severity: "high",
+      read_at: null,
+      created_at: new Date().toISOString(),
+      mention_id: "mention-1",
+    },
+  ];
+  let notification = {
+    digest_cadence: "20m",
+    digest_hour: 9,
+    channels: { email: false, web_push: false, in_app: true },
+    alerts: { velocity: true, high_authority: true, high_relevance: true },
+    email_available: true,
+  };
+  const source = {
+    id: "source-1",
+    name: "Public news",
+    type: "news",
+    is_active: true,
+    enabled_for_workspace: true,
+    language_codes: ["en"],
+  };
+  const mention = {
+    id: "mention-1",
+    title: "Verified backend result",
+    body: "Infrastructure investment announced.",
+    url: "https://example.com/story",
+    published_at: new Date().toISOString(),
+    source_id: source.id,
+    source,
+    sentiment: "positive",
+    country_code: "NG",
+    language: "en",
+    cluster_id: "cluster-1",
+    metadata: [{ topics: ["Network", "5G"] }],
+    relevance_score: "0.98",
+  };
+  const cluster = {
+    id: "cluster-1",
+    cluster_id: "cluster-1",
+    title: "Network performance",
+    summary: "Verified summary from the backend.",
+    mention_count: 342,
+    source_count: 46,
+    velocity: 48,
+    last_seen_at: new Date().toISOString(),
+    representative_mention: mention,
+  };
   await page.route("https://fonts.googleapis.com/**", (route) => route.abort());
   await page.route("https://fonts.gstatic.com/**", (route) => route.abort());
   await page.route("**/api/v1/**", async (route) => {
@@ -50,7 +103,10 @@ async function mockApi(page, options = {}) {
     // Assert that every request maps to the supplied OpenAPI contract.
     const template = path
       .replace(/\/workspaces\/w-[12]/, "/workspaces/{workspace}")
-      .replace(/\/monitors\/m-\d+/, "/monitors/{monitor}");
+      .replace(/\/monitors\/m-\d+/, "/monitors/{monitor}")
+      .replace(/\/mentions\/mention-\d+/, "/mentions/{mention}")
+      .replace(/\/clusters\/cluster-\d+/, "/clusters/{cluster}")
+      .replace(/\/alerts\/alert-\d+/, "/alerts/{alert}");
     expect(
       spec.paths[template]?.[method.toLowerCase()],
       `${method} ${path} must exist in OpenAPI`,
@@ -98,6 +154,60 @@ async function mockApi(page, options = {}) {
       workspaces = [{ ...workspace, name: body.name }];
       return fulfill({ data: workspaces[0] }, 201);
     }
+    if (path.endsWith("/preferences")) {
+      preferenceAttempts++;
+      if (options.preferenceError && preferenceAttempts === 1)
+        return fulfill({ message: "Notification service unavailable" }, 503);
+      return fulfill({ data: body || {} });
+    }
+    if (path.endsWith("/saved-searches"))
+      return fulfill({ data: { id: "saved-1", ...body } }, 201);
+    if (path.includes("/mentions/"))
+      return fulfill({ data: { ...mention, cluster } });
+    if (path.endsWith("/mentions") && path.includes("/clusters/"))
+      return fulfill({ data: [mention], meta: { next_cursor: null } });
+    if (path.includes("/clusters/")) return fulfill({ data: cluster });
+    if (path.endsWith("/explore"))
+      return fulfill({ data: [cluster], meta: { last_page: 1 } });
+    if (path.includes("/intelligence/")) return fulfill({ data: [cluster] });
+    if (path.endsWith("/settings/notifications")) {
+      if (method === "PATCH") notification = { ...notification, ...body };
+      return fulfill(notification);
+    }
+    if (
+      path.endsWith("/settings/monitoring-defaults") &&
+      options.settingsError &&
+      method === "PATCH"
+    )
+      return fulfill({ message: "Settings could not be saved." }, 503);
+    if (path.endsWith("/settings/monitoring-defaults"))
+      return fulfill({
+        data:
+          method === "PATCH"
+            ? body
+            : {
+                frequency: "20m",
+                history_days: 30,
+                include_related_terms: true,
+              },
+      });
+    if (path.endsWith("/settings/sources")) return fulfill({ data: [source] });
+    if (path.endsWith("/alerts/read-all")) {
+      alerts = alerts.map((item) => ({
+        ...item,
+        read_at: new Date().toISOString(),
+      }));
+      return fulfill({ updated: alerts.length });
+    }
+    if (path.includes("/alerts/alert-")) {
+      alerts = alerts.map((item) => ({
+        ...item,
+        read_at: new Date().toISOString(),
+      }));
+      return fulfill({ data: alerts[0] });
+    }
+    if (path.endsWith("/alerts"))
+      return fulfill({ data: alerts, meta: { next_cursor: null } });
     if (path.endsWith("/monitors") && method === "POST") {
       monitors = [...monitors, { ...monitor, ...body, id: "m-2" }];
       return fulfill({ data: monitors.at(-1) }, 201);
@@ -140,23 +250,11 @@ async function mockApi(page, options = {}) {
     if (path.endsWith("/history/searches")) return fulfill({ data: searches });
     if (path.endsWith("/sources"))
       return fulfill({
-        data: [{ source: { id: "source-1" }, available: true }],
+        data: options.sourceError ? [] : [{ source, available: true }],
       });
     if (path.endsWith("/alerts/counts"))
       return fulfill({ unread: 3, critical: 0, high: 0, normal: 3 });
-    if (path.endsWith("/search"))
-      return fulfill({
-        data: [
-          {
-            id: "mention-1",
-            title: "Verified backend result",
-            body: "Infrastructure investment announced.",
-            url: "https://example.com/story",
-            published_at: new Date().toISOString(),
-            source: { name: "Public news" },
-          },
-        ],
-      });
+    if (path.endsWith("/search")) return fulfill({ data: [mention] });
     return fulfill({ message: `Unhandled ${method} ${path}` }, 500);
   });
   return calls;
@@ -380,39 +478,46 @@ test("home search and monitor creation use workspace-scoped API routes", async (
   const calls = await mockApi(page);
   await login(page);
   await page.getByRole("button", { name: "Add monitor", exact: true }).click();
-  await page.getByLabel("Topic name", { exact: true }).fill("Cybersecurity");
   await page
-    .getByLabel("Search query", { exact: true })
+    .getByLabel("Person, organisation, topic or keyword")
     .fill("cybersecurity Nigeria");
-  await page.getByLabel("Type", { exact: true }).selectOption("topic");
+  await page.getByLabel("Include keywords").fill("security, data breach");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByLabel("News & media")).toBeChecked();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page
     .getByRole("button", { name: "Create monitor", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: /Cybersecurity topic/ }),
+    page.getByRole("button", { name: /cybersecurity Nigeria topic/ }),
   ).toBeVisible();
   expect(
     calls.find(
       (call) => call.method === "POST" && call.path.endsWith("/monitors"),
     ).body,
   ).toEqual({
-    name: "Cybersecurity",
+    name: "cybersecurity Nigeria",
     query: "cybersecurity Nigeria",
     type: "topic",
     frequency: "20m",
+    source_ids: ["source-1"],
+    include_keywords: ["security", "data breach"],
+    exclude_keywords: [],
   });
   await page.getByLabel("Search the public web").fill("MTN & 5G");
   await page
     .getByRole("button", { name: "Search", exact: true })
     .last()
     .click();
+  await page.getByRole("button", { name: /Verified backend result/ }).click();
   await expect(
     page.getByRole("heading", { name: "Verified backend result" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Read original" }),
-  ).toHaveAttribute("href", "https://example.com/story");
+  await expect(page.getByRole("link", { name: "Open source" })).toHaveAttribute(
+    "href",
+    "https://example.com/story",
+  );
   expect(errors).toEqual([]);
 });
 
@@ -508,4 +613,335 @@ test("monitor pagination loads the next backend page", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Next", exact: true }),
   ).toBeDisabled();
+});
+
+async function goTo(page, name) {
+  await page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("button", { name: new RegExp(`^${name}(?: \\d+)?$`) })
+    .click();
+}
+async function wizardToSchedule(page, topic = "Test monitor") {
+  await page.getByLabel("Person, organisation, topic or keyword").fill(topic);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+}
+
+test("monitor wizard preserves steps, retries preferences without duplicate creation", async ({
+  page,
+}) => {
+  const calls = await mockApi(page, { preferenceError: true });
+  await login(page);
+  await goTo(page, "Monitors");
+  await page.getByRole("button", { name: "Add monitor", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Continue", exact: true }),
+  ).toBeDisabled();
+  await wizardToSchedule(page);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.getByLabel("News & media")).toBeChecked();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Create monitor", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Your monitor was created.",
+  );
+  await page
+    .getByRole("button", { name: "Retry preferences", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(
+    calls.filter(
+      (call) => call.path.endsWith("/monitors") && call.method === "POST",
+    ),
+  ).toHaveLength(1);
+  expect(
+    calls.filter(
+      (call) => call.path.endsWith("/preferences") && call.method === "PATCH",
+    ),
+  ).toHaveLength(2);
+});
+
+test("search filters, sorting and saved views send documented fields", async ({
+  page,
+}) => {
+  const calls = await mockApi(page);
+  await login(page);
+  await page.getByLabel("Search the public web").fill("MTN Nigeria");
+  await page
+    .getByRole("button", { name: "Search", exact: true })
+    .last()
+    .click();
+  await page.getByLabel("Sentiment", { exact: true }).selectOption("positive");
+  await page.getByLabel("Language", { exact: true }).selectOption("en");
+  await page.getByLabel("Sort results").selectOption("latest");
+  await page.getByLabel("Source", { exact: true }).selectOption("source-1");
+  await page.getByLabel("Date", { exact: true }).selectOption("7");
+  await page.getByRole("button", { name: "Save this view" }).click();
+  await page.getByLabel("View name").fill("Positive MTN news");
+  await page.getByRole("button", { name: "Save view", exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText("Search view saved.");
+  const saved = calls.find((call) => call.path.endsWith("/saved-searches"));
+  expect(saved.body).toMatchObject({
+    name: "Positive MTN news",
+    query: "MTN Nigeria",
+  });
+  expect(saved.body.filters).toEqual(
+    expect.arrayContaining([
+      "sentiment=positive",
+      "language=en",
+      "source_id=source-1",
+      "sort=latest",
+    ]),
+  );
+  await page.getByRole("tab", { name: "Social", exact: true }).click();
+  await expect(
+    page.getByText(
+      "No results match this search. Try another topic or adjust your filters.",
+    ),
+  ).toBeVisible();
+});
+
+test("result and cluster drawers fetch details, close with Escape, and open related results", async ({
+  page,
+}) => {
+  const calls = await mockApi(page);
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await login(page);
+  await goTo(page, "Intelligence");
+  await page
+    .getByRole("button", { name: /Story cluster.*Network performance/ })
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Network performance", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("button", { name: "5G", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByText("Verified summary from the backend.", { exact: true }),
+  ).toHaveCount(2);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("tab", { name: "Emerging", exact: true }).click();
+  await page
+    .getByRole("button", { name: /Story cluster.*Network performance/ })
+    .click();
+  await page.getByRole("button", { name: "View related results" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: /Verified backend result/ }),
+  ).toBeVisible();
+  expect(
+    calls.some((call) => call.path.endsWith("/intelligence/emerging")),
+  ).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("alerts mark read through the API and notification frequency can be changed", async ({
+  page,
+}) => {
+  const calls = await mockApi(page);
+  await login(page);
+  await goTo(page, "Alerts");
+  await expect(
+    page.getByRole("button", { name: /Network outage is trending/ }),
+  ).toBeVisible();
+  await page.getByLabel("Notification digest frequency").selectOption("daily");
+  await expect(page.getByText("Notification digest · daily")).toBeVisible();
+  await page.getByRole("button", { name: "Mark all as read" }).click();
+  await expect(
+    page.getByText("You’re all caught up. New alerts will appear here."),
+  ).toBeVisible();
+  expect(
+    calls.some(
+      (call) =>
+        call.path.endsWith("/alerts/read-all") && call.method === "POST",
+    ),
+  ).toBe(true);
+  await page.getByRole("tab", { name: "All", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: /Network outage is trending/ }),
+  ).toBeVisible();
+});
+
+test("settings save server-supported defaults, sources and notifications", async ({
+  page,
+}) => {
+  const calls = await mockApi(page);
+  await login(page);
+  await goTo(page, "Settings");
+  await page.getByRole("button", { name: /Monitoring defaults/ }).click();
+  await page.getByLabel("Default monitoring frequency").selectOption("10m");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Changes saved." }),
+  ).toBeVisible();
+  expect(
+    calls.find(
+      (call) =>
+        call.path.endsWith("/settings/monitoring-defaults") &&
+        call.method === "PATCH",
+    ).body,
+  ).toEqual({ frequency: "10m" });
+  await page
+    .getByRole("navigation", { name: "Settings sections" })
+    .getByRole("button", { name: /Notifications/ })
+    .click();
+  await page
+    .getByRole("switch", { name: "Trending topics", exact: true })
+    .uncheck();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Changes saved." }),
+  ).toBeVisible();
+  expect(
+    calls.find(
+      (call) =>
+        call.path.endsWith("/settings/notifications") &&
+        call.method === "PATCH",
+    ).body,
+  ).toEqual({ notify_velocity: false });
+  await page.getByRole("button", { name: /Sources & languages/ }).click();
+  await page
+    .getByRole("switch", { name: "Public news", exact: true })
+    .uncheck();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  expect(
+    calls.find(
+      (call) =>
+        call.path.endsWith("/settings/sources") && call.method === "PATCH",
+    ).body,
+  ).toEqual({ sources: [{ source_id: "source-1", enabled: false }] });
+});
+
+test("discovery preferences persist locally and affect search presentation", async ({
+  page,
+}) => {
+  await mockApi(page);
+  await login(page);
+  await goTo(page, "Settings");
+  await page.getByRole("switch", { name: "Detect discussion tone" }).uncheck();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("status")).toHaveText(
+    "Preferences saved on this device.",
+  );
+  await goTo(page, "Home");
+  await page.getByLabel("Search the public web").fill("MTN");
+  await page
+    .getByRole("button", { name: "Search", exact: true })
+    .last()
+    .click();
+  await expect(page.locator(".result-content")).toBeVisible();
+  await expect(page.locator(".result-content .sentiment")).toHaveCount(0);
+  await page.reload();
+  await goTo(page, "Settings");
+  await expect(
+    page.getByRole("switch", { name: "Detect discussion tone" }),
+  ).not.toBeChecked();
+});
+
+test("analytics periods update live query and charts expose accessible data", async ({
+  page,
+}) => {
+  const calls = await mockApi(page);
+  await login(page);
+  await goTo(page, "Analytics");
+  await expect(
+    page.getByRole("img", { name: /Mention volume for 7 days/ }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "30 days", exact: true }).click();
+  await expect(
+    page.getByRole("img", { name: /Mention volume for 30 days/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Based on mentions returned for the selected period."),
+  ).toBeVisible();
+  expect(
+    calls.filter((call) => call.path.endsWith("/search")).length,
+  ).toBeGreaterThanOrEqual(2);
+});
+
+test("all updated screens work on mobile with reduced motion and without runtime errors", async ({
+  page,
+}) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Explore the demo workspace" })
+    .click();
+  for (const name of [
+    "Search",
+    "Monitors",
+    "Intelligence",
+    "Analytics",
+    "Alerts",
+    "Settings",
+  ]) {
+    await page
+      .getByRole("button", { name: "Open navigation", exact: true })
+      .click();
+    await goTo(page, name);
+    await expect(
+      page.getByRole("heading", {
+        name: name === "Search" ? "Search the public web" : name,
+        exact: true,
+      }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  expect(errors).toEqual([]);
+});
+
+test("failed settings writes report the error without a success message", async ({
+  page,
+}) => {
+  await mockApi(page, { settingsError: true });
+  await login(page);
+  await goTo(page, "Settings");
+  await page.getByRole("button", { name: /Monitoring defaults/ }).click();
+  await page.getByLabel("Default monitoring frequency").selectOption("10m");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "Settings could not be saved.",
+  );
+  await expect(page.getByText("Changes saved.", { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByLabel("Default monitoring frequency")).toHaveValue(
+    "10m",
+  );
+});
+
+test("wizard cannot create a monitor when no sources are available", async ({
+  page,
+}) => {
+  const calls = await mockApi(page, { sourceError: true });
+  await login(page);
+  await page.getByRole("button", { name: "Add monitor", exact: true }).click();
+  await page.getByLabel("Person, organisation, topic or keyword").fill("MTN");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByLabel("News & media")).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Continue", exact: true }),
+  ).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(
+    calls.filter(
+      (call) => call.path.endsWith("/monitors") && call.method === "POST",
+    ),
+  ).toHaveLength(0);
 });
