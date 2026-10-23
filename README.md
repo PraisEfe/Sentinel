@@ -15,9 +15,9 @@ The app starts at sign-in. `/signin` and `/signup` can be opened directly. Use y
 
 The supplied API contract is preserved in [docs/openapi.json](docs/openapi.json). The documentation URL requires authentication (401), so the uploaded contract remains the source for field and endpoint mappings.
 
-Browser requests use **same-origin `/api/v1` in every mode**. Vite handles the proxy in development and preview; `npm start` runs the production server with the same API proxy and SPA history fallback. The upstream defaults to `https://sentinel-api.absg-ohos.cloud`. TLS verification remains enabled, and existing HTTPS_PROXY/HTTP_PROXY/NO_PROXY settings are respected. A local backend on loopback uses a direct local connection.
+Browser requests use **same-origin `/api/v1` in every mode**. Vite handles the proxy in development and preview; `npm start` runs the production server with the same API proxy and SPA history fallback. The shared `.env` configures the upstream as `https://sentinel-api.absg-ohos.cloud/api/v1`; the proxy forwards `/api/v1` exactly once. TLS verification remains enabled, and existing HTTPS_PROXY/HTTP_PROXY/NO_PROXY settings are respected. A local backend on loopback uses a direct local connection.
 
-Optional overrides are documented in [.env.example](.env.example). Set `API_PROXY_TARGET=http://127.0.0.1:8000` in `.env.local` for a local backend. Set `VITE_API_BASE_URL` only when intentionally using a different browser API URL; an absolute URL requires the backend to allow your frontend's origin. `VITE_` values are public build-time configuration, never credentials.
+The project has one tracked [`.env`](.env) containing only the public production API URL. Development, preview, and production use this same file; no `.env.local` or mode-specific files are needed. Restart the server after editing it. Process environment variables can override settings for deployment. Never add credentials to this tracked file; supply secrets through your hosting provider's environment settings. Browser API requests always use `/api/v1`, so the backend does not need to allow localhost through CORS.
 
 ## Routes and shared state
 
@@ -95,6 +95,6 @@ npm run build
 npm start
 ```
 
-The Node production server serves `dist`, proxies `/api/v1` to the configured backend, and serves `index.html` for frontend deep links. It listens on `PORT` (3000 by default) and `HOST` (0.0.0.0 by default). `.env.local` supplies optional runtime settings. A production deployment can install only production dependencies after the build; the server and proxy packages are declared as production dependencies.
+The Node production server serves `dist`, proxies `/api/v1` to the configured backend, and serves `index.html` for frontend deep links. It listens on `PORT` (3000 by default) and `HOST` (0.0.0.0 by default). `.env` supplies the API target. A production deployment can install only production dependencies after the build; the server and proxy packages are declared as production dependencies.
 
-Deploying **only static `dist` files** requires your hosting platform to supply both SPA fallback and a same-origin `/api/v1` reverse proxy. Alternatively build with an explicit absolute `VITE_API_BASE_URL`, in which case the API must allow your exact frontend origin. The API currently advertises `https://sentinel.absg-ohos.cloud`; frontend code cannot change that server policy. Do not disable browser security or TLS checks to work around CORS.
+Deploying **only static `dist` files** requires your hosting platform to supply both SPA fallback and a same-origin `/api/v1` reverse proxy. The API currently advertises `https://sentinel.absg-ohos.cloud`; frontend code cannot change that server policy. Do not disable browser security or TLS checks to work around CORS.

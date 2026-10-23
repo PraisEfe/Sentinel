@@ -58,7 +58,7 @@ export default function LiveSearchView({
   ])
     if (filters[key]) params.set(key, filters[key]);
   if (from) params.set("from", from);
-  if (preferences.groupStories) params.set("collapse", "true");
+  params.set("collapse", preferences.groupStories ? "1" : "0");
   const resource = useResource(query ? `/search?${params}` : null, {
     list: true,
   });

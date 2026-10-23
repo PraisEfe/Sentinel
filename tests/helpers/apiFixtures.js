@@ -276,7 +276,15 @@ export async function mockApi(page, options = {}) {
       });
     if (path.endsWith("/alerts/counts"))
       return fulfill({ unread: 3, critical: 0, high: 0, normal: 3 });
-    if (path.endsWith("/search")) return fulfill({ data: [mention] });
+    if (path.endsWith("/search")) {
+      const collapse = new URL(req.url()).searchParams.get("collapse");
+      if (collapse !== null && !["0", "1"].includes(collapse))
+        return fulfill({
+          message: "The collapse field must be true or false.",
+          errors: { collapse: ["The collapse field must be true or false."] },
+        }, 422);
+      return fulfill({ data: [mention] });
+    }
     return fulfill({ message: `Unhandled ${method} ${path}` }, 500);
   });
   return calls;

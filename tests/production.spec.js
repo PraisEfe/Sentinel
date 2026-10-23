@@ -13,9 +13,11 @@ test.beforeAll(async () => {
   upstream = createServer(async (req, res) => {
     let text = "";
     for await (const chunk of req) text += chunk;
-    const path = new URL(req.url, "http://api.test").pathname;
+    const url = new URL(req.url, "http://api.test");
+    const path = url.pathname;
     calls.push({
       path,
+      collapse: url.searchParams.get("collapse"),
       method: req.method,
       authorization: req.headers.authorization,
       body: text,
@@ -47,6 +49,9 @@ test.beforeAll(async () => {
       res.writeHead(204);
       return res.end();
     }
+    if (path.endsWith("/search") && url.searchParams.has("collapse") &&
+        !["0", "1"].includes(url.searchParams.get("collapse")))
+      return json(422, { message: "The collapse field must be true or false." });
     if (path.endsWith("/search"))
       return json(200, {
         data: [
@@ -63,7 +68,7 @@ test.beforeAll(async () => {
     return json(200, { data: [], meta: { total: 0, last_page: 1 } });
   });
   const target = await listen(upstream);
-  production = await startProduction(target);
+  production = await startProduction(`${target}/api/v1`);
 });
 test.afterAll(async () => {
   await production?.close();
@@ -122,6 +127,7 @@ test("production login, protected search and refresh work through an actual HTTP
     calls.some(
       (call) =>
         call.path.endsWith("/search") &&
+        call.collapse === "1" &&
         call.authorization === "Bearer production-fixture-token",
     ),
   ).toBe(true);

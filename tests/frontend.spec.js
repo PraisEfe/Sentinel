@@ -675,3 +675,25 @@ test("wizard cannot create a monitor when no sources are available", async ({
     ),
   ).toHaveLength(0);
 });
+
+
+test("search encodes story grouping as API-compatible booleans, including after refresh", async ({ page }) => {
+  const calls = await mockApi(page);
+  await login(page);
+  await page.goto("/search?q=MTN");
+  await expect(page.locator(".result-content")).toBeVisible();
+  const latestCollapse = () => new URL(calls.filter((call) => call.path.endsWith("/search")).at(-1).url).searchParams.get("collapse");
+  expect(latestCollapse()).toBe("1");
+
+  await goTo(page, "Settings");
+  await page.getByRole("switch", { name: "Group similar stories automatically" }).uncheck();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("status")).toHaveText("Preferences saved on this device.");
+  await page.goto("/search?q=MTN");
+  await expect(page.locator(".result-content")).toBeVisible();
+  expect(latestCollapse()).toBe("0");
+  await page.reload();
+  await expect(page.locator(".result-content")).toBeVisible();
+  expect(latestCollapse()).toBe("0");
+  await expect(page.getByText("The collapse field must be true or false.")).toHaveCount(0);
+});

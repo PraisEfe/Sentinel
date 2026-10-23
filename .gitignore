@@ -26,8 +26,7 @@ dist-ssr
 # Figma exports and tokens
 figma_file.json
 fetch_figma.mjs
-.env
-.env.local
+.env.*
 
 # Browser test artifacts
 test-results/

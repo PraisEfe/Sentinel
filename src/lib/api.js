@@ -1,8 +1,5 @@
-// Same-origin in development, preview, and the production server.
-// An absolute URL is an explicit deployment override and needs backend CORS.
-export const API_BASE_URL = (
-  import.meta.env?.VITE_API_BASE_URL || "/api/v1"
-).replace(/\/$/, "");
+// Keep browser requests same-origin; the server reads the upstream from .env.
+export const API_BASE_URL = "/api/v1";
 let unauthorizedHandler = null;
 export function onUnauthorized(handler) {
   unauthorizedHandler = handler;

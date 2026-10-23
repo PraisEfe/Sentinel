@@ -8,7 +8,7 @@ test("live Sentinel API is reachable through the production same-origin proxy wi
     "Opt-in external check; run npm run test:live.",
   );
   const production = await startProduction(
-    "https://sentinel-api.absg-ohos.cloud",
+    "https://sentinel-api.absg-ohos.cloud/api/v1",
   );
   const corsErrors = [];
   page.on("console", (message) => {
