@@ -7,11 +7,8 @@ export const pagePaths = {
   alerts: "/alerts",
   settings: "/settings",
 };
-export const isDemoPath = (pathname) =>
-  pathname === "/demo" || pathname.startsWith("/demo/");
-export function workspacePathFor(page, demo = false) {
-  const path = pagePaths[page] || "/";
-  return demo ? (path === "/" ? "/demo" : `/demo${path}`) : path;
+export function workspacePathFor(page) {
+  return pagePaths[page] || "/";
 }
 export function safeReturnTo(value) {
   return typeof value === "string" &&

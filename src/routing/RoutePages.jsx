@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Link,
   Navigate,
@@ -13,7 +13,7 @@ import MonitorsView from "../components/views/MonitorsView";
 import LiveSearchView from "../components/views/LiveSearchView";
 import { useAppStore } from "../stores/appStore";
 import { useWorkspace } from "../lib/workspace";
-import { isDemoPath, safeReturnTo, workspacePathFor } from "./paths";
+import { safeReturnTo, workspacePathFor } from "./paths";
 
 export function AuthPage({ mode }) {
   const navigate = useNavigate();
@@ -36,7 +36,6 @@ export function AuthPage({ mode }) {
         await acceptSession(next, remember);
         if (useAppStore.getState().session) navigate(target, { replace: true });
       }}
-      onDemo={() => navigate("/demo")}
     />
   );
 }
@@ -97,27 +96,25 @@ export function NewWorkspacePage() {
   );
 }
 function useSummary() {
-  const { demo } = useWorkspace();
   return useAppStore(
     useShallow((state) => ({
-      data: demo ? state.demoData : state.data,
-      loading: demo ? false : state.dataStatus.loading,
-      error: demo ? "" : state.dataStatus.error,
-      page: demo ? 1 : state.monitorPage,
-      refresh: demo ? state.refreshDemo : state.refreshWorkspace,
+      data: state.data,
+      loading: state.dataStatus.loading,
+      error: state.dataStatus.error,
+      page: state.monitorPage,
+      refresh: state.refreshWorkspace,
       clearHistory: state.clearHistory,
       openMonitor: state.openMonitor,
     })),
   );
 }
 export function HomePage() {
-  const { demo } = useWorkspace();
   const summary = useSummary();
   const navigate = useNavigate();
   const [, setParams] = useSearchParams();
   const search = (text) =>
     navigate(
-      `${workspacePathFor("search", demo)}?${new URLSearchParams({ q: text })}`,
+      `${workspacePathFor("search")}?${new URLSearchParams({ q: text })}`,
     );
   return (
     <DashboardView
@@ -129,7 +126,7 @@ export function HomePage() {
       loading={summary.loading}
       error={summary.error}
       onRetry={summary.refresh}
-      onClearHistory={() => summary.clearHistory(demo)}
+      onClearHistory={() => summary.clearHistory()}
       monitorTotal={summary.data.monitorTotal}
       monitorPage={summary.page}
       lastPage={summary.data.lastPage || 1}
@@ -138,7 +135,6 @@ export function HomePage() {
   );
 }
 export function MonitorsPage() {
-  const { demo } = useWorkspace();
   const summary = useSummary();
   const navigate = useNavigate();
   const [, setParams] = useSearchParams();
@@ -151,7 +147,7 @@ export function MonitorsPage() {
       onCreate={() => summary.openMonitor()}
       onSelect={(text) =>
         navigate(
-          `${workspacePathFor("search", demo)}?${new URLSearchParams({ q: text })}`,
+          `${workspacePathFor("search")}?${new URLSearchParams({ q: text })}`,
         )
       }
       page={summary.page}
@@ -201,28 +197,10 @@ export function SearchPage() {
     />
   );
 }
-export function DemoGate({ children }) {
-  const { ready, startDemo } = useAppStore(
-    useShallow((state) => ({
-      ready: !!state.demoService,
-      startDemo: state.startDemo,
-    })),
-  );
-  useEffect(() => {
-    startDemo();
-  }, [startDemo]);
-  return ready ? (
-    children
-  ) : (
-    <p className="workspace-loading" role="status">
-      Opening demo workspace…
-    </p>
-  );
-}
 export function WorkspaceGate({ children }) {
   const workspaceId = useAppStore((state) => state.workspaceId);
   const location = useLocation();
-  if (!workspaceId && !isDemoPath(location.pathname))
+  if (!workspaceId)
     return (
       <Navigate
         to="/workspaces/new"
@@ -233,12 +211,11 @@ export function WorkspaceGate({ children }) {
   return children;
 }
 export function NotFoundPage() {
-  const { demo } = useWorkspace();
   return (
     <main className="workspace-gate">
       <h1>Page not found</h1>
       <p>The page you requested doesn’t exist.</p>
-      <Link className="primary-button" to={workspacePathFor("dashboard", demo)}>
+      <Link className="primary-button" to={workspacePathFor("dashboard")}>
         Go home
       </Link>
     </main>

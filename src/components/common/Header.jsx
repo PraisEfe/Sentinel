@@ -6,7 +6,6 @@ export default function Header({
   sourcesCount,
   lastScan,
   onAlerts,
-  demo,
 }) {
   return (
     <header className="app-header">
@@ -23,7 +22,6 @@ export default function Header({
         <span className="scan-status">
           · {lastScan ? `Last scan ${relativeTime(lastScan)}` : "No scans yet"}
         </span>
-        {demo && <span className="demo-badge">Demo data</span>}
       </div>
       <div className="header-actions">
         {sourcesCount !== undefined && (

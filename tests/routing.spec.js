@@ -141,16 +141,11 @@ test("a 401 while using a protected page clears global state and redirects to si
     await page.evaluate(() => localStorage.getItem("sentinel_session")),
   ).toBeNull();
 });
-test("demo routes remain public but cannot bypass private route protection", async ({
-  page,
-}) => {
+test("removed demo URLs cannot open a workspace without authentication", async ({ page }) => {
   const calls = await mockApi(page);
   await page.goto("/demo/monitors");
-  await expect(page.getByText("Demo data", { exact: true })).toBeVisible();
-  await goTo(page, "Search");
-  await expect(page).toHaveURL(/\/demo\/search$/);
-  await page.goto("/monitors");
   await expect(page).toHaveURL(/\/signin$/);
+  await expect(page.getByRole("button", { name: "Explore the demo workspace" })).toHaveCount(0);
   expect(calls).toEqual([]);
 });
 test("logout clears access even when the revocation service is offline", async ({

@@ -287,16 +287,12 @@ test("partial API failure is visible and does not substitute demo monitors", asy
   await expect(page.getByText("Nigerian banking sector")).toBeVisible();
 });
 
-test("demo is explicit, makes no API calls and remains usable on mobile", async ({
+test("authenticated workspace navigation remains usable on mobile", async ({
   page,
 }) => {
   const calls = await mockApi(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-  await page
-    .getByRole("button", { name: "Explore the demo workspace" })
-    .click();
-  await expect(page.getByText("Demo data", { exact: true })).toBeVisible();
+  await login(page);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -315,7 +311,7 @@ test("demo is explicit, makes no API calls and remains usable on mobile", async 
   await expect(
     page.getByRole("navigation", { name: "Main navigation" }),
   ).not.toBeInViewport();
-  expect(calls).toHaveLength(0);
+  expect(calls.some((call) => call.path === "/auth/login")).toBe(true);
 });
 
 test("malformed collection responses show an error without crashing the page", async ({
@@ -523,6 +519,7 @@ test("settings save server-supported defaults, sources and notifications", async
     .getByRole("navigation", { name: "Settings sections" })
     .getByRole("button", { name: /Notifications/ })
     .click();
+  await expect(page.getByRole("switch", { name: "Trending topics", exact: true })).toBeChecked();
   await page
     .getByRole("switch", { name: "Trending topics", exact: true })
     .uncheck();
@@ -538,6 +535,7 @@ test("settings save server-supported defaults, sources and notifications", async
     ).body,
   ).toEqual({ notify_velocity: false });
   await page.getByRole("button", { name: /Sources & languages/ }).click();
+  await expect(page.getByRole("switch", { name: "Public news", exact: true })).toBeChecked();
   await page
     .getByRole("switch", { name: "Public news", exact: true })
     .uncheck();
@@ -604,10 +602,8 @@ test("all updated screens work on mobile with reduced motion and without runtime
   page.on("pageerror", (error) => errors.push(error.message));
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-  await page
-    .getByRole("button", { name: "Explore the demo workspace" })
-    .click();
+  await mockApi(page);
+  await login(page);
   for (const name of [
     "Search",
     "Monitors",
@@ -696,4 +692,79 @@ test("search encodes story grouping as API-compatible booleans, including after 
   await expect(page.locator(".result-content")).toBeVisible();
   expect(latestCollapse()).toBe("0");
   await expect(page.getByText("The collapse field must be true or false.")).toHaveCount(0);
+});
+
+
+test("Latest and Most Mentioned retry their shared failed endpoint and recover without demo data", async ({ page }) => {
+  await mockApi(page);
+  let attempts = 0;
+  let failing = true;
+  await page.route("**/api/v1/workspaces/w-1/explore?*", async (route) => {
+    attempts++;
+    await route.fulfill({
+      status: failing ? 500 : 200,
+      contentType: "application/json",
+      body: JSON.stringify(failing ? { message: "Server Error" } : {
+        data: [
+          { id: "cluster-low", title: "Less mentioned", mention_count: 2 },
+          { id: "cluster-high", title: "Most mentioned live story", mention_count: 80 },
+        ], meta: { last_page: 1 },
+      }),
+    });
+  });
+  await login(page);
+  await goTo(page, "Intelligence");
+  await expect(page.locator(".cluster-panel").getByRole("alert")).toContainText("HTTP 500, /explore?page=1");
+  await expect(page.locator(".cluster-row")).toHaveCount(0);
+  const initialAttempts = attempts;
+  await page.getByRole("tab", { name: "Most Mentioned", exact: true }).click();
+  await expect.poll(() => attempts).toBeGreaterThan(initialAttempts);
+  await expect(page.locator(".cluster-panel").getByRole("alert")).toBeVisible();
+  failing = false;
+  await page.locator(".cluster-panel").getByRole("button", { name: "Try again" }).click();
+  await expect(page.locator(".cluster-row")).toHaveCount(2);
+  await expect(page.locator(".cluster-row").first()).toContainText("Most mentioned live story");
+  await expect(page.locator(".cluster-panel").getByRole("alert")).toHaveCount(0);
+  await page.getByRole("tab", { name: "Latest", exact: true }).click();
+  await expect(page.locator(".cluster-row").first()).toContainText("Less mentioned");
+});
+
+test("discovery errors do not prevent independent Trending and Emerging tabs from loading", async ({ page }) => {
+  await mockApi(page);
+  await page.route("**/api/v1/workspaces/w-1/explore?*", (route) => route.fulfill({
+    status: 503, contentType: "application/json", body: JSON.stringify({ message: "Server Error" }),
+  }));
+  await login(page);
+  await goTo(page, "Intelligence");
+  await expect(page.locator(".cluster-panel").getByRole("alert")).toContainText("HTTP 503");
+  for (const name of ["Trending", "Emerging"]) {
+    await page.getByRole("tab", { name, exact: true }).click();
+    await expect(page.locator(".cluster-row")).toHaveCount(1);
+    await expect(page.locator(".cluster-panel").getByRole("alert")).toHaveCount(0);
+  }
+});
+
+test("invalid sign-in email is rejected before any authentication request", async ({ page }) => {
+  const calls = await mockApi(page);
+  await page.goto('/signin');
+  // Bypass native HTML constraints to exercise the application validation too.
+  await page.locator('form').evaluate((form) => { form.noValidate = true; });
+  await page.getByLabel('Work email').fill("admin' OR 1=1 --");
+  await page.getByLabel('Password', { exact: true }).fill('test-password');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Enter a valid email address.');
+  expect(calls.some((call) => call.path === '/auth/login')).toBe(false);
+});
+
+test("sign-in preserves password punctuation and supports plus-address emails", async ({ page }) => {
+  const calls = await mockApi(page);
+  await page.goto('/signin');
+  const password = "a'quoted;password--!$";
+  await page.getByLabel('Work email').fill('ada+research@example.com');
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Discover what’s happening online.' })).toBeVisible();
+  const loginCall = calls.find((call) => call.path === '/auth/login');
+  expect(loginCall.body.email).toBe('ada+research@example.com');
+  expect(loginCall.body.password).toBe(password);
 });

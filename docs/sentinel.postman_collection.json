@@ -1,0 +1,3102 @@
+{
+  "info": {
+    "name": "Sentinel production API \u2014 individual endpoint tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Generated from docs/openapi.json. Run requests individually. Write requests change production data. Examples require real IDs, account values, reset/invitation tokens, and browser-generated push subscription keys. Login saves its token locally in collection variables. Do not export or commit populated secrets."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://sentinel-api.absg-ohos.cloud/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "workspace",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "monitor",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mention",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cluster",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "alert",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "source",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invitation",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invitationToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "savedSearch",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subscriptionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "resetToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pushEndpoint",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pushP256dh",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pushAuth",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "from",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "to",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Account",
+      "item": [
+        {
+          "name": "PATCH /auth/me",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"maxLength\": 120\n    },\n    \"timezone\": {\n      \"type\": \"string\",\n      \"maxLength\": 64\n    },\n    \"locale\": {\n      \"type\": \"string\",\n      \"maxLength\": 10\n    }\n  },\n  \"title\": \"UpdateAccountRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API test item\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /auth/password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "password"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 204. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"current_password\": {\n      \"type\": \"string\"\n    },\n    \"password\": {\n      \"type\": \"string\"\n    },\n    \"password_confirmation\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"current_password\",\n    \"password\",\n    \"password_confirmation\"\n  ],\n  \"title\": \"UpdatePasswordRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"{{password}}\",\n  \"password\": \"{{newPassword}}\",\n  \"password_confirmation\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "GET /auth/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Public endpoint. Replace path IDs using real response values. Documented success statuses: 201. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"maxLength\": 120\n    },\n    \"email\": {\n      \"type\": \"string\",\n      \"format\": \"email\",\n      \"maxLength\": 255\n    },\n    \"password\": {\n      \"type\": \"string\"\n    },\n    \"device_name\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 120\n    },\n    \"locale\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 10\n    },\n    \"timezone\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 64\n    },\n    \"password_confirmation\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"name\",\n    \"email\",\n    \"password\",\n    \"password_confirmation\"\n  ],\n  \"title\": \"RegisterRequest\"\n}",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API test item\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"password_confirmation\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Public endpoint. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"email\": {\n      \"type\": \"string\",\n      \"format\": \"email\"\n    },\n    \"password\": {\n      \"type\": \"string\"\n    },\n    \"device_name\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 120\n    }\n  },\n  \"required\": [\n    \"email\",\n    \"password\"\n  ],\n  \"title\": \"LoginRequest\"\n}",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login succeeds\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set(\"token\", pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/forgot-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Public endpoint. Replace path IDs using real response values. Documented success statuses: 202. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"email\": {\n      \"type\": \"string\",\n      \"format\": \"email\"\n    }\n  },\n  \"required\": [\n    \"email\"\n  ],\n  \"title\": \"ForgotPasswordRequest\"\n}",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([202]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/reset-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "Public endpoint. Replace path IDs using real response values. Documented success statuses: 202. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"token\": {\n      \"type\": \"string\"\n    },\n    \"email\": {\n      \"type\": \"string\",\n      \"format\": \"email\"\n    },\n    \"password\": {\n      \"type\": \"string\"\n    },\n    \"password_confirmation\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"token\",\n    \"email\",\n    \"password\",\n    \"password_confirmation\"\n  ],\n  \"title\": \"ResetPasswordRequest\"\n}",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{newPassword}}\",\n  \"password_confirmation\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([202]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 204."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Alert",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/alerts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "alerts"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/alerts/counts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/alerts/counts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "alerts",
+                "counts"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /workspaces/{workspace}/alerts/read-all",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/alerts/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "alerts",
+                "read-all"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/alerts/{alert}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/alerts/{{alert}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "alerts",
+                "{{alert}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /workspaces/{workspace}/alerts/{alert}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/alerts/{{alert}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "alerts",
+                "{{alert}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/analytics/overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/analytics/overview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "analytics",
+                "overview"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/analytics/volume",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/analytics/volume",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "analytics",
+                "volume"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/analytics/sentiment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/analytics/sentiment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "analytics",
+                "sentiment"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/analytics/sources",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/analytics/sources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "analytics",
+                "sources"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/analytics/keywords",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/analytics/keywords",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "analytics",
+                "keywords"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/analytics/discovery-time",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/analytics/discovery-time",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "analytics",
+                "discovery-time"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Digest",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/digests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/digests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "digests"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Discovery",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/explore",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/explore",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "explore"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/mentions/{mention}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/mentions/{{mention}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "mentions",
+                "{{mention}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/clusters/{cluster}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/clusters/{{cluster}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "clusters",
+                "{{cluster}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/clusters/{cluster}/mentions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/clusters/{{cluster}}/mentions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "clusters",
+                "{{cluster}}",
+                "mentions"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/sources",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/sources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "sources"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Intelligence",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/intelligence/trending",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/intelligence/trending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "intelligence",
+                "trending"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/intelligence/most-mentioned",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/intelligence/most-mentioned",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "intelligence",
+                "most-mentioned"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/intelligence/emerging",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/intelligence/emerging",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "intelligence",
+                "emerging"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/intelligence/geography",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/intelligence/geography",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "intelligence",
+                "geography"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Invitation",
+      "item": [
+        {
+          "name": "GET /invitations/{token}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invitations/{{invitationToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invitations",
+                "{{invitationToken}}"
+              ]
+            },
+            "description": "Public endpoint. Replace path IDs using real response values. Documented success statuses: 200.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /invitations/{token}/accept",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invitations/{{invitationToken}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invitations",
+                "{{invitationToken}}",
+                "accept"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /workspaces/{workspace}/invitations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/invitations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "invitations"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 202. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"email\": {\n      \"type\": \"string\",\n      \"format\": \"email\",\n      \"maxLength\": 255\n    },\n    \"role\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"admin\",\n        \"member\"\n      ]\n    }\n  },\n  \"required\": [\n    \"email\",\n    \"role\"\n  ],\n  \"title\": \"StoreInvitationRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([202]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /workspaces/{workspace}/invitations/{invitation}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/invitations/{{invitation}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "invitations",
+                "{{invitation}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 204."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Member",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/members",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "members"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /workspaces/{workspace}/members/{user}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/members/{{user}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "members",
+                "{{user}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"role\": {\n      \"$ref\": \"#/components/schemas/WorkspaceRole\"\n    },\n    \"can_oversee\": {\n      \"type\": \"boolean\"\n    }\n  },\n  \"title\": \"UpdateMemberRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"owner\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /workspaces/{workspace}/members/{user}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/members/{{user}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "members",
+                "{{user}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 204."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Monitor",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/monitors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /workspaces/{workspace}/monitors",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 201. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"maxLength\": 160\n    },\n    \"type\": {\n      \"$ref\": \"#/components/schemas/MonitorType\"\n    },\n    \"query\": {\n      \"type\": \"string\",\n      \"maxLength\": 2000\n    },\n    \"description\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 2000\n    },\n    \"frequency\": {\n      \"anyOf\": [\n        {\n          \"$ref\": \"#/components/schemas/MonitorFrequency\"\n        },\n        {\n          \"type\": \"null\"\n        }\n      ]\n    },\n    \"is_active\": {\n      \"type\": [\n        \"boolean\",\n        \"null\"\n      ]\n    },\n    \"include_related_terms\": {\n      \"type\": [\n        \"boolean\",\n        \"null\"\n      ]\n    },\n    \"history_days\": {\n      \"type\": [\n        \"integer\",\n        \"null\"\n      ],\n      \"minimum\": 1,\n      \"maximum\": 30\n    },\n    \"sentiment_filter\": {\n      \"anyOf\": [\n        {\n          \"$ref\": \"#/components/schemas/Sentiment\"\n        },\n        {\n          \"type\": \"null\"\n        }\n      ]\n    },\n    \"language_codes\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"type\": \"string\",\n        \"maxLength\": 10\n      }\n    },\n    \"location_names\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"type\": \"string\",\n        \"maxLength\": 160\n      }\n    },\n    \"include_keywords\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"type\": \"string\",\n        \"maxLength\": 200\n      }\n    },\n    \"exclude_keywords\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"type\": \"string\",\n        \"maxLength\": 200\n      }\n    },\n    \"related_keywords\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"type\": \"string\",\n        \"maxLength\": 200\n      }\n    },\n    \"source_ids\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"type\": \"string\",\n        \"format\": \"uuid\"\n      }\n    }\n  },\n  \"required\": [\n    \"name\",\n    \"type\",\n    \"query\"\n  ],\n  \"title\": \"StoreMonitorRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API test item\",\n  \"type\": \"person\",\n  \"query\": \"MTN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/monitors/{monitor}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors/{{monitor}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors",
+                "{{monitor}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /workspaces/{workspace}/monitors/{monitor}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors/{{monitor}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors",
+                "{{monitor}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"maxLength\": 160\n    },\n    \"type\": {\n      \"$ref\": \"#/components/schemas/MonitorType\"\n    },\n    \"query\": {\n      \"type\": \"string\",\n      \"maxLength\": 2000\n    },\n    \"description\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 2000\n    },\n    \"frequency\": {\n      \"$ref\": \"#/components/schemas/MonitorFrequency\"\n    },\n    \"is_active\": {\n      \"type\": \"boolean\"\n    },\n    \"include_related_terms\": {\n      \"type\": \"boolean\"\n    },\n    \"history_days\": {\n      \"type\": \"integer\",\n      \"minimum\": 1,\n      \"maximum\": 30\n    },\n    \"sentiment_filter\": {\n      \"anyOf\": [\n        {\n          \"$ref\": \"#/components/schemas/Sentiment\"\n        },\n        {\n          \"type\": \"null\"\n        }\n      ]\n    },\n    \"language_codes\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"maxLength\": 10\n      }\n    },\n    \"location_names\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"maxLength\": 160\n      }\n    },\n    \"include_keywords\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"maxLength\": 200\n      }\n    },\n    \"exclude_keywords\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"maxLength\": 200\n      }\n    },\n    \"related_keywords\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"maxLength\": 200\n      }\n    },\n    \"source_ids\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"format\": \"uuid\"\n      }\n    }\n  },\n  \"title\": \"UpdateMonitorRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API test item\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /workspaces/{workspace}/monitors/{monitor}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors/{{monitor}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors",
+                "{{monitor}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 204."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /workspaces/{workspace}/monitors/{monitor}/pause",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors/{{monitor}}/pause",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors",
+                "{{monitor}}",
+                "pause"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /workspaces/{workspace}/monitors/{monitor}/resume",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors/{{monitor}}/resume",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors",
+                "{{monitor}}",
+                "resume"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/monitors/{monitor}/mentions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors/{{monitor}}/mentions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors",
+                "{{monitor}}",
+                "mentions"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/monitors/{monitor}/stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors/{{monitor}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors",
+                "{{monitor}}",
+                "stats"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/monitors/{monitor}/activity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors/{{monitor}}/activity",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors",
+                "{{monitor}}",
+                "activity"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/monitors/{monitor}/preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors/{{monitor}}/preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors",
+                "{{monitor}}",
+                "preferences"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /workspaces/{workspace}/monitors/{monitor}/preferences",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/monitors/{{monitor}}/preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "monitors",
+                "{{monitor}}",
+                "preferences"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"is_muted\": {\n      \"type\": \"boolean\"\n    },\n    \"frequency\": {\n      \"anyOf\": [\n        {\n          \"$ref\": \"#/components/schemas/MonitorFrequency\"\n        },\n        {\n          \"type\": \"null\"\n        }\n      ]\n    },\n    \"notify_high_authority\": {\n      \"type\": [\n        \"boolean\",\n        \"null\"\n      ]\n    },\n    \"notify_velocity\": {\n      \"type\": [\n        \"boolean\",\n        \"null\"\n      ]\n    },\n    \"notify_high_relevance\": {\n      \"type\": [\n        \"boolean\",\n        \"null\"\n      ]\n    }\n  },\n  \"title\": \"UpdateMonitorPreferenceRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_muted\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MonitoringDefaults",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/settings/monitoring-defaults",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/settings/monitoring-defaults",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "settings",
+                "monitoring-defaults"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /workspaces/{workspace}/settings/monitoring-defaults",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/settings/monitoring-defaults",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "settings",
+                "monitoring-defaults"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"frequency\": {\n      \"$ref\": \"#/components/schemas/MonitorFrequency\"\n    },\n    \"history_days\": {\n      \"type\": \"integer\",\n      \"minimum\": 1,\n      \"maximum\": 30\n    },\n    \"include_related_terms\": {\n      \"type\": \"boolean\"\n    }\n  },\n  \"title\": \"UpdateMonitoringDefaultsRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"frequency\": \"5m\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NotificationSettings",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/settings/notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/settings/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "settings",
+                "notifications"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /workspaces/{workspace}/settings/notifications",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/settings/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "settings",
+                "notifications"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"channel_web_push\": {\n      \"type\": \"boolean\"\n    },\n    \"channel_email\": {\n      \"type\": \"boolean\"\n    },\n    \"digest_cadence\": {\n      \"$ref\": \"#/components/schemas/DigestCadence\"\n    },\n    \"digest_hour\": {\n      \"type\": \"integer\",\n      \"minimum\": 0,\n      \"maximum\": 23\n    },\n    \"notify_high_authority\": {\n      \"type\": \"boolean\"\n    },\n    \"notify_velocity\": {\n      \"type\": \"boolean\"\n    },\n    \"notify_high_relevance\": {\n      \"type\": \"boolean\"\n    },\n    \"quiet_hours\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"start\": {\n          \"type\": \"string\"\n        },\n        \"end\": {\n          \"type\": \"string\"\n        }\n      }\n    }\n  },\n  \"title\": \"UpdateNotificationSettingsRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel_web_push\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PushSubscription",
+      "item": [
+        {
+          "name": "GET /push/public-key",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/push/public-key",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "push",
+                "public-key"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /push/subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/push/subscriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "push",
+                "subscriptions"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /push/subscriptions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/push/subscriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "push",
+                "subscriptions"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 201. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"endpoint\": {\n      \"type\": \"string\",\n      \"maxLength\": 2000\n    },\n    \"p256dh\": {\n      \"type\": \"string\",\n      \"maxLength\": 255\n    },\n    \"auth\": {\n      \"type\": \"string\",\n      \"maxLength\": 255\n    },\n    \"device_name\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 120\n    }\n  },\n  \"required\": [\n    \"endpoint\",\n    \"p256dh\",\n    \"auth\"\n  ]\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endpoint\": \"{{pushEndpoint}}\",\n  \"p256dh\": \"{{pushP256dh}}\",\n  \"auth\": \"{{pushAuth}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /push/subscriptions/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/push/subscriptions/{{subscriptionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "push",
+                "subscriptions",
+                "{{subscriptionId}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 204."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SavedSearch",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/saved-searches",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/saved-searches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "saved-searches"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /workspaces/{workspace}/saved-searches",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/saved-searches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "saved-searches"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 201. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"maxLength\": 160\n    },\n    \"query\": {\n      \"type\": \"string\",\n      \"maxLength\": 2000\n    },\n    \"filters\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"required\": [\n    \"name\",\n    \"query\"\n  ]\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API test item\",\n  \"query\": \"MTN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /workspaces/{workspace}/saved-searches/{savedSearch}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/saved-searches/{{savedSearch}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "saved-searches",
+                "{{savedSearch}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"maxLength\": 160\n    },\n    \"query\": {\n      \"type\": \"string\",\n      \"maxLength\": 2000\n    },\n    \"filters\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API test item\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /workspaces/{workspace}/saved-searches/{savedSearch}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/saved-searches/{{savedSearch}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "saved-searches",
+                "{{savedSearch}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 204."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/search?q=MTN&collapse=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "MTN",
+                  "disabled": false,
+                  "description": "{\"type\": [\"string\", \"null\"], \"maxLength\": 500}"
+                },
+                {
+                  "key": "sentiment",
+                  "value": "positive",
+                  "disabled": true,
+                  "description": "{\"type\": [\"string\", \"null\"], \"enum\": [\"positive\", \"neutral\", \"negative\", null]}"
+                },
+                {
+                  "key": "language",
+                  "value": "en",
+                  "disabled": true,
+                  "description": "{\"type\": [\"string\", \"null\"], \"maxLength\": 10}"
+                },
+                {
+                  "key": "country_code",
+                  "value": "NG",
+                  "disabled": true,
+                  "description": "{\"type\": [\"string\", \"null\"], \"minLength\": 2, \"maxLength\": 2}"
+                },
+                {
+                  "key": "source_id",
+                  "value": "{{source}}",
+                  "disabled": true,
+                  "description": "{\"type\": [\"string\", \"null\"], \"format\": \"uuid\"}"
+                },
+                {
+                  "key": "monitor_id",
+                  "value": "REPLACE_ME",
+                  "disabled": true,
+                  "description": "{\"type\": [\"string\", \"null\"], \"format\": \"uuid\"}"
+                },
+                {
+                  "key": "cluster_id",
+                  "value": "REPLACE_ME",
+                  "disabled": true,
+                  "description": "{\"type\": [\"string\", \"null\"], \"format\": \"uuid\"}"
+                },
+                {
+                  "key": "from",
+                  "value": "{{from}}",
+                  "disabled": true,
+                  "description": "{\"type\": [\"string\", \"null\"], \"format\": \"date-time\"}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{to}}",
+                  "disabled": true,
+                  "description": "{\"type\": [\"string\", \"null\"], \"format\": \"date-time\"}"
+                },
+                {
+                  "key": "sort",
+                  "value": "relevance",
+                  "disabled": true,
+                  "description": "{\"type\": [\"string\", \"null\"], \"enum\": [\"relevance\", \"latest\", null]}"
+                },
+                {
+                  "key": "collapse",
+                  "value": "0",
+                  "disabled": false,
+                  "description": "{\"type\": [\"boolean\", \"null\"]}"
+                }
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/search/suggestions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/search/suggestions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "search",
+                "suggestions"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SearchHistory",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/history/searches",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/history/searches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "history",
+                "searches"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /workspaces/{workspace}/history/searches",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/history/searches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "history",
+                "searches"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SourceSettings",
+      "item": [
+        {
+          "name": "GET /workspaces/{workspace}/settings/sources",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/settings/sources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "settings",
+                "sources"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /workspaces/{workspace}/settings/sources",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/settings/sources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "settings",
+                "sources"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"sources\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"source_id\": {\n            \"type\": \"string\",\n            \"format\": \"uuid\"\n          },\n          \"enabled\": {\n            \"type\": \"boolean\"\n          },\n          \"language_codes\": {\n            \"type\": [\n              \"array\",\n              \"null\"\n            ],\n            \"items\": {\n              \"type\": \"string\",\n              \"maxLength\": 10\n            }\n          }\n        },\n        \"required\": [\n          \"source_id\",\n          \"enabled\"\n        ]\n      },\n      \"minItems\": 1\n    }\n  },\n  \"required\": [\n    \"sources\"\n  ],\n  \"title\": \"UpdateSourceSettingsRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sources\": [\n    {\n      \"source_id\": \"{{source}}\",\n      \"enabled\": true\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Workspace",
+      "item": [
+        {
+          "name": "GET /workspaces",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /workspaces",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 201. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"maxLength\": 120\n    },\n    \"parent_id\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"format\": \"uuid\"\n    },\n    \"level\": {\n      \"anyOf\": [\n        {\n          \"$ref\": \"#/components/schemas/WorkspaceLevel\"\n        },\n        {\n          \"type\": \"null\"\n        }\n      ]\n    },\n    \"office_code\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 32\n    },\n    \"timezone\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 64\n    },\n    \"locale\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 10\n    },\n    \"settings\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"required\": [\n    \"name\"\n  ],\n  \"title\": \"StoreWorkspaceRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API test item\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /workspaces/{workspace}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"maxLength\": 120\n    },\n    \"office_code\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 32\n    },\n    \"timezone\": {\n      \"type\": \"string\",\n      \"maxLength\": 64\n    },\n    \"locale\": {\n      \"type\": \"string\",\n      \"maxLength\": 10\n    },\n    \"settings\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"title\": \"UpdateWorkspaceRequest\"\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API test item\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /workspaces/{workspace}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 204."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /workspaces/{workspace}/descendants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspace}}/descendants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workspaces",
+                "{{workspace}}",
+                "descendants"
+              ]
+            },
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documented success status\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

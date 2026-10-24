@@ -173,3 +173,15 @@ test("production proxy failures return JSON rather than an HTML fallback", async
     await isolated.close();
   }
 });
+
+test("production does not serve env files and API responses cannot be cached", async ({ request }) => {
+  for (const path of ['/.env', '/.env.local', '/.git/config']) {
+    const response = await request.get(`${production.url}${path}`);
+    expect(response.status()).toBe(404);
+    expect(await response.text()).not.toContain('API_PROXY_TARGET=');
+  }
+  const response = await request.get(`${production.url}/api/v1/auth/me`, { headers: { Accept: 'application/json' } });
+  expect(response.status()).toBe(401);
+  expect(response.headers()['cache-control']).toBe('no-store');
+  expect(response.headers()['x-content-type-options']).toBe('nosniff');
+});

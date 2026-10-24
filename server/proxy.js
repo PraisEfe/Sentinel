@@ -1,4 +1,6 @@
-import { ProxyAgent } from "proxy-agent";
+import { HttpsProxyAgent } from "https-proxy-agent";
+import { HttpProxyAgent } from "http-proxy-agent";
+import { getProxyForUrl } from "proxy-from-env";
 export function apiProxyOptions(env = process.env) {
   const target = new URL(
     env.API_PROXY_TARGET || "https://sentinel-api.absg-ohos.cloud/api/v1",
@@ -15,12 +17,18 @@ export function apiProxyOptions(env = process.env) {
       "API_PROXY_TARGET must be an HTTP(S) URL with an optional /api/v1 path, without credentials, query, or fragment.",
     );
   const local = ["127.0.0.1", "localhost", "[::1]"].includes(target.hostname);
+  const proxyUrl = local ? "" : getProxyForUrl(target.href);
+  const agent = proxyUrl
+    ? target.protocol === "https:"
+      ? new HttpsProxyAgent(proxyUrl)
+      : new HttpProxyAgent(proxyUrl)
+    : undefined;
   return {
     // Incoming requests already include /api/v1; forward that path exactly once.
     target: target.origin,
     changeOrigin: true,
     secure: true,
-    agent: local ? undefined : new ProxyAgent(),
+    agent,
     proxyTimeout: 20000,
   };
 }

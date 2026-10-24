@@ -11,13 +11,13 @@ npm ci
 npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-The app starts at sign-in. `/signin` and `/signup` can be opened directly. Use your existing backend account, create an account through the UI, or choose **Explore the demo workspace**. Demo mode is explicitly marked under `/demo`, never calls the backend, and does not persist demo changes. It never authorizes access to the real private routes.
+The app starts at sign-in. `/signin` and `/signup` can be opened directly. Use your existing backend account or create an account through the UI. All workspace screens require a server-verified session and use the production API.
 
 The supplied API contract is preserved in [docs/openapi.json](docs/openapi.json). The documentation URL requires authentication (401), so the uploaded contract remains the source for field and endpoint mappings.
 
 Browser requests use **same-origin `/api/v1` in every mode**. Vite handles the proxy in development and preview; `npm start` runs the production server with the same API proxy and SPA history fallback. The shared `.env` configures the upstream as `https://sentinel-api.absg-ohos.cloud/api/v1`; the proxy forwards `/api/v1` exactly once. TLS verification remains enabled, and existing HTTPS_PROXY/HTTP_PROXY/NO_PROXY settings are respected. A local backend on loopback uses a direct local connection.
 
-The project has one tracked [`.env`](.env) containing only the public production API URL. Development, preview, and production use this same file; no `.env.local` or mode-specific files are needed. Restart the server after editing it. Process environment variables can override settings for deployment. Never add credentials to this tracked file; supply secrets through your hosting provider's environment settings. Browser API requests always use `/api/v1`, so the backend does not need to allow localhost through CORS.
+The project uses one optional, **untracked** `.env` file. Development, preview, and production read it if present; otherwise they use the production API default. To override locally, create `.env` with `API_PROXY_TARGET=https://sentinel-api.absg-ohos.cloud/api/v1`. For deployment, configure `API_PROXY_TARGET`, `PORT`, and `HOST` in the hosting provider's environment settings. Process variables override the file. Never commit credentials. Browser API requests always use `/api/v1`.
 
 ## Routes and shared state
 
@@ -28,7 +28,6 @@ React Router handles navigation, deep links, refreshes, query parameters, and br
 | `/signin`, `/signup`, `/forgot-password` | Public account forms; authenticated users return to their destination |
 | `/`, `/search`, `/monitors`, `/intelligence`, `/analytics`, `/alerts`, `/settings` | Protected, server-verified session and selected workspace required |
 | `/workspaces/new` | Protected account without a workspace can create one |
-| `/demo` and matching `/demo/*` screens | Public sample workspace, isolated from live data and authentication |
 
 `ProtectedRoute` redirects signed-out visitors to sign-in and restores the intended internal URL afterwards. A stored token is verified using `/auth/me` before private pages render. Unauthorized API responses expire the session and clear private state. Logout clears device access even if server-side revocation is temporarily unreachable. Client guards improve navigation; backend bearer authentication and authorization still enforce access to every resource.
 
@@ -63,7 +62,7 @@ The three-step monitor wizard persists the query, include/exclude keywords, sele
 
 Search date, source, country, language, sentiment, and relevance/latest sorting use documented parameters. Channel tabs filter returned mentions by their documented source type. Saved filters are stored as the contract’s string-array field. Drawer links accept only HTTP(S) URLs. Unknown mention/source/relevance metrics show an unavailable state rather than sample values.
 
-Analytics endpoints in this specification have untyped object responses. Live analytics therefore derives volume, tone, source distribution, keywords, and geography from documented mention records returned for the selected period, with trends from documented story-cluster records. It labels this scope explicitly. Demo mode uses illustrative analytics fixtures. The specification also describes `intelligence/most-mentioned.data` as a string, so Most Mentioned sorts the current page of documented `/explore` records and labels that scope.
+Analytics endpoints in this specification have untyped object responses. Live analytics therefore derives volume, tone, source distribution, keywords, and geography from documented mention records returned for the selected period, with trends from documented story-cluster records. It labels this scope explicitly. The specification also describes `intelligence/most-mentioned.data` as a string, so Most Mentioned sorts the current page of documented `/explore` records and labels that scope.
 
 Search & discovery display preferences are saved per workspace **on this device** and affect search grouping, inclusion of social results, summary display, and sentiment display. Server-supported monitoring defaults, notification settings, source enablement, and account fields persist through their documented PATCH endpoints. Source-language metadata is displayed; editing languages and registering a browser push subscription are outside this update. Google/Microsoft authentication and completing a password reset from an emailed token are still outside the implemented flows.
 
@@ -98,3 +97,17 @@ npm start
 The Node production server serves `dist`, proxies `/api/v1` to the configured backend, and serves `index.html` for frontend deep links. It listens on `PORT` (3000 by default) and `HOST` (0.0.0.0 by default). `.env` supplies the API target. A production deployment can install only production dependencies after the build; the server and proxy packages are declared as production dependencies.
 
 Deploying **only static `dist` files** requires your hosting platform to supply both SPA fallback and a same-origin `/api/v1` reverse proxy. The API currently advertises `https://sentinel.absg-ohos.cloud`; frontend code cannot change that server policy. Do not disable browser security or TLS checks to work around CORS.
+
+## Test individual API endpoints
+
+See [the endpoint testing guide](docs/api-testing.md) for Postman and PowerShell instructions. Import [the Postman collection](docs/sentinel.postman_collection.json) to test all 72 documented operations individually, with bearer authentication, request bodies, optional query parameters, and success-status checks.
+
+## Authentication security and deployment checks
+
+Email format is validated in the frontend using a regex. Passwords are sent unchanged in JSON over HTTPS; special characters are valid and are not stripped. Client validation is bypassable and does **not** prevent SQL injection. The production authentication backend must use parameterized queries or safe ORM bindings, validate input on the server, hash passwords, rate-limit login attempts, and authorize every workspace request. This repository contains the frontend and reverse proxy, not that backend, so these backend guarantees cannot be verified here.
+
+Before deployment, resolve the reported authenticated `GET /api/v1/workspaces/{workspace}/explore?page=1` HTTP 500 using backend exception logs. It affects both Latest and Most Mentioned. Successful unauthenticated live checks do not establish that this endpoint or every authenticated operation works. The UI now retries failed shared requests when switching these tabs and reports the failing endpoint/status.
+
+## Application boundaries
+
+The shipped app has no demo route, sample workspace service, or mock analytics. React Router defines public authentication routes and a protected workspace layout. Zustand manages shared session/workspace state; `src/lib/api.js` is the HTTP transport, and `useResource` manages page request loading, cancellation, validation, and retries. Views render API results or explicit empty/error states. API test fixtures live under `tests` and are not imported into the application bundle. Figma exports and fetch scripts are not runtime or build dependencies.

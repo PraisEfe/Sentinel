@@ -2,12 +2,10 @@ import { useEffect } from "react";
 import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import { useAppStore } from "./stores/appStore";
-import { useWorkspace } from "./lib/workspace";
 import ProtectedRoute from "./routing/ProtectedRoute";
 import WorkspaceLayout from "./routing/WorkspaceLayout";
 import {
   AuthPage,
-  DemoGate,
   HomePage,
   MonitorsPage,
   NewWorkspacePage,
@@ -28,17 +26,16 @@ function IntelligencePage() {
 }
 function AlertsPage() {
   const navigate = useNavigate();
-  const { demo } = useWorkspace();
   const openResult = useAppStore((state) => state.openResult);
   return (
     <AlertsView
       onSelectResult={openResult}
       onNavigateSettings={() =>
-        navigate(`${workspacePathFor("settings", demo)}?section=notifications`)
+        navigate(`${workspacePathFor("settings")}?section=notifications`)
       }
       onInspectTopic={(q) =>
         navigate(
-          `${workspacePathFor("search", demo)}?${new URLSearchParams({ q })}`,
+          `${workspacePathFor("search")}?${new URLSearchParams({ q })}`,
         )
       }
     />
@@ -74,16 +71,6 @@ export default function App() {
           <Route path="signin" element={<AuthPage mode="signin" />} />
           <Route path="signup" element={<AuthPage mode="signup" />} />
           <Route path="forgot-password" element={<AuthPage mode="forgot" />} />
-          <Route
-            path="demo"
-            element={
-              <DemoGate>
-                <WorkspaceLayout />
-              </DemoGate>
-            }
-          >
-            {workspaceRoutes()}
-          </Route>
           <Route element={<ProtectedRoute />}>
             <Route path="workspaces/new" element={<NewWorkspacePage />} />
             <Route

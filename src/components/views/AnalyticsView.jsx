@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
-import { ArrowUpRight } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import { ANALYTICS_DATA } from "../../data/mockData";
-import { useResource, useWorkspace, number } from "../../lib/workspace";
+import { useResource, number } from "../../lib/workspace";
 import { PageMotion, ResourceState, Tabs } from "../common/WorkspaceUI";
 const EMPTY = [];
 const ignored = new Set([
@@ -27,7 +25,6 @@ const ignored = new Set([
 ]);
 export default function AnalyticsView() {
   const [period, setPeriod] = useState("7 days");
-  const { demo } = useWorkspace();
   const reduced = useReducedMotion();
   const range = useMemo(() => {
     const to = new Date();
@@ -45,7 +42,6 @@ export default function AnalyticsView() {
   const clusters = useResource("/explore", { list: true });
   const rows = mentions.data?.data || EMPTY;
   const data = useMemo(() => {
-    if (demo) return ANALYTICS_DATA[period];
     const values = Array(7).fill(0);
     const tone = { positive: 0, neutral: 0, negative: 0 };
     const sources = {};
@@ -92,7 +88,7 @@ export default function AnalyticsView() {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 4),
     };
-  }, [demo, period, rows, range]);
+  }, [rows, range]);
   const max = Math.max(1, ...data.volumeValues);
   const toneTotal = Object.values(data.tone).reduce((sum, n) => sum + n, 0);
   const sourceTotal = Object.values(data.sources).reduce(
@@ -102,22 +98,8 @@ export default function AnalyticsView() {
   const positive = toneTotal
     ? Math.round((data.tone.positive / toneTotal) * 100)
     : 0;
-  const keywords = data.keywords || [
-    ["network", 1],
-    ["connectivity", 1],
-    ["new tariff", 1],
-    ["5G", 1],
-    ["customer experience", 1],
-    ["data plans", 1],
-    ["Lagos", 1],
-    ["coverage", 1],
-  ];
-  const locations = data.locations || [
-    ["Lagos", 36],
-    ["Abuja", 23],
-    ["Port Harcourt", 14],
-    ["Other Nigeria", 27],
-  ];
+  const keywords = data.keywords;
+  const locations = data.locations;
   const locationTotal = locations.reduce((sum, [, n]) => sum + n, 0);
   return (
     <PageMotion className="research-page">
@@ -142,15 +124,9 @@ export default function AnalyticsView() {
           <div className="metric-caption">Mention volume</div>
           <div className="volume-number">
             <strong>{mentions.error ? "—" : number(data.mentionVolume)}</strong>
-            {demo && (
-              <span>
-                <ArrowUpRight size={12} />
-                {data.growth.replace(/[^0-9.%+-]/g, "")}
-              </span>
-            )}
           </div>
           <p className="metric-subtitle">
-            {demo ? "Public mentions" : "Returned mentions"} across{" "}
+            Returned mentions across{" "}
             {number(data.activeSources)} sources
           </p>
           <div
@@ -182,11 +158,9 @@ export default function AnalyticsView() {
               <span key={i}>{label}</span>
             ))}
           </div>
-          {!demo && (
             <p className="list-note">
               Based on mentions returned for the selected period.
             </p>
-          )}
         </section>
         <div className="analytics-side">
           <section className="chart-card">

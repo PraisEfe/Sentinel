@@ -14,9 +14,8 @@ import ResultPanel from "../components/common/ResultPanel";
 import { useAppStore } from "../stores/appStore";
 import { useWorkspace } from "../lib/workspace";
 import { workspacePathFor } from "./paths";
-const demoWorkspace = { id: "demo", name: "Research workspace" };
 export default function WorkspaceLayout() {
-  const { demo, scopeKey } = useWorkspace();
+  const { scopeKey } = useWorkspace();
   const location = useLocation();
   const navigate = useNavigate();
   const outlet = useOutlet();
@@ -24,8 +23,8 @@ export default function WorkspaceLayout() {
   const reduced = useReducedMotion();
   const state = useAppStore(
     useShallow((store) => ({
-      user: demo ? store.demoUser : store.user,
-      data: demo ? store.demoData : store.data,
+      user: store.user,
+      data: store.data,
       workspaces: store.workspaces,
       workspaceId: store.workspaceId,
       monitorPage: store.monitorPage,
@@ -41,14 +40,13 @@ export default function WorkspaceLayout() {
       selectWorkspace: store.selectWorkspace,
       createMonitor: store.createMonitor,
       logout: store.logout,
-      leaveDemo: store.leaveDemo,
       loadWorkspace: store.loadWorkspace,
     })),
   );
-  const base = workspacePathFor("dashboard", demo);
+  const base = workspacePathFor("dashboard");
   const isSummary =
     location.pathname === base ||
-    location.pathname === workspacePathFor("monitors", demo);
+    location.pathname === workspacePathFor("monitors");
   const requestedPage = Number(params.get("page") || 1);
   const page = isSummary
     ? Number.isSafeInteger(requestedPage) && requestedPage > 0
@@ -63,16 +61,14 @@ export default function WorkspaceLayout() {
     workspaceId,
   } = state;
   useEffect(() => {
-    if (!demo) void loadWorkspace({ page });
-  }, [demo, workspaceId, page, loadWorkspace]);
+    void loadWorkspace({ page });
+  }, [workspaceId, page, loadWorkspace]);
   useEffect(() => {
     setSidebarOpen(false);
     closeResult();
     closeMonitor();
   }, [location.pathname, setSidebarOpen, closeResult, closeMonitor]);
-  const workspace = demo
-    ? demoWorkspace
-    : state.workspaces.find((item) => item.id === state.workspaceId);
+  const workspace = state.workspaces.find((item) => item.id === state.workspaceId);
   const lastScan = state.data.monitors
     .map((item) => item.last_scan_at)
     .filter(Boolean)
@@ -81,12 +77,11 @@ export default function WorkspaceLayout() {
   function related(text, filters = {}) {
     state.closeResult();
     navigate(
-      `${workspacePathFor("search", demo)}?${new URLSearchParams({ q: text, ...filters })}`,
+      `${workspacePathFor("search")}?${new URLSearchParams({ q: text, ...filters })}`,
     );
   }
   async function signOut() {
-    if (demo) state.leaveDemo();
-    else await state.logout();
+    await state.logout();
     navigate("/signin", { replace: true });
   }
   return (
@@ -98,7 +93,7 @@ export default function WorkspaceLayout() {
         onSignOut={signOut}
         user={state.user}
         workspace={workspace}
-        workspaces={demo ? [demoWorkspace] : state.workspaces}
+        workspaces={state.workspaces}
         onWorkspaceChange={(id) => {
           state.selectWorkspace(id);
           navigate("/", { replace: true });
@@ -110,8 +105,7 @@ export default function WorkspaceLayout() {
           monitorsCount={state.data.monitorTotal}
           sourcesCount={state.data.sourcesCount}
           lastScan={lastScan}
-          onAlerts={() => navigate(workspacePathFor("alerts", demo))}
-          demo={demo}
+          onAlerts={() => navigate(workspacePathFor("alerts"))}
         />
         {state.notice && (
           <div className="load-error" role="alert">
@@ -140,7 +134,7 @@ export default function WorkspaceLayout() {
           <CreateMonitorDialog
             initialTopic={state.monitorSeed}
             onClose={state.closeMonitor}
-            onCreate={(fields) => state.createMonitor(fields, demo)}
+            onCreate={(fields) => state.createMonitor(fields)}
           />
         )}
       </AnimatePresence>

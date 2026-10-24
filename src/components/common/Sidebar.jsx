@@ -11,7 +11,6 @@ import {
   X,
 } from "lucide-react";
 import { NavLink, Link } from "react-router-dom";
-import { useWorkspace } from "../../lib/workspace";
 import { workspacePathFor } from "../../routing/paths";
 import Brand from "./Brand";
 const navigation = [
@@ -33,7 +32,6 @@ export default function Sidebar({
   workspaces = [],
   onWorkspaceChange,
 }) {
-  const { demo } = useWorkspace();
   const initials = (user?.name || "Your account")
     .split(" ")
     .map((part) => part[0])
@@ -80,7 +78,7 @@ export default function Sidebar({
           {navigation.map(([id, label, Icon]) => (
             <NavLink
               key={id}
-              to={workspacePathFor(id, demo)}
+              to={workspacePathFor(id)}
               end={id === "dashboard"}
               className={({ isActive }) =>
                 `nav-item ${isActive ? "active" : ""} ${id === "settings" ? "nav-settings" : ""}`
@@ -98,7 +96,7 @@ export default function Sidebar({
         <div className="sidebar-bottom">
           <Link
             className="nav-item"
-            to={workspacePathFor("settings", demo)}
+            to={workspacePathFor("settings")}
             onClick={onClose}
           >
             <CircleHelp size={17} /> Help & resources
@@ -107,7 +105,7 @@ export default function Sidebar({
             <span className="user-avatar">{initials}</span>
             <div>
               <strong>{user?.name || "Your account"}</strong>
-              <small>{workspace?.name || "Demo workspace"}</small>
+              <small>{workspace?.name || "Workspace"}</small>
             </div>
             <button aria-label="Sign out" title="Sign out" onClick={onSignOut}>
               <LogOut size={16} />

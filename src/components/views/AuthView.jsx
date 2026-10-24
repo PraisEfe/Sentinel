@@ -2,11 +2,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   Activity,
-  ArrowRight,
-  Globe,
   LockKeyhole,
   Mail,
-  Search,
   UserRound,
 } from "lucide-react";
 import Brand from "../common/Brand";
@@ -14,7 +11,6 @@ import { authenticate, request } from "../../lib/api";
 
 export default function AuthView({
   onAuthenticate,
-  onDemo,
   initialMode = "signin",
   notice,
 }) {
@@ -53,6 +49,13 @@ export default function AuthView({
     if (busy) return;
     setError("");
     setMessage("");
+    // Format validation only. SQL injection prevention belongs in backend
+    // parameterized queries; never strip punctuation from passwords.
+    const validEmail = /^[^\s@\p{Cc}]+@[^\s@\p{Cc}]+\.[^\s@\p{Cc}]+$/u;
+    if (email.trim().length > 255 || !validEmail.test(email.trim())) {
+      setError("Enter a valid email address.");
+      return;
+    }
     if (signup && !name.trim()) {
       setError("Enter your full name.");
       return;
@@ -108,38 +111,7 @@ export default function AuthView({
             Search, organize and monitor relevant public information across
             news, websites, social discussions, blogs and forums.
           </p>
-          <div
-            className="intelligence-preview"
-            aria-label="Example intelligence preview"
-          >
-            <div className="preview-query">
-              <Search size={15} />
-              <span>MTN Nigeria</span>
-              <small>4,821 results</small>
-            </div>
-            <div className="preview-signal">
-              <i className="signal-dot orange" />
-              <div>
-                <strong>Network performance</strong>
-                <small>342 mentions across 46 sources</small>
-              </div>
-              <b>+18%</b>
-            </div>
-            <div className="preview-signal">
-              <i className="signal-dot" />
-              <div>
-                <strong>New service initiative</strong>
-                <small>127 mentions across 18 sources</small>
-              </div>
-              <b>+52%</b>
-            </div>
-            <div className="preview-footer">
-              <span>
-                <Globe size={12} /> 328 sources indexed
-              </span>
-              <span>Updated just now</span>
-            </div>
-          </div>
+
         </div>
         <p className="auth-trust">
           PUBLIC-WEB INTELLIGENCE <span>•</span> HUMAN-CENTRED RESEARCH{" "}
@@ -340,11 +312,6 @@ export default function AuthView({
               {signup || forgot ? "Sign in" : "Create an account"}
             </button>
           </p>
-          {!signup && !forgot && (
-            <button type="button" className="demo-link" onClick={onDemo}>
-              Explore the demo workspace <ArrowRight size={13} />
-            </button>
-          )}
         </div>
         <footer className="auth-legal">
           © {new Date().getFullYear()} Sentinel Intelligence{" "}

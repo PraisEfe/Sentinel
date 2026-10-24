@@ -10,7 +10,6 @@ import {
   saveSession,
   workspacePath,
 } from "../lib/api";
-import { createDemoService } from "../data/demoWorkspace";
 
 export const defaultPreferences = Object.freeze({
   groupStories: true,
@@ -61,9 +60,6 @@ export const useAppStore = create(
       notice: "",
       preferences: {},
       workspaceSelections: {},
-      demoService: null,
-      demoUser: null,
-      demoData: emptyData(),
       setNotice: (notice) => set({ notice }),
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
       openResult: (selection) => set({ selection }),
@@ -322,20 +318,7 @@ export const useAppStore = create(
           },
         }));
       },
-      createMonitor: async (fields, demo = false) => {
-        if (demo) {
-          const service = get().demoService;
-          const monitor = {
-            ...fields,
-            id: crypto.randomUUID(),
-            is_active: true,
-            mention_count: 0,
-            latest_scan: null,
-          };
-          service.store.monitors = [...service.store.monitors, monitor];
-          get().refreshDemo();
-          return monitor;
-        }
+      createMonitor: async (fields) => {
         const result = await get().api("/monitors", {
           method: "POST",
           body: fields,
@@ -343,11 +326,7 @@ export const useAppStore = create(
         void get().refreshWorkspace();
         return result.data;
       },
-      clearHistory: async (demo = false) => {
-        if (demo) {
-          set((state) => ({ demoData: { ...state.demoData, history: [] } }));
-          return;
-        }
+      clearHistory: async () => {
         const { workspaceId, authVersion } = get();
         await get().api("/history/searches", { method: "DELETE" });
         if (
@@ -356,11 +335,10 @@ export const useAppStore = create(
         )
           set((state) => ({ data: { ...state.data, history: [] } }));
       },
-      updateUser: (user, demo = false) =>
-        demo ? set({ demoUser: { ...user } }) : set({ user: { ...user } }),
-      savePreferences: (next, demo = false) => {
+      updateUser: (user) => set({ user: { ...user } }),
+      savePreferences: (next) => {
         const state = get();
-        const key = demo ? "demo" : `${state.user?.id}:${state.workspaceId}`;
+        const key = `${state.user?.id}:${state.workspaceId}`;
         // Persist only non-secret preferences and workspace selections.
         const preferences = {
           ...state.preferences,
@@ -383,59 +361,6 @@ export const useAppStore = create(
         );
         set({ preferences });
       },
-      startDemo: () => {
-        if (get().demoService) return;
-        const service = createDemoService();
-        const now = Date.now();
-        set({
-          demoService: service,
-          demoUser: { ...service.store.account },
-          demoData: {
-            ...emptyData(),
-            monitors: [...service.store.monitors],
-            monitorTotal: service.store.monitors.length,
-            unread: service.store.alerts.filter((item) => !item.read_at).length,
-            sourcesCount: service.store.sources.length,
-            history: [
-              ["MTN Nigeria", 4821],
-              ["Dangote", 1201],
-              ["Nigerian banking sector", 1082],
-              ["Cybersecurity", 2403],
-            ].map(([query, result_count], index) => ({
-              id: `demo-search-${index}`,
-              query,
-              result_count,
-              created_at: new Date(now - (index + 1) * 3600000).toISOString(),
-            })),
-          },
-        });
-      },
-      demoApi: async (path, options) => {
-        get().startDemo();
-        return structuredClone(await get().demoService.call(path, options));
-      },
-      refreshDemo: () => {
-        const service = get().demoService;
-        if (service)
-          set((state) => ({
-            demoData: {
-              ...state.demoData,
-              monitors: structuredClone(service.store.monitors),
-              monitorTotal: service.store.monitors.length,
-              unread: service.store.alerts.filter((item) => !item.read_at)
-                .length,
-            },
-          }));
-      },
-      leaveDemo: () =>
-        set({
-          demoService: null,
-          demoUser: null,
-          demoData: emptyData(),
-          sidebarOpen: false,
-          selection: null,
-          createOpen: false,
-        }),
     }),
     {
       name: "sentinel_preferences",

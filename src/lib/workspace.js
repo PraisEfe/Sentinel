@@ -1,38 +1,28 @@
 import { useEffect, useState, useCallback } from "react";
-import { useLocation } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { defaultPreferences, useAppStore } from "../stores/appStore";
 
 export function useWorkspace() {
-  const { pathname } = useLocation();
-  const demo = pathname === "/demo" || pathname.startsWith("/demo/");
   const state = useAppStore(
     useShallow((store) => ({
-      api: demo ? store.demoApi : store.api,
-      user: demo ? store.demoUser : store.user,
+      api: store.api,
+      user: store.user,
       workspaceId: store.workspaceId,
       authVersion: store.authVersion,
       preferences: store.preferences,
       save: store.savePreferences,
       updateUser: store.updateUser,
-      onRefresh: demo ? store.refreshDemo : store.refreshWorkspace,
+      onRefresh: store.refreshWorkspace,
     })),
   );
-  const { save, updateUser } = state;
-  const savePreferences = useCallback((next) => save(next, demo), [save, demo]);
-  const onUserUpdate = useCallback(
-    (user) => updateUser(user, demo),
-    [updateUser, demo],
-  );
-  const key = demo ? "demo" : `${state.user?.id}:${state.workspaceId}`;
+  const key = `${state.user?.id}:${state.workspaceId}`;
   return {
     api: state.api,
-    demo,
     user: state.user,
-    scopeKey: demo ? "demo" : `${state.authVersion}:${state.workspaceId}`,
+    scopeKey: `${state.authVersion}:${state.workspaceId}`,
     preferences: state.preferences[key] || defaultPreferences,
-    savePreferences,
-    onUserUpdate,
+    savePreferences: state.save,
+    onUserUpdate: state.updateUser,
     onRefresh: state.onRefresh,
   };
 }
@@ -65,7 +55,7 @@ export function useResource(path, { list = false } = {}) {
         if (active) setState({ key, data: result, loading: false, error: "" });
       } catch (error) {
         if (active)
-          setState({ key, data: null, loading: false, error: error.message });
+          setState({ key, data: null, loading: false, error: error.message, errorStatus: error.status || 0 });
       }
     }
     load();
