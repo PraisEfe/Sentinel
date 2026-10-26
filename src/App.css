@@ -444,6 +444,7 @@ input::placeholder {
 }
 .nav-item.active {
   background: #22372b;
+  box-shadow: inset 3px 0 #61ba91;
   color: #eef5ef;
 }
 .nav-item svg {
@@ -1345,4 +1346,9 @@ input::placeholder {
 }
 .topic-description small::first-letter {
   text-transform: uppercase;
+}
+.nav-settings.active {
+  border-top-color: transparent;
+  border-radius: 9px;
+  padding-top: 12px;
 }

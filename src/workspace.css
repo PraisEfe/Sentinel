@@ -1960,3 +1960,10 @@ body:has(dialog[open]) {
   align-items: center;
   gap: 4px;
 }
+
+.settings-advanced { margin-top: 18px; color: #687b70; font-size: 11px; }
+.settings-advanced summary { cursor: pointer; padding: 10px 0; }
+.settings-advanced[open] summary { border-bottom: 1px solid #e1eae4; }
+.settings-panel .setting-row { padding: 21px 0; min-height: 73px; }
+.settings-panel .setting-row:last-child { border-bottom: 1px solid #e1eae4; }
+.compact-results .result-row { padding-top: 10px; padding-bottom: 10px; min-height: 0; }

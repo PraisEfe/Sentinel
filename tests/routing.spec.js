@@ -206,6 +206,7 @@ test("profile updates propagate through the shared store to the sidebar", async 
   await mockApi(page);
   await login(page);
   await page.goto("/settings?section=account");
+  await page.getByText("Profile details", { exact: true }).click();
   await page.getByLabel("Full name", { exact: true }).fill("Moses Orogun");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(

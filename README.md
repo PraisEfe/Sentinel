@@ -111,3 +111,9 @@ Before deployment, resolve the reported authenticated `GET /api/v1/workspaces/{w
 ## Application boundaries
 
 The shipped app has no demo route, sample workspace service, or mock analytics. React Router defines public authentication routes and a protected workspace layout. Zustand manages shared session/workspace state; `src/lib/api.js` is the HTTP transport, and `useResource` manages page request loading, cancellation, validation, and retries. Views render API results or explicit empty/error states. API test fixtures live under `tests` and are not imported into the application bundle. Figma exports and fetch scripts are not runtime or build dependencies.
+
+## Settings behavior
+
+Monitoring, notifications, and source groups save through the workspace settings endpoints. New monitors read the saved monitoring defaults before creation. Disabling the twenty-minute scan shortcut selects thirty minutes; disabling the twenty-minute digest selects daily delivery, since the contract has no disabled cadence. Historical matching uses thirty days when enabled and the API minimum of one day otherwise. Advanced sections retain precise schedules, individual sources, and account profile fields.
+
+Personal search-history visibility and compact search-result density are device-local preferences, scoped by account/workspace. Hiding history does not stop backend history collection. French results update source language preferences; actual collection depends on backend/source support. Automatic emerging-topic monitoring, weekly research summaries, and research-participation preferences have no writable fields in the supplied contract, so those controls remain disabled with an explanation.

@@ -109,6 +109,7 @@ function useSummary() {
   );
 }
 export function HomePage() {
+  const { preferences } = useWorkspace();
   const summary = useSummary();
   const navigate = useNavigate();
   const [, setParams] = useSearchParams();
@@ -122,7 +123,7 @@ export function HomePage() {
       onSelectTopic={search}
       onOpenAddMonitor={() => summary.openMonitor()}
       monitors={summary.data.monitors}
-      history={summary.data.history}
+      history={preferences.showHistory === false ? [] : summary.data.history}
       loading={summary.loading}
       error={summary.error}
       onRetry={summary.refresh}

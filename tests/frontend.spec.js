@@ -231,6 +231,8 @@ test("home search and monitor creation use workspace-scoped API routes", async (
     query: "cybersecurity Nigeria",
     type: "topic",
     frequency: "20m",
+    history_days: 30,
+    include_related_terms: true,
     source_ids: ["source-1"],
     include_keywords: ["security", "data breach"],
     exclude_keywords: [],
@@ -503,6 +505,7 @@ test("settings save server-supported defaults, sources and notifications", async
   await login(page);
   await goTo(page, "Settings");
   await page.getByRole("button", { name: /Monitoring defaults/ }).click();
+  await page.getByText("Advanced monitoring settings", { exact: true }).click();
   await page.getByLabel("Default monitoring frequency").selectOption("10m");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(
@@ -519,9 +522,9 @@ test("settings save server-supported defaults, sources and notifications", async
     .getByRole("navigation", { name: "Settings sections" })
     .getByRole("button", { name: /Notifications/ })
     .click();
-  await expect(page.getByRole("switch", { name: "Trending topics", exact: true })).toBeChecked();
+  await expect(page.getByRole("switch", { name: "High-velocity topic alerts", exact: true })).toBeChecked();
   await page
-    .getByRole("switch", { name: "Trending topics", exact: true })
+    .getByRole("switch", { name: "High-velocity topic alerts", exact: true })
     .uncheck();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(
@@ -535,6 +538,7 @@ test("settings save server-supported defaults, sources and notifications", async
     ).body,
   ).toEqual({ notify_velocity: false });
   await page.getByRole("button", { name: /Sources & languages/ }).click();
+  await page.getByText("Individual sources", { exact: true }).click();
   await expect(page.getByRole("switch", { name: "Public news", exact: true })).toBeChecked();
   await page
     .getByRole("switch", { name: "Public news", exact: true })
@@ -638,6 +642,7 @@ test("failed settings writes report the error without a success message", async 
   await login(page);
   await goTo(page, "Settings");
   await page.getByRole("button", { name: /Monitoring defaults/ }).click();
+  await page.getByText("Advanced monitoring settings", { exact: true }).click();
   await page.getByLabel("Default monitoring frequency").selectOption("10m");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("alert")).toHaveText(
@@ -767,4 +772,51 @@ test("sign-in preserves password punctuation and supports plus-address emails", 
   const loginCall = calls.find((call) => call.path === '/auth/login');
   expect(loginCall.body.email).toBe('ada+research@example.com');
   expect(loginCall.body.password).toBe(password);
+});
+
+test("screenshot settings controls send supported monitoring, digest and source fields", async ({ page }) => {
+  const calls = await mockApi(page);
+  await login(page);
+  await goTo(page, "Settings");
+  await page.getByRole("button", { name: /Monitoring defaults/ }).click();
+  await expect(page.getByRole("switch", { name: "Scan every 20 minutes" })).toBeChecked();
+  await page.getByRole("switch", { name: "Scan every 20 minutes" }).uncheck();
+  await page.getByRole("switch", { name: "Include historical matches" }).uncheck();
+  await expect(page.getByRole("switch", { name: "Discover emerging topics" })).toBeDisabled();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("status")).toHaveText("Changes saved.");
+  expect(calls.find((c) => c.path.endsWith('/settings/monitoring-defaults') && c.method === 'PATCH').body).toEqual({ frequency: '30m', history_days: 1 });
+  await page.getByRole("navigation", { name: "Settings sections" }).getByRole("button", { name: /Notifications/ }).click();
+  await expect(page.getByRole("switch", { name: "New result digest" })).toBeChecked();
+  await page.getByRole("switch", { name: "New result digest" }).uncheck();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("status")).toHaveText("Changes saved.");
+  expect(calls.find((c) => c.path.endsWith('/settings/notifications') && c.method === 'PATCH').body).toEqual({ digest_cadence: 'daily' });
+  await page.getByRole("button", { name: /Sources & languages/ }).click();
+  await expect(page.getByRole("switch", { name: "News and media" })).toBeChecked();
+  await page.getByRole("switch", { name: "News and media" }).uncheck();
+  await page.getByRole("switch", { name: "French-language results" }).check();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("status")).toHaveText("Changes saved.");
+  expect(calls.find((c) => c.path.endsWith('/settings/sources') && c.method === 'PATCH').body).toEqual({ sources: [{source_id:'source-1',enabled:false,language_codes:['en','fr']}] });
+});
+
+test("account presentation preferences persist and change history and search density", async ({ page }) => {
+  await mockApi(page);
+  await login(page);
+  await goTo(page, "Settings");
+  await page.getByRole("button", { name: /^Account/ }).click();
+  await expect(page.getByRole("switch", { name: "Weekly research summary" })).toBeDisabled();
+  await expect(page.getByRole("switch", { name: "Product research participation" })).toBeDisabled();
+  await page.getByRole("switch", { name: "Personal search history" }).uncheck();
+  await page.getByRole("switch", { name: "Compact result density" }).check();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("status")).toHaveText("Changes saved.");
+  await page.reload();
+  await expect(page.getByRole("switch", { name: "Personal search history" })).not.toBeChecked();
+  await expect(page.getByRole("switch", { name: "Compact result density" })).toBeChecked();
+  await goTo(page,"Home");
+  await expect(page.getByText("Nigerian banking sector")).toHaveCount(0);
+  await page.goto('/search?q=MTN');
+  await expect(page.locator('.search-page')).toHaveClass(/compact-results/);
 });

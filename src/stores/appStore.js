@@ -16,6 +16,8 @@ export const defaultPreferences = Object.freeze({
   includeSocial: true,
   aiSummaries: true,
   detectTone: true,
+  showHistory: true,
+  compactResults: false,
 });
 const emptyData = () => ({
   monitors: [],

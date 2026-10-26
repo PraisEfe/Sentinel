@@ -35,6 +35,17 @@ function SettingsPanel({ tab }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [localChanges, setLocalChanges] = useState({});
+  const sourceList = Array.isArray(resource.data?.data) ? resource.data.data : [];
+  const languages = (source) => Array.isArray(source.language_codes)
+    ? source.language_codes : (source.language_codes || "en").split(/[,\s]+/);
+  const sourceEnabled = (source) => get(`source_${source.id}`, enabled(source.enabled_for_workspace));
+  const sourceGroup = (label, types, description) => {
+    const list = sourceList.filter((source) => types.includes(source.type) && source.is_active);
+    return <Toggle key={label} label={label} description={list.length ? description : "No active sources available in this group."}
+      checked={list.length > 0 && list.every(sourceEnabled)} disabled={!list.length}
+      onChange={(value) => { setChanges((previous) => ({ ...previous, ...Object.fromEntries(list.map((source) => [`source_${source.id}`, value])) })); setMessage(""); }} />;
+  };
   const response = resource.data;
   const raw = response?.data ?? response;
   const data = raw && !Array.isArray(raw) ? raw : {};
@@ -58,25 +69,31 @@ function SettingsPanel({ tab }) {
         if (tab === "Sources & languages")
           body = {
             sources: (Array.isArray(raw) ? raw : [])
-              .filter((source) => `source_${source.id}` in changes)
+              .filter((source) => `source_${source.id}` in changes || "french" in changes)
               .map((source) => ({
                 source_id: source.id,
-                enabled: changes[`source_${source.id}`],
+                enabled: sourceEnabled(source),
+                ...("french" in changes ? { language_codes: changes.french
+                  ? [...new Set([...languages(source), "en", "fr"])]
+                  : languages(source).filter((code) => code !== "fr") } : {}),
               })),
           };
-        if (!Object.keys(changes).length) {
+        if (!Object.keys(changes).length && !Object.keys(localChanges).length) {
           setMessage("No changes to save.");
           return;
         }
         if (tab === "Account" && "name" in body && !body.name.trim())
           throw Error("Enter your full name.");
-        const result = await api(path, { method: "PATCH", body });
-        if (tab === "Account")
+        const result = Object.keys(changes).length
+          ? await api(path, { method: "PATCH", body }) : null;
+        if (Object.keys(localChanges).length) savePreferences({ ...preferences, ...localChanges });
+        if (tab === "Account" && result)
           onUserUpdate(result.data || result.user || { ...user, ...changes });
         setMessage("Changes saved.");
         resource.reload();
       }
       setChanges({});
+      setLocalChanges({});
     } catch (failure) {
       setError(failure.message);
     } finally {
@@ -114,7 +131,10 @@ function SettingsPanel({ tab }) {
           <p>
             {tab === "Search & discovery"
               ? "Set the defaults used on this device."
-              : "Manage preferences for your workspace."}
+              : tab === "Monitoring defaults" ? "Choose how newly created monitors scan for information."
+                : tab === "Notifications" ? "Decide which discoveries should notify you and where."
+                : tab === "Sources & languages" ? "Choose the public sources and languages included in discovery."
+                : "Manage workspace behavior and account preferences."}
           </p>
         </div>
         <button className="primary-button" disabled={locked}>
@@ -145,6 +165,21 @@ function SettingsPanel({ tab }) {
           ))}
         {tab === "Monitoring defaults" && (
           <>
+            <Toggle label="Scan every 20 minutes" description="Use a twenty-minute discovery interval for new monitors. Turning off uses a thirty-minute interval."
+              checked={get("frequency", data.frequency) === "20m"} onChange={(value) => change("frequency", value ? "20m" : "30m")} />
+            <Toggle
+              label="Track related keywords"
+              description="Include related terms when creating monitors."
+              checked={get(
+                "include_related_terms",
+                data.include_related_terms || false,
+              )}
+              onChange={(value) => change("include_related_terms", value)}
+            />
+            <Toggle label="Discover emerging topics" description="Emerging stories are available in Intelligence; automatic monitoring of them is not available yet." checked={false} disabled />
+            <Toggle label="Include historical matches" description="Search up to thirty days of available history when a monitor is created. Off retains the API minimum of one day."
+              checked={Number(get("history_days", data.history_days)) > 1} onChange={(value) => change("history_days", value ? 30 : 1)} />
+            <details className="settings-advanced"><summary>Advanced monitoring settings</summary>
             <label className="settings-field">
               Monitoring frequency
               <select
@@ -169,15 +204,6 @@ function SettingsPanel({ tab }) {
                 ))}
               </select>
             </label>
-            <Toggle
-              label="Track related keywords"
-              description="Include related terms when creating monitors."
-              checked={get(
-                "include_related_terms",
-                data.include_related_terms || false,
-              )}
-              onChange={(value) => change("include_related_terms", value)}
-            />
             <label className="settings-field">
               History to include (days)
               <input
@@ -189,6 +215,7 @@ function SettingsPanel({ tab }) {
                 onChange={(e) => change("history_days", Number(e.target.value))}
               />
             </label>
+            </details>
             {Array.isArray(raw) && (
               <p className="field-hint">
                 Choose values to set your defaults. Existing defaults were not
@@ -199,69 +226,38 @@ function SettingsPanel({ tab }) {
         )}
         {tab === "Notifications" && (
           <>
-            <label className="settings-field">
-              Digest frequency
-              <select
-                aria-label="Digest frequency"
-                value={get("digest_cadence", data.digest_cadence || "20m")}
-                onChange={(e) => change("digest_cadence", e.target.value)}
-              >
-                <option value="20m">Every 20 minutes</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-              </select>
-            </label>
-            {[
-              [
-                "notify_high_relevance",
-                "High-relevance results",
-                data.alerts?.high_relevance,
-              ],
-              ["notify_velocity", "Trending topics", data.alerts?.velocity],
-              [
-                "notify_high_authority",
-                "Major source alerts",
-                data.alerts?.high_authority,
-              ],
-              ["channel_email", "Email notifications", data.channels?.email],
-              [
-                "channel_web_push",
-                "Web push delivery preference",
-                data.channels?.web_push,
-              ],
-            ].map(([key, label, value]) => (
-              <Toggle
-                key={key}
-                label={label}
-                description={
-                  key === "channel_web_push"
-                    ? "Delivery requires a browser subscription registered for your account."
-                    : key === "channel_email" && !data.email_available
-                      ? "Email delivery is not available yet."
-                      : undefined
-                }
-                checked={get(key, value)}
-                disabled={
-                  key === "channel_email" && data.email_available === false
-                }
-                onChange={(next) => change(key, next)}
-              />
-            ))}
-            <label className="settings-field">
-              Daily digest hour
-              <input
-                aria-label="Daily digest hour"
-                type="number"
-                min="0"
-                max="23"
-                value={get("digest_hour", data.digest_hour ?? 9)}
-                onChange={(e) => change("digest_hour", Number(e.target.value))}
-              />
-            </label>
+            <Toggle label="High-velocity topic alerts" description="Notify me when discussion grows substantially above its normal baseline."
+              checked={get("notify_velocity", data.alerts?.velocity)} onChange={(value) => change("notify_velocity", value)} />
+            <Toggle label="Major source alerts" description="Notify me when a high-authority publication mentions a monitored topic."
+              checked={get("notify_high_authority", data.alerts?.high_authority)} onChange={(value) => change("notify_high_authority", value)} />
+            <Toggle label="New result digest" description="Send a digest every twenty minutes. Turning off switches to a daily digest."
+              checked={get("digest_cadence", data.digest_cadence) === "20m"} onChange={(value) => change("digest_cadence", value ? "20m" : "daily")} />
+            <Toggle label="Email notifications" description={data.email_available === false ? "Email delivery is not available yet." : `Also deliver selected alerts to ${user?.email || "your account email"}.`}
+              checked={get("channel_email", data.channels?.email)} disabled={data.email_available === false} onChange={(value) => change("channel_email", value)} />
+            <details className="settings-advanced"><summary>Advanced notification settings</summary>
+              <label className="settings-field">Digest frequency
+                <select aria-label="Digest frequency" value={get("digest_cadence", data.digest_cadence || "20m")} onChange={(event) => change("digest_cadence", event.target.value)}>
+                  <option value="20m">Every 20 minutes</option><option value="daily">Daily</option><option value="weekly">Weekly</option>
+                </select>
+              </label>
+              <Toggle label="High-relevance results" checked={get("notify_high_relevance", data.alerts?.high_relevance)} onChange={(value) => change("notify_high_relevance", value)} />
+              <Toggle label="Web push delivery preference" description="Delivery requires a browser subscription registered for your account."
+                checked={get("channel_web_push", data.channels?.web_push)} onChange={(value) => change("channel_web_push", value)} />
+              <label className="settings-field">Daily digest hour
+                <input aria-label="Daily digest hour" type="number" min="0" max="23" value={get("digest_hour", data.digest_hour ?? 9)} onChange={(event) => change("digest_hour", Number(event.target.value))} />
+              </label>
+            </details>
           </>
         )}
         {tab === "Sources & languages" && (
           <>
+            {sourceGroup("News and media", ["news"], "Search public articles from local, regional and international publishers.")}
+            {sourceGroup("Public social content", ["social"], "Include publicly accessible social posts and conversations.")}
+            {sourceGroup("Blogs and forums", ["blog", "forum"], "Include specialist blogs, community forums and public discussions.")}
+            <Toggle label="French-language results" description="Request French alongside each source’s existing languages. Collection depends on source support."
+              checked={get("french", sourceList.length > 0 && sourceList.every((source) => languages(source).includes("fr")))} disabled={!sourceList.length}
+              onChange={(value) => change("french", value)} />
+            <details className="settings-advanced"><summary>Individual sources</summary>
             {(Array.isArray(raw) ? raw : []).map((source) => (
               <Toggle
                 key={source.id}
@@ -275,6 +271,7 @@ function SettingsPanel({ tab }) {
                 onChange={(value) => change(`source_${source.id}`, value)}
               />
             ))}
+            </details>
             {Array.isArray(raw) && !raw.length && (
               <p className="workspace-empty">
                 No sources have been configured for this workspace.
@@ -284,6 +281,15 @@ function SettingsPanel({ tab }) {
         )}
         {tab === "Account" && (
           <>
+            <Toggle label="Weekly research summary" description="Weekly summary delivery is not available for this account yet." checked={false} disabled />
+            <Toggle label="Personal search history" description="Show recent searches on this device’s home screen. This does not disable backend history storage."
+              checked={localChanges.showHistory ?? preferences.showHistory ?? true}
+              onChange={(value) => { setLocalChanges((previous) => ({ ...previous, showHistory: value })); setMessage(""); }} />
+            <Toggle label="Compact result density" description="Show more search results on screen with reduced vertical spacing on this device."
+              checked={localChanges.compactResults ?? preferences.compactResults ?? false}
+              onChange={(value) => { setLocalChanges((previous) => ({ ...previous, compactResults: value })); setMessage(""); }} />
+            <Toggle label="Product research participation" description="Research participation is not available for this account yet." checked={false} disabled />
+            <details className="settings-advanced"><summary>Profile details</summary>
             <label className="settings-field">
               Full name
               <input
@@ -320,6 +326,7 @@ function SettingsPanel({ tab }) {
                 placeholder="en"
               />
             </label>
+            </details>
           </>
         )}
       </fieldset>

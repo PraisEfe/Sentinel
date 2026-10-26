@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
-import { useResource, useWorkspace } from "../../lib/workspace";
+import { enabled, useResource, useWorkspace } from "../../lib/workspace";
 import { ResourceState } from "./WorkspaceUI";
 const sourceGroups = [
   ["news", "News & media", ["news"]],
@@ -23,12 +23,15 @@ export default function CreateMonitorDialog({
   const [include, setInclude] = useState("");
   const [exclude, setExclude] = useState("");
   const [type, setType] = useState("topic");
-  const [frequency, setFrequency] = useState("20m");
+  const [frequency, setFrequency] = useState(null);
   const [selected, setSelected] = useState(["news", "social", "web", "blogs"]);
   const [highRelevance, setHighRelevance] = useState(true);
   const [velocity, setVelocity] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const defaults = useResource("/settings/monitoring-defaults");
+  const defaultFields = defaults.data?.data ?? defaults.data ?? {};
+  const selectedFrequency = frequency ?? defaultFields.frequency ?? "20m";
   const sources = useResource("/sources", { list: true });
   const available = (sources.data?.data || [])
     .filter((item) => item.available !== false)
@@ -65,7 +68,7 @@ export default function CreateMonitorDialog({
       setStep(3);
       return;
     }
-    if (busy) return;
+    if (busy || defaults.loading || defaults.error) return;
     setBusy(true);
     let monitor = created;
     try {
@@ -74,7 +77,9 @@ export default function CreateMonitorDialog({
           name: topic.trim().slice(0, 160),
           query: topic.trim(),
           type,
-          frequency,
+          frequency: selectedFrequency,
+          ...(defaultFields.history_days != null ? { history_days: Number(defaultFields.history_days) } : {}),
+          ...(defaultFields.include_related_terms != null ? { include_related_terms: enabled(defaultFields.include_related_terms) } : {}),
           source_ids: sourceIds,
           include_keywords: include
             .split(",")
@@ -236,13 +241,14 @@ export default function CreateMonitorDialog({
               })}
             </>
           )}
+          {step === 3 && <ResourceState resource={defaults} />}
           {step === 3 && (
             <>
               <label className="field-label" htmlFor="monitor-frequency">
                 Monitoring frequency
                 <select
                   id="monitor-frequency"
-                  value={frequency}
+                  value={selectedFrequency}
                   onChange={(e) => setFrequency(e.target.value)}
                 >
                   {[

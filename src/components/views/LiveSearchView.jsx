@@ -153,7 +153,7 @@ export default function LiveSearchView({
     ],
   ];
   return (
-    <PageMotion className="research-page search-page">
+    <PageMotion className={`research-page search-page${preferences.compactResults ? " compact-results" : ""}`}>
       <form
         className="discovery-search compact-search"
         onSubmit={(e) => {

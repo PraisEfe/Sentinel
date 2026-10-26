@@ -45,6 +45,7 @@ export async function mockApi(page, options = {}) {
       mention_id: "mention-1",
     },
   ];
+  let defaults = { frequency: "20m", history_days: 30, include_related_terms: true };
   let notification = {
     digest_cadence: "20m",
     digest_hour: 9,
@@ -194,18 +195,20 @@ export async function mockApi(page, options = {}) {
       method === "PATCH"
     )
       return fulfill({ message: "Settings could not be saved." }, 503);
-    if (path.endsWith("/settings/monitoring-defaults"))
-      return fulfill({
-        data:
-          method === "PATCH"
-            ? body
-            : {
-                frequency: "20m",
-                history_days: 30,
-                include_related_terms: true,
-              },
-      });
-    if (path.endsWith("/settings/sources")) return fulfill({ data: [source] });
+    if (path.endsWith("/settings/monitoring-defaults")) {
+      if (method === "PATCH") defaults = { ...defaults, ...body };
+      return fulfill({ data: defaults });
+    }
+    if (path.endsWith("/settings/sources")) {
+      if (method === "PATCH") {
+        const update = body.sources.find((item) => item.source_id === source.id);
+        if (update) {
+          source.enabled_for_workspace = update.enabled;
+          if (update.language_codes) source.language_codes = update.language_codes;
+        }
+      }
+      return fulfill({ data: [source] });
+    }
     if (path.endsWith("/alerts/read-all")) {
       alerts = alerts.map((item) => ({
         ...item,
