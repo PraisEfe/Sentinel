@@ -1,3 +1,4 @@
+import LoadingState from "./LoadingState";
 import { motion, useReducedMotion } from "framer-motion";
 export function PageMotion({ children, className = "" }) {
   const reduced = useReducedMotion();
@@ -15,11 +16,7 @@ export function PageMotion({ children, className = "" }) {
 }
 export function ResourceState({ resource, empty = false, children }) {
   if (resource.loading)
-    return (
-      <p className="workspace-loading" role="status">
-        Loading…
-      </p>
-    );
+    return <LoadingState />;
   if (resource.error)
     return (
       <div className="load-error" role="alert">

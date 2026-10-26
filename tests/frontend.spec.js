@@ -137,7 +137,7 @@ for (const [name, options, message] of [
   [
     "validation",
     { loginError: true },
-    "These credentials do not match our records.",
+    "Check your email and password, then try again.",
   ],
   [
     "offline",
@@ -189,7 +189,7 @@ test("history clears only after success, and failed clearing can be retried", as
   const calls = await mockApi(page, { clearError: true });
   await login(page);
   await page.getByRole("button", { name: "Clear history" }).click();
-  await expect(page.getByRole("alert")).toHaveText("Could not clear history.");
+  await expect(page.getByRole("alert")).toHaveText("We couldn’t complete that request. Please try again.");
   await expect(page.getByText("Nigerian banking sector")).toBeVisible();
   await page.getByRole("button", { name: "Clear history" }).click();
   await expect(
@@ -373,7 +373,7 @@ test("monitor wizard preserves steps, retries preferences without duplicate crea
     .getByRole("button", { name: "Create monitor", exact: true })
     .click();
   await expect(page.getByRole("alert")).toContainText(
-    "Your monitor was created.",
+    "Your monitor is ready.",
   );
   await page
     .getByRole("button", { name: "Retry preferences", exact: true })
@@ -646,7 +646,7 @@ test("failed settings writes report the error without a success message", async 
   await page.getByLabel("Default monitoring frequency").selectOption("10m");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("alert")).toHaveText(
-    "Settings could not be saved.",
+    "We couldn’t complete that request. Please try again.",
   );
   await expect(page.getByText("Changes saved.", { exact: true })).toHaveCount(
     0,
@@ -719,7 +719,7 @@ test("Latest and Most Mentioned retry their shared failed endpoint and recover w
   });
   await login(page);
   await goTo(page, "Intelligence");
-  await expect(page.locator(".cluster-panel").getByRole("alert")).toContainText("HTTP 500, /explore?page=1");
+  await expect(page.locator(".cluster-panel").getByRole("alert")).toContainText("We couldn’t complete that request. Please try again.");
   await expect(page.locator(".cluster-row")).toHaveCount(0);
   const initialAttempts = attempts;
   await page.getByRole("tab", { name: "Most Mentioned", exact: true }).click();
@@ -741,7 +741,7 @@ test("discovery errors do not prevent independent Trending and Emerging tabs fro
   }));
   await login(page);
   await goTo(page, "Intelligence");
-  await expect(page.locator(".cluster-panel").getByRole("alert")).toContainText("HTTP 503");
+  await expect(page.locator(".cluster-panel").getByRole("alert")).toContainText("We couldn’t complete that request. Please try again.");
   for (const name of ["Trending", "Emerging"]) {
     await page.getByRole("tab", { name, exact: true }).click();
     await expect(page.locator(".cluster-row")).toHaveCount(1);
@@ -784,20 +784,20 @@ test("screenshot settings controls send supported monitoring, digest and source 
   await page.getByRole("switch", { name: "Include historical matches" }).uncheck();
   await expect(page.getByRole("switch", { name: "Discover emerging topics" })).toBeDisabled();
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByRole("status")).toHaveText("Changes saved.");
+  await expect(page.getByRole("status").filter({ hasText: "Changes saved." })).toHaveText("Changes saved.");
   expect(calls.find((c) => c.path.endsWith('/settings/monitoring-defaults') && c.method === 'PATCH').body).toEqual({ frequency: '30m', history_days: 1 });
   await page.getByRole("navigation", { name: "Settings sections" }).getByRole("button", { name: /Notifications/ }).click();
   await expect(page.getByRole("switch", { name: "New result digest" })).toBeChecked();
   await page.getByRole("switch", { name: "New result digest" }).uncheck();
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByRole("status")).toHaveText("Changes saved.");
+  await expect(page.getByRole("status").filter({ hasText: "Changes saved." })).toHaveText("Changes saved.");
   expect(calls.find((c) => c.path.endsWith('/settings/notifications') && c.method === 'PATCH').body).toEqual({ digest_cadence: 'daily' });
   await page.getByRole("button", { name: /Sources & languages/ }).click();
   await expect(page.getByRole("switch", { name: "News and media" })).toBeChecked();
   await page.getByRole("switch", { name: "News and media" }).uncheck();
   await page.getByRole("switch", { name: "French-language results" }).check();
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByRole("status")).toHaveText("Changes saved.");
+  await expect(page.getByRole("status").filter({ hasText: "Changes saved." })).toHaveText("Changes saved.");
   expect(calls.find((c) => c.path.endsWith('/settings/sources') && c.method === 'PATCH').body).toEqual({ sources: [{source_id:'source-1',enabled:false,language_codes:['en','fr']}] });
 });
 
@@ -811,7 +811,7 @@ test("account presentation preferences persist and change history and search den
   await page.getByRole("switch", { name: "Personal search history" }).uncheck();
   await page.getByRole("switch", { name: "Compact result density" }).check();
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByRole("status")).toHaveText("Changes saved.");
+  await expect(page.getByRole("status").filter({ hasText: "Changes saved." })).toHaveText("Changes saved.");
   await page.reload();
   await expect(page.getByRole("switch", { name: "Personal search history" })).not.toBeChecked();
   await expect(page.getByRole("switch", { name: "Compact result density" })).toBeChecked();
@@ -819,4 +819,56 @@ test("account presentation preferences persist and change history and search den
   await expect(page.getByText("Nigerian banking sector")).toHaveCount(0);
   await page.goto('/search?q=MTN');
   await expect(page.locator('.search-page')).toHaveClass(/compact-results/);
+});
+
+test("published UI hides raw service errors while preserving recovery guidance", async ({ page }) => {
+  await mockApi(page);
+  let status = 500;
+  await page.route('**/api/v1/auth/login', (route) => route.fulfill({
+    status,
+    contentType: 'application/json',
+    body: JSON.stringify({ message: 'SQLSTATE connection failed at /srv/private/config.php:42', errors: { internal: ['database password secret'] } }),
+  }));
+  await page.goto('/signin');
+  await page.getByLabel('Work email').fill('ada@example.com');
+  await page.getByLabel('Password', { exact: true }).fill('test-password');
+  for (const [code, message] of [
+    [500, 'We couldn’t complete that request. Please try again.'],
+    [429, 'Please wait a moment before trying again.'],
+    [403, 'You don’t have access to this action.'],
+    [422, 'Check your email and password, then try again.'],
+  ]) {
+    status = code;
+    await page.getByRole('button', { name:'Sign in', exact:true }).click();
+    await expect(page.getByRole('alert')).toHaveText(message);
+    await expect(page.locator('body')).not.toContainText('SQLSTATE');
+    await expect(page.locator('body')).not.toContainText('/srv/private');
+    await expect(page.locator('body')).not.toContainText('database password');
+  }
+});
+
+test("data loaders animate accessibly, respect reduced motion, and disappear when results arrive", async ({ page }) => {
+  await mockApi(page);
+  await login(page);
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  await page.route('**/api/v1/workspaces/w-1/search?*', async (route) => {
+    await gate;
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({data:[]})});
+  });
+  try {
+    await page.goto('/search?q=MTN');
+    const loader = page.getByRole('region', { name: 'Search results' }).locator('.sentinel-loading');
+    await expect(loader).toBeVisible();
+    await expect(loader).toHaveAttribute('role','status');
+    await expect(loader).toHaveAttribute('aria-live','polite');
+    await expect(loader.locator('.sentinel-loading-mark')).toHaveAttribute('aria-hidden','true');
+    await page.emulateMedia({reducedMotion:'no-preference'});
+    await expect.poll(() => loader.locator('.sentinel-loading-mark > span').first().evaluate((el) => getComputedStyle(el).animationName)).toBe('sentinel-breathe');
+    await page.emulateMedia({reducedMotion:'reduce'});
+    await expect.poll(() => loader.locator('.sentinel-loading-mark > span').first().evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
+    await expect(loader).toBeVisible();
+  } finally { release(); }
+  await expect(page.getByRole('region', { name: 'Search results' }).locator('.sentinel-loading')).toHaveCount(0);
+  await expect(page.getByText('No results match this search. Try another topic or adjust your filters.')).toBeVisible();
 });

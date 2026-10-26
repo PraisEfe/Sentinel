@@ -1,3 +1,4 @@
+import LoadingState from "../common/LoadingState";
 import { useState } from "react";
 import {
   Activity,
@@ -91,9 +92,7 @@ export default function DashboardView({
           </div>
         )}
         {loading && (
-          <p role="status" className="loading-state">
-            Loading your workspace…
-          </p>
+          <LoadingState label="Loading your workspace…" rows={3} />
         )}
         {!monitorsOnly && (
           <section aria-labelledby="recent-heading">

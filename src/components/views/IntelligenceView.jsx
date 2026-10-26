@@ -20,12 +20,6 @@ export default function IntelligenceView({ onSelectCluster }) {
         ? "/intelligence/emerging"
         : `/explore?page=${page}`;
   const resource = useResource(path, { list: true });
-  const displayResource = resource.error && resource.errorStatus >= 500
-    ? {
-        ...resource,
-        error: `The API could not load stories (HTTP ${resource.errorStatus}, ${path}). Latest and Most Mentioned share this endpoint. Try again; if it persists, the backend needs investigation.`,
-      }
-    : resource;
   const emerging = useResource("/intelligence/emerging", { list: true });
   const rows = [...(resource.data?.data || [])];
   if (tab === "Most Mentioned")
@@ -68,7 +62,7 @@ export default function IntelligenceView({ onSelectCluster }) {
               </p>
             </div>
           </div>
-          <ResourceState resource={displayResource} empty={!rows.length} />
+          <ResourceState resource={resource} empty={!rows.length} />
           {!resource.loading &&
             !resource.error &&
             rows.map((item) => (

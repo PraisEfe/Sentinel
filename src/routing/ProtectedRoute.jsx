@@ -1,3 +1,4 @@
+import LoadingState from "../components/common/LoadingState";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../stores/appStore";
@@ -29,7 +30,7 @@ export default function ProtectedRoute() {
             ? "Opening your workspace…"
             : "Unable to open your workspace"}
         </h1>
-        {boot.loading && <p role="status">Verifying your session…</p>}
+        {boot.loading && <LoadingState label="Verifying your session…" fullPage />}
         {boot.error && (
           <>
             <p role="alert">{boot.error}</p>

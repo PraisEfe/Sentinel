@@ -106,7 +106,7 @@ See [the endpoint testing guide](docs/api-testing.md) for Postman and PowerShell
 
 Email format is validated in the frontend using a regex. Passwords are sent unchanged in JSON over HTTPS; special characters are valid and are not stripped. Client validation is bypassable and does **not** prevent SQL injection. The production authentication backend must use parameterized queries or safe ORM bindings, validate input on the server, hash passwords, rate-limit login attempts, and authorize every workspace request. This repository contains the frontend and reverse proxy, not that backend, so these backend guarantees cannot be verified here.
 
-Before deployment, resolve the reported authenticated `GET /api/v1/workspaces/{workspace}/explore?page=1` HTTP 500 using backend exception logs. It affects both Latest and Most Mentioned. Successful unauthenticated live checks do not establish that this endpoint or every authenticated operation works. The UI now retries failed shared requests when switching these tabs and reports the failing endpoint/status.
+Before deployment, resolve the reported authenticated `GET /api/v1/workspaces/{workspace}/explore?page=1` HTTP 500 using backend exception logs. It affects both Latest and Most Mentioned. Successful unauthenticated live checks do not establish that this endpoint or every authenticated operation works. The UI now retries failed shared requests when switching these tabs and shows a concise retry message.
 
 ## Application boundaries
 
@@ -117,3 +117,5 @@ The shipped app has no demo route, sample workspace service, or mock analytics. 
 Monitoring, notifications, and source groups save through the workspace settings endpoints. New monitors read the saved monitoring defaults before creation. Disabling the twenty-minute scan shortcut selects thirty minutes; disabling the twenty-minute digest selects daily delivery, since the contract has no disabled cadence. Historical matching uses thirty days when enabled and the API minimum of one day otherwise. Advanced sections retain precise schedules, individual sources, and account profile fields.
 
 Personal search-history visibility and compact search-result density are device-local preferences, scoped by account/workspace. Hiding history does not stop backend history collection. French results update source language preferences; actual collection depends on backend/source support. Automatic emerging-topic monitoring, weekly research summaries, and research-participation preferences have no writable fields in the supplied contract, so those controls remain disabled with an explanation.
+
+API failures use short, actionable messages in the interface; arbitrary upstream messages and validation text are not rendered. HTTP status remains available on the error object and in browser Network diagnostics. Error notices remain accessible and keep recovery actions visible.

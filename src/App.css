@@ -304,9 +304,9 @@ input::placeholder {
 }
 .form-error {
   padding: 10px 12px;
-  background: #fff0ed;
-  border: 1px solid #f0cec5;
-  color: #9d3b29;
+  background: #faf7f5;
+  border: 1px solid #e5d9d2;
+  color: #735348;
   border-radius: 5px;
   font-size: 12px;
   line-height: 1.6;
@@ -892,10 +892,10 @@ input::placeholder {
   color: #7d9083;
 }
 .load-error {
-  padding: 14px 18px;
-  border: 1px solid #efd6bf;
-  background: #fff8ef;
-  color: #8c5d29;
+  padding: 10px 14px;
+  border: 1px solid #dde5df;
+  background: #f8faf8;
+  color: #52665a;
   border-radius: 6px;
   font-size: 12px;
   display: flex;

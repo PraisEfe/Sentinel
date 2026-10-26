@@ -107,7 +107,7 @@ export default function CreateMonitorDialog({
     } catch (failure) {
       setError(
         monitor
-          ? `Your monitor was created. Notification preferences could not be saved: ${failure.message} Retry to save preferences without creating another monitor.`
+          ? "Your monitor is ready. Please retry to save its notification preferences."
           : failure.message,
       );
     } finally {

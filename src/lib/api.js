@@ -71,22 +71,22 @@ export async function request(
   if (!response.ok) {
     if (response.status === 401 && token) unauthorizedHandler?.(token);
     const errors = json?.errors || {};
-    const detail = Object.values(errors)
-      .flat()
-      .find((value) => typeof value === "string");
-    throw new ApiError(
-      detail ||
-        json?.message ||
-        (response.status === 401
-          ? "Your session has expired. Please sign in again."
-          : `The request failed (${response.status}). Please try again.`),
-      response.status,
-      errors,
-    );
+    // Never render arbitrary upstream messages: they may contain infrastructure
+    // details. Keep status and validation data on ApiError for diagnostics.
+    const message = response.status === 401
+      ? token ? "Your session has expired. Please sign in again." : "Check your email and password, then try again."
+      : response.status === 403 ? "You don’t have access to this action."
+      : response.status === 404 ? "This item is no longer available."
+      : response.status === 422 ? path === "/auth/login"
+        ? "Check your email and password, then try again."
+        : "Please check your details and try again."
+      : response.status === 429 ? "Please wait a moment before trying again."
+      : "We couldn’t complete that request. Please try again.";
+    throw new ApiError(message, response.status, errors);
   }
   if (json === null)
     throw new ApiError(
-      "The server returned an unexpected response. Please try again.",
+      "We couldn’t load this information. Please try again.",
       response.status,
     );
   return json;
@@ -110,7 +110,7 @@ export async function requestList(path, options) {
   const response = await request(path, options);
   if (!Array.isArray(response?.data)) {
     throw new ApiError(
-      "The server returned an unexpected response. Please try again.",
+      "We couldn’t load this information. Please try again.",
     );
   }
   return response;

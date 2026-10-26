@@ -1,3 +1,4 @@
+import LoadingState from "../common/LoadingState";
 import { Activity, ArrowRight, Plus } from "lucide-react";
 import { PageMotion, Pagination } from "../common/WorkspaceUI";
 import { frequencyLabel, number } from "../../lib/workspace";
@@ -140,9 +141,7 @@ export default function MonitorsView({
           </table>
         </div>
         {loading && (
-          <p className="workspace-loading" role="status">
-            Loading monitors…
-          </p>
+          <LoadingState label="Updating your monitors…" rows={3} />
         )}
         {!loading && !monitors.length && (
           <p className="workspace-empty">

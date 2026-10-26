@@ -51,7 +51,7 @@ export function useResource(path, { list = false } = {}) {
       try {
         const result = await api(path, { signal: controller.signal });
         if (list && !Array.isArray(result?.data))
-          throw Error("This data is not available in a supported format yet.");
+          throw Error("We couldn’t load this information. Please try again.");
         if (active) setState({ key, data: result, loading: false, error: "" });
       } catch (error) {
         if (active)
