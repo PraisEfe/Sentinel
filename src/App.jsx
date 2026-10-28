@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import { useAppStore } from "./stores/appStore";
@@ -14,7 +14,9 @@ import {
   WorkspaceGate,
 } from "./routing/RoutePages";
 import IntelligenceView from "./components/views/IntelligenceView";
-import AnalyticsView from "./components/views/AnalyticsView";
+import RouteBoundary from "./routing/RouteBoundary";
+import LoadingState from "./components/common/LoadingState";
+const AnalyticsView = lazy(() => import("./components/views/AnalyticsView"));
 import AlertsView from "./components/views/AlertsView";
 import SettingsView from "./components/views/SettingsView";
 import { workspacePathFor } from "./routing/paths";
@@ -55,7 +57,7 @@ function workspaceRoutes() {
       <Route path="search" element={<SearchPage />} />
       <Route path="monitors" element={<MonitorsPage />} />
       <Route path="intelligence" element={<IntelligencePage />} />
-      <Route path="analytics" element={<AnalyticsView />} />
+      <Route path="analytics" element={<RouteBoundary><Suspense fallback={<LoadingState label="Opening analytics…" />}><AnalyticsView /></Suspense></RouteBoundary>} />
       <Route path="alerts" element={<AlertsPage />} />
       <Route path="settings" element={<SettingsView />} />
       <Route path="*" element={<NotFoundPage />} />

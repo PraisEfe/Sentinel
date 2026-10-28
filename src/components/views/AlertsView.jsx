@@ -1,3 +1,4 @@
+import DigestDrawer from "../common/DigestDrawer";
 import { useState } from "react";
 import { Activity, ArrowRight, Clock3, Globe } from "lucide-react";
 import { PageMotion, ResourceState, Tabs } from "../common/WorkspaceUI";
@@ -9,6 +10,7 @@ export default function AlertsView({
   onSelectResult,
 }) {
   const { api, onRefresh } = useWorkspace();
+  const [digestAlert, setDigestAlert] = useState(null);
   const [tab, setTab] = useState("Unread");
   const [cursor, setCursor] = useState("");
   const resource = useResource(
@@ -40,6 +42,12 @@ export default function AlertsView({
     }
   }
   async function open(item) {
+    if (item.type === "digest" || (!item.type && /\bdigest\b/i.test(item.title || ""))) {
+      setError("");
+      setDigestAlert(item);
+      if (!item.read_at) void action(`/alerts/${encodeURIComponent(item.id)}`);
+      return;
+    }
     if (
       !item.read_at &&
       !(await action(`/alerts/${encodeURIComponent(item.id)}`))
@@ -54,6 +62,7 @@ export default function AlertsView({
   const cadence = notification.data?.digest_cadence;
   return (
     <PageMotion className="research-page">
+      {digestAlert && <DigestDrawer key={digestAlert.id} alert={digestAlert} onClose={()=>setDigestAlert(null)} onSelectResult={onSelectResult} readError={error} />}
       <div className="research-heading">
         <div>
           <h1>Alerts</h1>

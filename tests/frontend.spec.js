@@ -585,7 +585,7 @@ test("analytics loads dedicated workspace endpoints and refreshes without search
   for (const endpoint of ["overview", "volume", "sentiment", "sources", "keywords", "discovery-time"]) {
     await expect.poll(() => calls.filter((call) => call.path.endsWith(`/analytics/${endpoint}`)).length).toBeGreaterThan(0);
   }
-  await expect(page.getByRole("region", {name:"Workspace overview"})).toContainText('12,482');
+  await expect(page.getByRole("region", {name:"Mention volume"})).toContainText('12,482');
   await expect(page.getByRole("region", {name:"Mention volume"}).getByRole("img")).toBeVisible();
   expect(calls.some((call) => call.path.endsWith('/search') || call.path.endsWith('/explore'))).toBe(false);
   const before = calls.filter((call) => call.path.includes('/analytics/')).length;
@@ -867,41 +867,81 @@ test("data loaders animate accessibly, respect reduced motion, and disappear whe
   await expect(page.getByText('No results match this search. Try another topic or adjust your filters.')).toBeVisible();
 });
 
-test("analytics panels handle empty, missing, zero and failed responses independently", async ({ page }) => {
+test("analytics uses verified period totals, preserves missing values and isolates failed panels",async({page})=>{
   await mockApi(page);
-  let failing = true;
-  await page.route('**/api/v1/workspaces/w-1/analytics/**', (route) => {
-    const endpoint = new URL(route.request().url()).pathname.split('/').at(-1);
-    const bodies = {
-      overview: { total_mentions: 98765, unknown_metric: null },
-      volume: { data: [] },
-      sentiment: { positive: 0, neutral: 0, negative: 0 },
-      keywords: [],
-      'discovery-time': { average_minutes: null },
-    };
-    return route.fulfill({
-      status: endpoint === 'sources' && failing ? 503 : 200,
-      contentType:'application/json',
-      body:JSON.stringify(endpoint === 'sources' ? failing ? { message:'Internal database failure' } : {news:10} : bodies[endpoint]),
-    });
+  let failing=true;
+  await page.route('**/api/v1/workspaces/w-1/analytics/**',(route)=>{
+    const url=new URL(route.request().url());
+    const endpoint=url.pathname.split('/').at(-1);
+    const meta={from:url.searchParams.get('from'),to:url.searchParams.get('to')};
+    const bodies={overview:{total_mentions:98765,source_count:null},volume:{data:[]},sentiment:{positive:0,neutral:0,negative:0},keywords:{data:[]},'discovery-time':{average_minutes:null}};
+    return route.fulfill({status:endpoint==='sources'&&failing?503:200,contentType:'application/json',body:JSON.stringify(endpoint==='sources' ? failing ? {message:'Internal database failure'} : {data:[{name:'News',count:10}],meta} : {...bodies[endpoint],meta})});
   });
-  await login(page);
-  await goTo(page,'Analytics');
-  const overview = page.getByRole('region',{name:'Workspace overview'});
-  await expect(overview).toContainText('98,765');
-  await expect(overview).toContainText('Not available');
-  const volume = page.getByRole('region',{name:'Mention volume'});
-  await expect(volume).toContainText('No data available yet.');
+  await login(page);await goTo(page,'Analytics');
+  const volume=page.getByRole('region',{name:'Mention volume'});
+  await expect(volume).toContainText('98,765');
   await expect(volume.getByRole('img')).toHaveCount(0);
-  await expect(page.getByRole('region',{name:'Discussion tone'})).toContainText('0');
-  await expect(page.getByRole('region',{name:'Discovery time'})).toContainText('Not available');
-  await expect(page.getByRole('region',{name:'Top keywords'}).getByRole('alert')).toBeVisible();
-  const sources = page.getByRole('region',{name:'Source distribution'});
+  await expect(page.getByRole('region',{name:'Discussion tone'})).toContainText('No tone data');
+  const sources=page.getByRole('region',{name:'Source distribution'});
   await expect(sources.getByRole('alert')).toBeVisible();
   await expect(sources).not.toContainText('Internal database failure');
-  failing = false;
-  await sources.getByRole('button',{name:'Try again'}).click();
-  await expect(sources.getByRole('alert')).toHaveCount(0);
-  await expect(sources).toContainText('10');
-  await expect(overview).toContainText('98,765');
+  failing=false;await sources.getByRole('button',{name:'Try again'}).click();
+  await expect(sources.getByRole('alert')).toHaveCount(0);await expect(sources).toContainText('10 mentions');
+  await expect(volume).toContainText('98,765');
+});
+
+test("analytics restores Recharts layout, changes range consistently and never labels unverified totals as period data",async({page})=>{
+  const calls=await mockApi(page);await login(page);await goTo(page,'Analytics');
+  await expect(page.getByRole('tab',{name:'30 days',exact:true})).toHaveAttribute('aria-selected','true');
+  await expect(page.locator('.recharts-bar-rectangle').first()).toBeVisible();
+  await page.getByRole('tab',{name:'7 days',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Mention volume'}).getByRole('img')).toHaveAttribute('aria-label',/7 days/);
+  const last=calls.filter((call)=>call.path.endsWith('/analytics/overview')).at(-1);
+  const query=new URL(last.url).searchParams;
+  expect(Date.parse(query.get('to'))-Date.parse(query.get('from'))).toBe(7*86400000);
+  await page.route('**/api/v1/workspaces/w-1/analytics/overview?*',(route)=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({total_mentions:999999,source_count:900})}));
+  await page.getByRole('button',{name:'Refresh analytics'}).click();
+  await expect(page.getByText(/The service hasn’t confirmed this reporting period/)).toBeVisible();
+  await expect(page.getByRole('region',{name:'Mention volume'})).not.toContainText('999,999');
+});
+
+test("digest alerts open a summary and included articles without navigating to search",async({page})=>{
+  const calls=await mockApi(page,{digestAlert:true});await login(page);await goTo(page,'Alerts');
+  await page.getByRole('button',{name:/20m digest/}).click();
+  const dialog=page.getByRole('dialog',{name:'20m digest'});await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Two new infrastructure reports were discovered.');
+  await expect(dialog.getByRole('heading',{name:'Digest article one'})).toBeVisible();
+  await expect(dialog.getByRole('heading',{name:'Digest article two'})).toBeVisible();
+  await expect(dialog.getByRole('link',{name:'Open source'})).toHaveAttribute('href','https://example.com/first');
+  await expect(dialog.locator('a[href^="javascript:"]')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/alerts$/);
+  expect(calls.some((call)=>call.path.endsWith('/digests'))).toBe(true);
+  expect(calls.some((call)=>call.path.endsWith('/search'))).toBe(false);
+  await dialog.getByRole('button',{name:'Open result',exact:true}).click();
+  await expect(page.getByRole('dialog').getByRole('heading',{name:'Verified backend result',exact:true})).toBeVisible();
+});
+
+test("older and count-only digests remain useful without fabricated summaries",async({page})=>{
+  await mockApi(page,{digestAlert:true,olderDigest:true,emptyDigest:true});await login(page);await goTo(page,'Alerts');
+  await page.getByRole('button',{name:/20m digest/}).click();
+  const dialog=page.getByRole('dialog',{name:'20m digest'});
+  await dialog.getByRole('button',{name:'Load older digests'}).click();
+  await expect(dialog).toContainText('new mentions');
+  await expect(dialog).toContainText('A written summary wasn’t included');
+  await expect(dialog).toContainText('did not include article details');
+  await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/alerts$/);
+});
+
+test('digest loading failures keep the alert readable and never show a different alert’s digest',async({page})=>{
+  await mockApi(page,{digestAlert:true});
+  let fail=true;
+  await page.route('**/api/v1/workspaces/w-1/digests',(route)=>route.fulfill({status:fail?503:200,contentType:'application/json',body:JSON.stringify(fail?{message:'SQL private details'}:{data:[{id:'other-digest',alert_id:'another-alert',mention_count:500,payload:[{summary:'Unrelated summary'}]}]})}));
+  await login(page);await goTo(page,'Alerts');await page.getByRole('button',{name:/20m digest/}).click();
+  const dialog=page.getByRole('dialog',{name:'20m digest'});
+  await expect(dialog).toContainText('2 new mentions in this window.');
+  await expect(dialog.getByRole('alert')).toBeVisible();await expect(dialog).not.toContainText('SQL private details');
+  fail=false;await dialog.getByRole('button',{name:'Try again'}).click();
+  await expect(dialog).toContainText('The full digest wasn’t included on this page.');
+  await expect(dialog).not.toContainText('Unrelated summary');await expect(page).toHaveURL(/\/alerts$/);
 });

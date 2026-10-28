@@ -1,3 +1,4 @@
+import { stopLocalPush } from "../lib/push";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
@@ -71,6 +72,7 @@ export const useAppStore = create(
       closeMonitor: () => set({ createOpen: false }),
 
       expire: () => {
+        void stopLocalPush(get().user?.id).catch(() => {});
         cancelJobs();
         clearSession();
         set((state) => ({
@@ -145,28 +147,22 @@ export const useAppStore = create(
         return job.promise;
       },
       logout: async () => {
-        const { session, authVersion } = get();
-        let notice = "";
-        try {
-          if (session)
-            await request("/auth/logout", {
-              token: session.token,
-              method: "POST",
-            });
-        } catch (error) {
-          if (error.status !== 401)
-            notice =
-              "Signed out on this device. The server could not be reached to revoke this session.";
-        }
-        // An expired request must not clear a newer sign-in.
-        if (get().authVersion !== authVersion && get().session) return;
+        const { session, user } = get();
+        // Close private routes immediately, including while a push registration
+        // or server revocation is still in flight.
         cancelJobs();
         clearSession();
-        set((state) => ({
-          ...privateReset(),
-          notice,
-          authVersion: state.authVersion + 1,
-        }));
+        set((state) => ({ ...privateReset(), authVersion: state.authVersion + 1, notice: "" }));
+        const signedOutVersion = get().authVersion;
+        let notice = "";
+        try { await stopLocalPush(user?.id); }
+        catch { notice = "Signed out. Review notification permission in your browser’s site settings."; }
+        try {
+          if (session) await request("/auth/logout", { token: session.token, method: "POST" });
+        } catch (error) {
+          if (error.status !== 401) notice = "Signed out on this device. The server could not be reached to revoke this session.";
+        }
+        if (get().authVersion === signedOutVersion && !get().session) set({ notice });
       },
       selectWorkspace: (workspaceId) => {
         const state = get();

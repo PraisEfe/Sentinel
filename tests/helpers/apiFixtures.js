@@ -1,3 +1,4 @@
+import { createECDH } from "node:crypto";
 import { expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 const spec = JSON.parse(
@@ -24,6 +25,9 @@ const history = [
 
 export async function mockApi(page, options = {}) {
   const calls = [];
+  let subscriptions = [];
+  let pushPosts = 0;
+  let pushPreferences = 0;
   let monitors = options.empty ? [] : [monitor];
   let searches = options.empty ? [] : [...history];
   let workspaces = options.noWorkspace
@@ -42,7 +46,9 @@ export async function mockApi(page, options = {}) {
       severity: "high",
       read_at: null,
       created_at: new Date().toISOString(),
-      mention_id: "mention-1",
+      mention_id: options.digestAlert ? null : "mention-1",
+      type: options.digestAlert ? "digest" : "high_velocity",
+      ...(options.digestAlert ? {title:"20m digest",body:"2 new mentions in this window."} : {}),
     },
   ];
   let defaults = { frequency: "20m", history_days: 30, include_related_terms: true };
@@ -112,7 +118,8 @@ export async function mockApi(page, options = {}) {
       .replace(/\/monitors\/m-\d+/, "/monitors/{monitor}")
       .replace(/\/mentions\/mention-\d+/, "/mentions/{mention}")
       .replace(/\/clusters\/cluster-\d+/, "/clusters/{cluster}")
-      .replace(/\/alerts\/alert-\d+/, "/alerts/{alert}");
+      .replace(/\/alerts\/alert-\d+/, "/alerts/{alert}")
+      .replace(/\/push\/subscriptions\/push-\d+/, "/push/subscriptions/{id}");
     expect(
       spec.paths[template]?.[method.toLowerCase()],
       `${method} ${path} must exist in OpenAPI`,
@@ -130,6 +137,29 @@ export async function mockApi(page, options = {}) {
       !["/auth/login", "/auth/register", "/auth/forgot-password"].includes(path)
     )
       expect(req.headers().authorization).toBe("Bearer test-session-token");
+    if (path === "/push/public-key") {
+      const key = createECDH("prime256v1").generateKeys().toString("base64url");
+      return fulfill({ public_key: options.invalidPushKey ? "invalid" : key });
+    }
+    if (path === "/push/subscriptions") {
+      if (method === "POST") {
+        pushPosts++;
+        if (options.pushMalformed) return fulfill({data:{}},201);
+        if (options.pushError && pushPosts === 1) return fulfill({message:"Internal error"},503);
+        const subscription = { ...body, id: "push-1", user_id: user.id, revoked_at: null };
+        subscriptions = [subscription];
+        return fulfill({data:subscription},201);
+      }
+      return fulfill({data:subscriptions});
+    }
+    if (path.startsWith("/push/subscriptions/") && method === "DELETE") {
+      subscriptions = subscriptions.filter((item) => item.id !== path.split("/").at(-1));
+      return route.fulfill({status:204});
+    }
+    if (path.endsWith("/settings/notifications") && method === "PATCH" && body?.channel_web_push === true) {
+      pushPreferences++;
+      if (options.pushPreferenceError && pushPreferences === 1) return fulfill({message:"Internal error"},503);
+    }
     if (options.offline && path === "/auth/login") return route.abort("failed");
     if (options.loginError && path === "/auth/login")
       return fulfill(
@@ -178,16 +208,31 @@ export async function mockApi(page, options = {}) {
       return fulfill({ data: body || {} });
     }
     if (path.includes("/analytics/")) {
+      const params = new URL(req.url()).searchParams;
+      const from = params.get("from"), to = params.get("to");
       const analytics = {
-        overview: { mention_count: 12482, source_count: 328 },
-        volume: { data: [{ date: "2026-10-26", count: 100 }, { date: "2026-10-27", count: 200 }] },
-        sentiment: { positive: 62, neutral: 28, negative: 10 },
-        sources: { data: [{ name: "Public news", count: 500 }] },
+        overview: { mention_count: 12482, source_count: 328, growth_percent: 9.7 },
+        volume: { data: Array.from({length:24},(_,index)=>({date:new Date(Date.parse(from)+(Date.parse(to)-Date.parse(from))*index/23).toISOString(),count:100+index*10})) },
+        sentiment: { positive: 59, neutral: 28, negative: 13 },
+        sources: { data: [{ name: "Public news", count: 500, percentage:100 }] },
         keywords: { data: [{ keyword: "network", count: 80 }] },
         "discovery-time": { average_minutes: 6 },
       };
-      return fulfill(analytics[path.split("/").at(-1)]);
+      return fulfill({...analytics[path.split("/").at(-1)],meta:{from,to}});
     }
+    if (path.endsWith("/digests")) {
+      const cursor = new URL(req.url()).searchParams.get("cursor");
+      const older = options.olderDigest && cursor !== "older";
+      return fulfill({data:older ? [] : [{
+        id:"digest-1",workspace_id:"w-1",monitor_id:null,cadence:"20m",alert_id:"alert-1",
+        period_start:new Date(Date.now()-1200000).toISOString(),period_end:new Date().toISOString(),mention_count:2,
+        payload:options.emptyDigest ? [] : [{summary:"Two new infrastructure reports were discovered.",mentions:[
+          {mention_id:"mention-1",title:"Digest article one",source:{name:"Public news"},url:"https://example.com/first",summary:"A new infrastructure investment was announced."},
+          {title:"Digest article two",source:"Public news",url:"javascript:alert(1)"}
+        ]}],
+      }], next_cursor:older ? "older" : null});
+    }
+    if (path.endsWith("/intelligence/geography")) return fulfill({data:[{location:"Lagos",count:36,percentage:36},{location:"Abuja",count:23,percentage:23}]});
     if (path.endsWith("/saved-searches"))
       return fulfill({ data: { id: "saved-1", ...body } }, 201);
     if (path.includes("/mentions/"))

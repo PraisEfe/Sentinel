@@ -185,3 +185,23 @@ test("production does not serve env files and API responses cannot be cached", a
   expect(response.headers()['cache-control']).toBe('no-store');
   expect(response.headers()['x-content-type-options']).toBe('nosniff');
 });
+
+test("production serves the push worker as JavaScript instead of the SPA fallback",async({request})=>{
+  const response=await request.get(`${production.url}/push-sw.js`);
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toContain('javascript');
+  expect(await response.text()).toContain('notificationclick');
+});
+
+test('an unavailable analytics bundle shows a recovery action and can reload successfully',async({page})=>{
+  const pattern='**/assets/AnalyticsView-*.js';
+  await page.route(pattern,(route)=>route.abort());
+  await page.goto(`${production.url}/analytics`);
+  await page.getByLabel('Work email').fill('ada@example.com');
+  await page.getByLabel('Password',{exact:true}).fill('test-password');
+  await page.getByRole('button',{name:'Sign in',exact:true}).click();
+  await expect(page.getByRole('alert')).toContainText('We couldn’t open this page.');
+  await page.unroute(pattern);
+  await page.getByRole('button',{name:'Reload page'}).click();
+  await expect(page.getByRole('heading',{name:'Analytics',exact:true})).toBeVisible();
+});

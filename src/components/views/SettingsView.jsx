@@ -1,3 +1,4 @@
+import BrowserPushSettings from "../common/BrowserPushSettings";
 import { useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import {
@@ -234,6 +235,7 @@ function SettingsPanel({ tab }) {
               checked={get("digest_cadence", data.digest_cadence) === "20m"} onChange={(value) => change("digest_cadence", value ? "20m" : "daily")} />
             <Toggle label="Email notifications" description={data.email_available === false ? "Email delivery is not available yet." : `Also deliver selected alerts to ${user?.email || "your account email"}.`}
               checked={get("channel_email", data.channels?.email)} disabled={data.email_available === false} onChange={(value) => change("channel_email", value)} />
+            <BrowserPushSettings deliveryEnabled={!!data.channels?.web_push} onChange={resource.reload} />
             <details className="settings-advanced"><summary>Advanced notification settings</summary>
               <label className="settings-field">Digest frequency
                 <select aria-label="Digest frequency" value={get("digest_cadence", data.digest_cadence || "20m")} onChange={(event) => change("digest_cadence", event.target.value)}>
@@ -241,7 +243,7 @@ function SettingsPanel({ tab }) {
                 </select>
               </label>
               <Toggle label="High-relevance results" checked={get("notify_high_relevance", data.alerts?.high_relevance)} onChange={(value) => change("notify_high_relevance", value)} />
-              <Toggle label="Web push delivery preference" description="Delivery requires a browser subscription registered for your account."
+              <Toggle label="Workspace push delivery" description="Allow delivery for this workspace to registered devices. Use Enable on this device above to register this browser."
                 checked={get("channel_web_push", data.channels?.web_push)} onChange={(value) => change("channel_web_push", value)} />
               <label className="settings-field">Daily digest hour
                 <input aria-label="Daily digest hour" type="number" min="0" max="23" value={get("digest_hour", data.digest_hour ?? 9)} onChange={(event) => change("digest_hour", Number(event.target.value))} />
