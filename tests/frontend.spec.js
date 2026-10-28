@@ -945,3 +945,22 @@ test('digest loading failures keep the alert readable and never show a different
   await expect(dialog).toContainText('The full digest wasn’t included on this page.');
   await expect(dialog).not.toContainText('Unrelated summary');await expect(page).toHaveURL(/\/alerts$/);
 });
+
+test('actual production overview renders nested totals and labels the actual 31-day scope',async({page})=>{
+  await mockApi(page);
+  await page.route('**/api/v1/workspaces/w-1/analytics/overview?*',(route)=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({period:'30.999999999988d',compare:'previous_30.999999999988d',totals:{mentions:1961,new_today:0,sources:35,avg_discovery_seconds:3208},deltas:{mentions_pct:100}})}));
+  await login(page);await goTo(page,'Analytics');
+  await page.getByRole('tab',{name:'90 days',exact:true}).click();
+  const volume=page.getByRole('region',{name:'Mention volume'});
+  await expect(volume).toContainText('1,961');
+  await expect(volume).toContainText('reported 31 days');
+  await expect(volume).toContainText('Chart: returned dates within the selected 90 days.');
+  await expect(volume).toContainText('35 active sources');
+  await expect(volume).toContainText('0 new today');
+  await expect(volume).toContainText('+100%');
+  await expect(volume).toContainText('Compared with previous 31 days');
+  await expect(page.getByText('Showing totals for the service’s reported 31 days, instead of the selected 90 days.')).toBeVisible();
+  await expect(page.getByText(/53m 28s average discovery/)).toBeVisible();
+  await expect(page.getByRole('region',{name:'Source distribution'})).toContainText('35');
+  await expect(page.getByRole('tab',{name:'90 days',exact:true})).toHaveAttribute('aria-selected','true');
+});

@@ -20,3 +20,18 @@ test('sentiment requires complete categories and breakdowns do not invent percen
   expect(toneValues({positive:59,neutral:28,negative:13}).entries[0].percentage).toBe(59);
   expect(breakdown({data:[{name:'News',count:25}]},'sources')).toEqual([{name:'News',count:25,percentage:null}]);
 });
+
+test('production overview nested fields and floating-point periods retain their reported scope',async()=>{
+  const {reportedDays,periodLabel,comparisonPeriod,hasReportedScope}=await import('../src/lib/analytics.js');
+  const value={period:'30.999999999988d',compare:'previous_30.999999999988d',totals:{mentions:1961,new_today:0,sources:35,avg_discovery_seconds:3208},deltas:{mentions_pct:100}};
+  expect(metric(value,['totals.mentions'])).toBe(1961);
+  expect(metric(value,['totals.new_today'])).toBe(0);
+  expect(metric(value,['totals.sources'])).toBe(35);
+  expect(metric(value,['totals.avg_discovery_seconds'])).toBe(3208);
+  expect(metric(value,['deltas.mentions_pct'],true)).toBe(100);
+  expect(periodLabel(reportedDays(value))).toBe('31 days');
+  expect(comparisonPeriod(value)).toBe('31 days');
+  expect(hasReportedScope(value,range)).toBe(true);
+  expect(confirmsRange(value,range)).toBe(false);
+  for(const period of ['', 'Infinityd', '-2d', 'unknown'])expect(reportedDays({period})).toBeNull();
+});

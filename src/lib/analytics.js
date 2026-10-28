@@ -73,3 +73,23 @@ export function toneValues(payload) {
   const total = values.reduce((sum, value) => sum + value, 0);
   return { total, entries: values.map((count, i) => ({ name: ["positive", "neutral", "negative"][i], count, percentage: total ? count / total * 100 : null })) };
 }
+
+export function reportedDays(payload) {
+  const value = unwrap(payload);
+  const period = value?.period ?? payload?.period ?? payload?.meta?.period;
+  if (typeof period !== "string") return null;
+  const match = /^(\d+(?:\.\d+)?)d$/.exec(period);
+  const days = match ? Number(match[1]) : null;
+  return days !== null && Number.isFinite(days) && days > 0 ? days : null;
+}
+export function periodLabel(days) {
+  return days === null ? null : `${Number(days.toFixed(2))} ${Math.abs(days - 1) < .0001 ? "day" : "days"}`;
+}
+export function comparisonPeriod(payload) {
+  const compare = unwrap(payload)?.compare;
+  if (typeof compare !== "string" || !compare.startsWith("previous_")) return null;
+  return periodLabel(reportedDays({period:compare.slice("previous_".length)}));
+}
+export function hasReportedScope(payload, range) {
+  return confirmsRange(payload, range) || reportedDays(payload) !== null;
+}
