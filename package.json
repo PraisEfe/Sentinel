@@ -11,7 +11,8 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "start": "node --env-file-if-exists=.env server/index.js",
-    "test:live": "node scripts/test-live.js"
+    "test:live": "node scripts/test-live.js",
+    "check:analytics": "node --env-file-if-exists=.env scripts/check-analytics.js"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",

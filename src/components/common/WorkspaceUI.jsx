@@ -44,6 +44,9 @@ export function Tabs({ items, value, onChange, label }) {
             type="button"
             key={id}
             role="tab"
+            data-tab-id={id}
+            disabled={typeof item !== "string" && !!item.disabled}
+            title={typeof item === "string" ? undefined : item.title}
             tabIndex={value === id ? 0 : -1}
             onKeyDown={(event) => {
               if (
@@ -53,7 +56,7 @@ export function Tabs({ items, value, onChange, label }) {
               event.preventDefault();
               const buttons = [
                 ...event.currentTarget.parentElement.querySelectorAll(
-                  '[role="tab"]',
+                  '[role="tab"]:not(:disabled)',
                 ),
               ];
               const current = buttons.indexOf(event.currentTarget);
@@ -61,14 +64,12 @@ export function Tabs({ items, value, onChange, label }) {
                 event.key === "Home"
                   ? 0
                   : event.key === "End"
-                    ? items.length - 1
+                    ? buttons.length - 1
                     : (current +
                         (event.key === "ArrowRight" ? 1 : -1) +
-                        items.length) %
-                      items.length;
-              onChange(
-                typeof items[next] === "string" ? items[next] : items[next].id,
-              );
+                        buttons.length) %
+                      buttons.length;
+              onChange(buttons[next].getAttribute("data-tab-id"));
               buttons[next].focus();
             }}
             aria-selected={value === id}

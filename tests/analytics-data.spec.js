@@ -35,3 +35,19 @@ test('production overview nested fields and floating-point periods retain their 
   expect(confirmsRange(value,range)).toBe(false);
   for(const period of ['', 'Infinityd', '-2d', 'unknown'])expect(reportedDays({period})).toBeNull();
 });
+
+
+test('live analytics wrappers preserve API ratios and every returned volume bucket',()=>{
+  const sentiment=toneValues({sentiment:{positive:0.1433,neutral:0.7517,negative:0.105}});
+  expect(sentiment.entries[0].percentage).toBeCloseTo(14.33,5);
+  const sources=breakdown({sources:[{source_id:'source-1',name:'News',count:1367,share:0.5872}]},'sources');
+  expect(sources[0].percentage).toBeCloseTo(58.72,5);
+  expect(sources[0].count).toBe(1367);
+  expect(breakdown({keywords:[{term:'network',count:1218}]},'keywords')[0].name).toBe('network');
+  expect(volumeSeries({volume:[{date:'2026-09-28',count:0},{date:'2026-10-28',count:10}]})).toHaveLength(2);
+});
+
+test("numeric keyword terms remain visible without coercing malformed names", () => {
+  expect(breakdown({ keywords: [{ term: 2026, count: 3 }] }, "keywords")).toEqual([{ name: "2026", count: 3, percentage: null }]);
+  expect(breakdown({ keywords: [{ term: null, count: 3 }] }, "keywords")).toBeNull();
+});

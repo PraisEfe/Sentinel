@@ -873,9 +873,9 @@ test("analytics uses verified period totals, preserves missing values and isolat
   await page.route('**/api/v1/workspaces/w-1/analytics/**',(route)=>{
     const url=new URL(route.request().url());
     const endpoint=url.pathname.split('/').at(-1);
-    const meta={from:url.searchParams.get('from'),to:url.searchParams.get('to')};
+    const meta={};const scope={period:url.searchParams.get('period')==='90d'?'90.999999999988d':'30.999999999988d'};
     const bodies={overview:{total_mentions:98765,source_count:null},volume:{data:[]},sentiment:{positive:0,neutral:0,negative:0},keywords:{data:[]},'discovery-time':{average_minutes:null}};
-    return route.fulfill({status:endpoint==='sources'&&failing?503:200,contentType:'application/json',body:JSON.stringify(endpoint==='sources' ? failing ? {message:'Internal database failure'} : {data:[{name:'News',count:10}],meta} : {...bodies[endpoint],meta})});
+    return route.fulfill({status:endpoint==='sources'&&failing?503:200,contentType:'application/json',body:JSON.stringify(endpoint==='sources' ? failing ? {message:'Internal database failure'} : {data:[{name:'News',count:10}],meta} : {...bodies[endpoint],...scope,meta})});
   });
   await login(page);await goTo(page,'Analytics');
   const volume=page.getByRole('region',{name:'Mention volume'});
@@ -894,11 +894,14 @@ test("analytics restores Recharts layout, changes range consistently and never l
   const calls=await mockApi(page);await login(page);await goTo(page,'Analytics');
   await expect(page.getByRole('tab',{name:'30 days',exact:true})).toHaveAttribute('aria-selected','true');
   await expect(page.locator('.recharts-bar-rectangle').first()).toBeVisible();
-  await page.getByRole('tab',{name:'7 days',exact:true}).click();
-  await expect(page.getByRole('region',{name:'Mention volume'}).getByRole('img')).toHaveAttribute('aria-label',/7 days/);
+  await expect(page.getByRole('tab',{name:'7 days',exact:true})).toBeDisabled();
+  await expect(page.getByRole('tab',{name:'24 hours',exact:true})).toBeDisabled();
+  await page.getByRole('tab',{name:'90 days',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Mention volume'}).getByRole('img')).toHaveAttribute('aria-label',/90 days/);
   const last=calls.filter((call)=>call.path.endsWith('/analytics/overview')).at(-1);
   const query=new URL(last.url).searchParams;
-  expect(Date.parse(query.get('to'))-Date.parse(query.get('from'))).toBe(7*86400000);
+  expect(query.get('period')).toBe('90d');
+  expect(query.has('from')).toBe(false);expect(query.has('to')).toBe(false);
   await page.route('**/api/v1/workspaces/w-1/analytics/overview?*',(route)=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({total_mentions:999999,source_count:900})}));
   await page.getByRole('button',{name:'Refresh analytics'}).click();
   await expect(page.getByText(/The service hasn’t confirmed this reporting period/)).toBeVisible();
@@ -954,7 +957,7 @@ test('actual production overview renders nested totals and labels the actual 31-
   const volume=page.getByRole('region',{name:'Mention volume'});
   await expect(volume).toContainText('1,961');
   await expect(volume).toContainText('reported 31 days');
-  await expect(volume).toContainText('Chart: returned dates within the selected 90 days.');
+  await expect(volume).toContainText('Chart: daily buckets returned by the service.');
   await expect(volume).toContainText('35 active sources');
   await expect(volume).toContainText('0 new today');
   await expect(volume).toContainText('+100%');
@@ -963,4 +966,20 @@ test('actual production overview renders nested totals and labels the actual 31-
   await expect(page.getByText(/53m 28s average discovery/)).toBeVisible();
   await expect(page.getByRole('region',{name:'Source distribution'})).toContainText('35');
   await expect(page.getByRole('tab',{name:'90 days',exact:true})).toHaveAttribute('aria-selected','true');
+});
+
+
+test('only live-verified analytics periods can be selected and all panels use the same period parameter',async({page})=>{
+  const calls=await mockApi(page);await login(page);await goTo(page,'Analytics');
+  await expect(page.getByRole('region',{name:'Discussion tone'})).toContainText('59%');
+  await expect(page.getByRole('region',{name:'Source distribution'})).toContainText('100%');
+  await expect(page.getByRole('region',{name:'Top keywords'})).toContainText('network');
+  const selected=page.getByRole('tab',{name:'30 days',exact:true});await selected.focus();await selected.press('ArrowLeft');
+  await expect(page.getByRole('tab',{name:'90 days',exact:true})).toHaveAttribute('aria-selected','true');
+  await expect(page.getByRole('region',{name:'Mention volume'}).getByRole('img')).toHaveAttribute('aria-label',/90 days/);
+  await expect.poll(()=>calls.filter(call=>call.path.includes('/analytics/')&&new URL(call.url).searchParams.get('period')==='90d').length).toBeGreaterThanOrEqual(6);
+  expect(calls.filter(call=>call.path.includes('/analytics/')).every(call=>{
+    const params=new URL(call.url).searchParams;
+    return !params.has('from')&&!params.has('to')&&['30d','90d'].includes(params.get('period'));
+  })).toBe(true);
 });

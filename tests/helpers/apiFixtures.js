@@ -209,16 +209,20 @@ export async function mockApi(page, options = {}) {
     }
     if (path.includes("/analytics/")) {
       const params = new URL(req.url()).searchParams;
-      const from = params.get("from"), to = params.get("to");
+      if (params.has("from") || params.has("to")) return fulfill({message:"Unsupported date filter"},500);
+      const period = params.get("period");
+      if (!["30d","90d"].includes(period)) return fulfill({message:"Unsupported period"},500);
+      const days = period === "90d" ? 90 : 30;
+      const to = new Date(), from = new Date(to.getTime()-days*86400000);
       const analytics = {
-        overview: { mention_count: 12482, source_count: 328, growth_percent: 9.7 },
-        volume: { data: Array.from({length:24},(_,index)=>({date:new Date(Date.parse(from)+(Date.parse(to)-Date.parse(from))*index/23).toISOString(),count:100+index*10})) },
-        sentiment: { positive: 59, neutral: 28, negative: 13 },
-        sources: { data: [{ name: "Public news", count: 500, percentage:100 }] },
-        keywords: { data: [{ keyword: "network", count: 80 }] },
-        "discovery-time": { average_minutes: 6 },
+        overview: { period:`${days}.999999999988d`,compare:`previous_${days}.999999999988d`,totals:{mentions:12482,sources:328,new_today:0,avg_discovery_seconds:360},deltas:{mentions_pct:9.7} },
+        volume: { volume: Array.from({length:days+1},(_,index)=>({date:new Date(from.getTime()+86400000*index).toISOString().slice(0,10),count:100+index*10})) },
+        sentiment: { sentiment:{positive:0.59,neutral:0.28,negative:0.13} },
+        sources: {sources:[{name:"Public news",count:500,share:1}]},
+        keywords:{keywords:[{term:"network",count:80}]},
+        "discovery-time":{avg_discovery_seconds:360},
       };
-      return fulfill({...analytics[path.split("/").at(-1)],meta:{from,to}});
+      return fulfill(analytics[path.split("/").at(-1)]);
     }
     if (path.endsWith("/digests")) {
       const cursor = new URL(req.url()).searchParams.get("cursor");

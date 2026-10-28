@@ -1,3 +1,4 @@
+export const supportedAnalyticsPeriods = { "30 days": "30d", "90 days": "90d" };
 export const periods = { "24 hours": 1, "7 days": 7, "30 days": 30, "90 days": 90 };
 export const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 export const unwrap = (value) => object(value) && "data" in value ? value.data : value;
@@ -40,7 +41,7 @@ export function records(payload, keys = []) {
 export function volumeSeries(payload, range) {
   const rows = records(payload, ["series", "buckets", "volume", "points"]);
   if (!rows) return null;
-  const scoped = confirmsRange(payload, range);
+  const scoped = !range || confirmsRange(payload, range);
   const mapped = rows.map((row) => {
     const date = row?.date ?? row?.day ?? row?.timestamp ?? row?.bucket;
     const count = metric(row, ["count", "mention_count", "mentions", "value"]);
@@ -53,9 +54,12 @@ export function breakdown(payload, kind) {
   const rows = records(payload, [kind, "items", "breakdown"]);
   if (rows) {
     const mapped = rows.map((row) => {
-      const name = row?.name ?? row?.label ?? row?.keyword ?? row?.word ?? row?.term ?? row?.location ?? row?.country_code ?? row?.type ?? row?.source?.name;
+      const rawName = row?.name ?? row?.label ?? row?.keyword ?? row?.word ?? row?.term ?? row?.location ?? row?.country_code ?? row?.type ?? row?.source?.name;
+      const name = kind === "keywords" && typeof rawName === "number" && Number.isFinite(rawName) ? String(rawName) : rawName;
       const count = metric(row, ["count", "mention_count", "mentions", "value"]);
-      const percentage = metric(row, ["percentage", "percent", "share_percent"]);
+      const explicitPercentage = metric(row, ["percentage", "percent", "share_percent"]);
+      const share = metric(row, ["share"]);
+      const percentage = explicitPercentage ?? (share !== null && share <= 1 ? share * 100 : null);
       if (typeof name !== "string" || !name.trim() || (count === null && percentage === null && kind !== "keywords")) return null;
       return { name, count, percentage: percentage !== null && percentage <= 100 ? percentage : null };
     });
@@ -66,7 +70,8 @@ export function breakdown(payload, kind) {
   return null;
 }
 export function toneValues(payload) {
-  const data = unwrap(payload);
+  const root = unwrap(payload);
+  const data = object(root?.sentiment) ? root.sentiment : root;
   if (!object(data)) return null;
   const values = ["positive", "neutral", "negative"].map((key) => metric(data, [key, `${key}.count`]));
   if (values.some((value) => value === null)) return null;
