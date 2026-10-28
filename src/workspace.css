@@ -1999,3 +1999,17 @@ body:has(dialog[open]) {
   .sentinel-loading *, .sentinel-loading *::before { animation: none !important; transition: none !important; }
   .sentinel-loading-track > span { width: 100%; opacity: .6; }
 }
+.dedicated-analytics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; align-items: start; }
+.analytics-panel h2 { margin-bottom: 18px; }
+.analytics-panel { min-width: 0; overflow-wrap: anywhere; }
+.analytics-fields { margin: 0; }
+.analytics-fields > div { padding: 10px 0; border-bottom: 1px solid #e7eee9; }
+.analytics-fields > div:last-child { border: 0; }
+.analytics-fields dt { font-size: 10px; color: #718579; margin-bottom: 5px; }
+.analytics-fields dd { margin: 0; }
+.analytics-value { font-size: 14px; color: #284c38; font-variant-numeric: tabular-nums; }
+.analytics-unavailable { font-size: 11px; color: #7b8d81; }
+.analytics-records { list-style: none; padding: 0; margin: 12px 0; }
+.analytics-records > li { padding: 10px 0; border-bottom: 1px solid #e7eee9; }
+.analytics-records > li:last-child { border: 0; }
+@media (max-width: 900px) { .dedicated-analytics-grid { grid-template-columns: minmax(0, 1fr); } }

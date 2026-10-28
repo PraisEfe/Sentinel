@@ -1352,3 +1352,8 @@ input::placeholder {
   border-radius: 9px;
   padding-top: 12px;
 }
+
+.brand-mark img { display: block; width: 100%; height: 100%; border-radius: inherit; }
+.workspace-create { display: flex; align-items: center; gap: 7px; margin: -8px 10px 24px; padding: 8px 0; font-size: 10px; color: #b8d8c6; border-radius: 4px; }
+.workspace-create:hover { color: #eef8f2; }
+.workspace-gate .auth-form { width: 100%; }

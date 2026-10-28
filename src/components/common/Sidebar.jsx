@@ -1,4 +1,5 @@
 import {
+  Plus,
   Home,
   Search,
   Radio,
@@ -57,7 +58,7 @@ export default function Sidebar({
             <X size={18} />
           </button>
         </div>
-        {workspaces.length > 1 && (
+        {workspaces.length > 0 && (
           <label className="workspace-picker">
             Workspace
             <select
@@ -73,6 +74,9 @@ export default function Sidebar({
             </select>
           </label>
         )}
+        <Link className="workspace-create" to="/workspaces/new" onClick={onClose}>
+          <Plus size={14} /> New workspace
+        </Link>
         <div className="nav-caption">EXPLORE</div>
         <nav aria-label="Main navigation">
           {navigation.map(([id, label, Icon]) => (

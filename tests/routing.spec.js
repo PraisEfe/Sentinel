@@ -301,3 +301,55 @@ test("bootstrap errors keep private pages closed and can be retried safely", asy
     page.getByRole("heading", { name: "Monitors", exact: true }),
   ).toBeVisible();
 });
+
+test("signed-in users create another workspace, switch back and retain both after refresh", async ({ page }) => {
+  const calls = await mockApi(page);
+  await login(page);
+  await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue('w-1');
+  await page.getByRole('link',{name:'New workspace',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Create another workspace'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Create workspace',exact:true})).toBeDisabled();
+  await page.getByLabel('Workspace name').fill('Second research team');
+  await page.getByRole('button',{name:'Create workspace',exact:true}).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue('w-2');
+  await expect(page.getByLabel('Workspace',{exact:true}).locator('option')).toHaveCount(2);
+  await expect(page.getByRole('button',{name:/Workspace two monitor/})).toBeVisible();
+  const created = calls.find((call) => call.path === '/workspaces' && call.method === 'POST');
+  expect(created.body.name).toBe('Second research team');
+  expect(created.headers.authorization).toBe('Bearer test-session-token');
+  await page.reload();
+  await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue('w-2');
+  await page.getByLabel('Workspace',{exact:true}).selectOption('w-1');
+  await expect(page.getByRole('button',{name:/MTN Nigeria organisation/})).toBeVisible();
+  await expect(page.getByRole('button',{name:/Workspace two monitor/})).toHaveCount(0);
+});
+
+test("workspace creation can be cancelled and permission failures preserve the current workspace", async ({ page }) => {
+  const calls = await mockApi(page,{createWorkspaceError:true});
+  await login(page);
+  await page.getByRole('link',{name:'New workspace',exact:true}).click();
+  await page.getByRole('link',{name:'Cancel and return to workspace'}).click();
+  await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue('w-1');
+  expect(calls.some((call) => call.path === '/workspaces' && call.method === 'POST')).toBe(false);
+  await page.getByRole('link',{name:'New workspace',exact:true}).click();
+  await page.getByLabel('Workspace name').fill('Private research');
+  await page.getByRole('button',{name:'Create workspace',exact:true}).click();
+  await expect(page.getByRole('alert')).toHaveText('You don’t have access to this action.');
+  await expect(page.getByLabel('Workspace name')).toHaveValue('Private research');
+  await page.getByRole('link',{name:'Cancel and return to workspace'}).click();
+  await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue('w-1');
+  await expect(page.getByLabel('Workspace',{exact:true}).locator('option')).toHaveCount(1);
+});
+
+test("new brand mark is shared by sign-in, sidebar and favicon", async ({ page }) => {
+  await mockApi(page);
+  await page.goto('/signin');
+  await expect(page.locator('.brand-mark img')).toHaveAttribute('src','/sentinel.svg');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href','/sentinel.svg');
+  const mark = await page.request.get('/sentinel.svg');
+  expect(mark.status()).toBe(200);
+  expect(await mark.text()).toContain('height="33"');
+  await login(page);
+  await expect(page.locator('.sidebar-brand .brand-mark img')).toBeVisible();
+});

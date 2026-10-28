@@ -166,14 +166,27 @@ export async function mockApi(page, options = {}) {
     if (path === "/workspaces" && method === "GET")
       return fulfill({ data: workspaces });
     if (path === "/workspaces" && method === "POST") {
-      workspaces = [{ ...workspace, name: body.name }];
-      return fulfill({ data: workspaces[0] }, 201);
+      if (options.createWorkspaceError) return fulfill({ message: "Forbidden" }, 403);
+      const created = { ...workspace, id: `w-${workspaces.length + 1}`, name: body.name };
+      workspaces = [...workspaces, created];
+      return fulfill({ data: created }, 201);
     }
     if (path.endsWith("/preferences")) {
       preferenceAttempts++;
       if (options.preferenceError && preferenceAttempts === 1)
         return fulfill({ message: "Notification service unavailable" }, 503);
       return fulfill({ data: body || {} });
+    }
+    if (path.includes("/analytics/")) {
+      const analytics = {
+        overview: { mention_count: 12482, source_count: 328 },
+        volume: { data: [{ date: "2026-10-26", count: 100 }, { date: "2026-10-27", count: 200 }] },
+        sentiment: { positive: 62, neutral: 28, negative: 10 },
+        sources: { data: [{ name: "Public news", count: 500 }] },
+        keywords: { data: [{ keyword: "network", count: 80 }] },
+        "discovery-time": { average_minutes: 6 },
+      };
+      return fulfill(analytics[path.split("/").at(-1)]);
     }
     if (path.endsWith("/saved-searches"))
       return fulfill({ data: { id: "saved-1", ...body } }, 201);

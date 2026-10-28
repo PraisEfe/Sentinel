@@ -578,25 +578,19 @@ test("discovery preferences persist locally and affect search presentation", asy
   ).not.toBeChecked();
 });
 
-test("analytics periods update live query and charts expose accessible data", async ({
-  page,
-}) => {
+test("analytics loads dedicated workspace endpoints and refreshes without searching mentions", async ({ page }) => {
   const calls = await mockApi(page);
   await login(page);
   await goTo(page, "Analytics");
-  await expect(
-    page.getByRole("img", { name: /Mention volume for 7 days/ }),
-  ).toBeVisible();
-  await page.getByRole("tab", { name: "30 days", exact: true }).click();
-  await expect(
-    page.getByRole("img", { name: /Mention volume for 30 days/ }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("Based on mentions returned for the selected period."),
-  ).toBeVisible();
-  expect(
-    calls.filter((call) => call.path.endsWith("/search")).length,
-  ).toBeGreaterThanOrEqual(2);
+  for (const endpoint of ["overview", "volume", "sentiment", "sources", "keywords", "discovery-time"]) {
+    await expect.poll(() => calls.filter((call) => call.path.endsWith(`/analytics/${endpoint}`)).length).toBeGreaterThan(0);
+  }
+  await expect(page.getByRole("region", {name:"Workspace overview"})).toContainText('12,482');
+  await expect(page.getByRole("region", {name:"Mention volume"}).getByRole("img")).toBeVisible();
+  expect(calls.some((call) => call.path.endsWith('/search') || call.path.endsWith('/explore'))).toBe(false);
+  const before = calls.filter((call) => call.path.includes('/analytics/')).length;
+  await page.getByRole('button', {name:'Refresh analytics'}).click();
+  await expect.poll(() => calls.filter((call) => call.path.includes('/analytics/')).length).toBeGreaterThanOrEqual(before + 6);
 });
 
 test("all updated screens work on mobile with reduced motion and without runtime errors", async ({
@@ -871,4 +865,43 @@ test("data loaders animate accessibly, respect reduced motion, and disappear whe
   } finally { release(); }
   await expect(page.getByRole('region', { name: 'Search results' }).locator('.sentinel-loading')).toHaveCount(0);
   await expect(page.getByText('No results match this search. Try another topic or adjust your filters.')).toBeVisible();
+});
+
+test("analytics panels handle empty, missing, zero and failed responses independently", async ({ page }) => {
+  await mockApi(page);
+  let failing = true;
+  await page.route('**/api/v1/workspaces/w-1/analytics/**', (route) => {
+    const endpoint = new URL(route.request().url()).pathname.split('/').at(-1);
+    const bodies = {
+      overview: { total_mentions: 98765, unknown_metric: null },
+      volume: { data: [] },
+      sentiment: { positive: 0, neutral: 0, negative: 0 },
+      keywords: [],
+      'discovery-time': { average_minutes: null },
+    };
+    return route.fulfill({
+      status: endpoint === 'sources' && failing ? 503 : 200,
+      contentType:'application/json',
+      body:JSON.stringify(endpoint === 'sources' ? failing ? { message:'Internal database failure' } : {news:10} : bodies[endpoint]),
+    });
+  });
+  await login(page);
+  await goTo(page,'Analytics');
+  const overview = page.getByRole('region',{name:'Workspace overview'});
+  await expect(overview).toContainText('98,765');
+  await expect(overview).toContainText('Not available');
+  const volume = page.getByRole('region',{name:'Mention volume'});
+  await expect(volume).toContainText('No data available yet.');
+  await expect(volume.getByRole('img')).toHaveCount(0);
+  await expect(page.getByRole('region',{name:'Discussion tone'})).toContainText('0');
+  await expect(page.getByRole('region',{name:'Discovery time'})).toContainText('Not available');
+  await expect(page.getByRole('region',{name:'Top keywords'}).getByRole('alert')).toBeVisible();
+  const sources = page.getByRole('region',{name:'Source distribution'});
+  await expect(sources.getByRole('alert')).toBeVisible();
+  await expect(sources).not.toContainText('Internal database failure');
+  failing = false;
+  await sources.getByRole('button',{name:'Try again'}).click();
+  await expect(sources.getByRole('alert')).toHaveCount(0);
+  await expect(sources).toContainText('10');
+  await expect(overview).toContainText('98,765');
 });

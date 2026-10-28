@@ -296,7 +296,8 @@ export const useAppStore = create(
       },
       refreshWorkspace: () => get().loadWorkspace({ force: true }),
       createWorkspace: async (name) => {
-        if (!name.trim()) throw new ApiError("Enter a workspace name.");
+        if (!get().session) throw new ApiError("Please sign in to continue.", 401);
+        if (!name.trim() || name.trim().length > 120) throw new ApiError("Enter a workspace name of up to 120 characters.");
         const authVersion = get().authVersion;
         const result = await request("/workspaces", {
           token: get().session?.token,
@@ -309,16 +310,25 @@ export const useAppStore = create(
         if (!result.data?.id)
           throw new ApiError("The server did not return the new workspace.");
         if (get().authVersion !== authVersion) return;
+        workspaceJob?.controller.abort();
+        workspaceJob = null;
         set((state) => ({
-          workspaces: [...state.workspaces, result.data],
+          workspaces: [...state.workspaces.filter((item) => item.id !== result.data.id), result.data],
           workspaceId: result.data.id,
           dataKey: "",
           data: emptyData(),
+          dataStatus: { loading: false, error: "" },
+          monitorPage: 1,
+          selection: null,
+          createOpen: false,
+          monitorSeed: "",
+          sidebarOpen: false,
           workspaceSelections: {
             ...state.workspaceSelections,
             [state.user.id]: result.data.id,
           },
         }));
+        return result.data;
       },
       createMonitor: async (fields) => {
         const result = await get().api("/monitors", {

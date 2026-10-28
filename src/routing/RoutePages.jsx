@@ -47,18 +47,19 @@ export function NewWorkspacePage() {
     })),
   );
   const location = useLocation();
+  const navigate = useNavigate();
+  const [additional] = useState(Boolean(workspaceId));
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  if (workspaceId)
-    return <Navigate to={safeReturnTo(location.state?.from)} replace />;
   async function submit(event) {
     event.preventDefault();
     if (busy) return;
     setBusy(true);
     setError("");
     try {
-      await createWorkspace(name);
+      const workspace = await createWorkspace(name);
+      if (workspace?.id) navigate(safeReturnTo(location.state?.from), { replace: true });
     } catch (failure) {
       setError(failure.message);
     } finally {
@@ -67,8 +68,8 @@ export function NewWorkspacePage() {
   }
   return (
     <main className="workspace-gate">
-      <h1>Create your research workspace</h1>
-      <p>You’re signed in. Give your first workspace a name to get started.</p>
+      <h1>{additional ? "Create another workspace" : "Create your research workspace"}</h1>
+      <p>{additional ? "Keep research and monitoring organized in separate workspaces. You can switch between them from the sidebar." : "You’re signed in. Give your first workspace a name to get started."}</p>
       <form className="auth-form" onSubmit={submit}>
         <label className="field-label" htmlFor="workspace-name">
           Workspace name
@@ -89,6 +90,7 @@ export function NewWorkspacePage() {
           {busy ? "Creating…" : "Create workspace"}
         </button>
       </form>
+      {additional && <Link className="text-link" to="/">Cancel and return to workspace</Link>}
       <button className="text-link" onClick={useAppStore.getState().logout}>
         Sign out
       </button>

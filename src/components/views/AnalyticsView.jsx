@@ -1,271 +1,76 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { RefreshCw } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import { useResource, number } from "../../lib/workspace";
-import { PageMotion, ResourceState, Tabs } from "../common/WorkspaceUI";
-const EMPTY = [];
-const ignored = new Set([
-  "about",
-  "across",
-  "after",
-  "their",
-  "there",
-  "these",
-  "those",
-  "which",
-  "would",
-  "could",
-  "should",
-  "while",
-  "where",
-  "public",
-  "sources",
-  "information",
-  "through",
-  "during",
-]);
-export default function AnalyticsView() {
-  const [period, setPeriod] = useState("7 days");
+import { useResource } from "../../lib/workspace";
+import { PageMotion, ResourceState } from "../common/WorkspaceUI";
+
+const panels = [
+  ["overview", "Workspace overview"],
+  ["volume", "Mention volume"],
+  ["sentiment", "Discussion tone"],
+  ["sources", "Source distribution"],
+  ["keywords", "Top keywords"],
+  ["discovery-time", "Discovery time"],
+];
+const label = (key) => key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ").replace(/^./, (letter) => letter.toUpperCase());
+const record = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+const display = (value) => typeof value === "number"
+  ? value.toLocaleString(undefined, { maximumFractionDigits: 20 })
+  : typeof value === "boolean" ? value ? "Yes" : "No" : String(value);
+
+// The supplied OpenAPI defines objects, not fixed analytics fields. Render
+// returned labels/values without guessing totals, percentages, units, or scope.
+function AnalyticsValue({ value, title, depth = 0 }) {
+  const [visible, setVisible] = useState(50);
   const reduced = useReducedMotion();
-  const range = useMemo(() => {
-    const to = new Date();
-    const days = period === "24 hours" ? 1 : parseInt(period);
-    return {
-      from: new Date(to - days * 86400000).toISOString(),
-      to: to.toISOString(),
-      days,
-    };
-  }, [period]);
-  const mentions = useResource(
-    `/search?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`,
-    { list: true },
-  );
-  const clusters = useResource("/explore", { list: true });
-  const rows = mentions.data?.data || EMPTY;
-  const data = useMemo(() => {
-    const values = Array(7).fill(0);
-    const tone = { positive: 0, neutral: 0, negative: 0 };
-    const sources = {};
-    const keywords = {};
-    const locations = {};
-    const start = new Date(range.from).getTime();
-    const duration = new Date(range.to) - start;
-    for (const item of rows) {
-      const index = Math.min(
-        6,
-        Math.max(
-          0,
-          Math.floor(((new Date(item.published_at) - start) / duration) * 7),
-        ),
-      );
-      if (Number.isFinite(index)) values[index]++;
-      if (item.sentiment in tone) tone[item.sentiment]++;
-      const type = item.source?.type || "web";
-      sources[type] = (sources[type] || 0) + 1;
-      const location = item.location_name || item.country_code;
-      if (location) locations[location] = (locations[location] || 0) + 1;
-      for (const word of (item.title || "").toLowerCase().match(/[a-z]{4,}/g) ||
-        [])
-        if (!ignored.has(word)) keywords[word] = (keywords[word] || 0) + 1;
-    }
-    return {
-      mentionVolume: rows.length,
-      activeSources: new Set(
-        rows.map((item) => item.source_id || item.source?.id).filter(Boolean),
-      ).size,
-      volumeValues: values,
-      timeLabels: values.map((_, i) =>
-        new Date(start + (duration * i) / 7).toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-        }),
-      ),
-      tone,
-      sources,
-      keywords: Object.entries(keywords)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 8),
-      locations: Object.entries(locations)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 4),
-    };
-  }, [rows, range]);
-  const max = Math.max(1, ...data.volumeValues);
-  const toneTotal = Object.values(data.tone).reduce((sum, n) => sum + n, 0);
-  const sourceTotal = Object.values(data.sources).reduce(
-    (sum, n) => sum + n,
-    0,
-  );
-  const positive = toneTotal
-    ? Math.round((data.tone.positive / toneTotal) * 100)
-    : 0;
-  const keywords = data.keywords;
-  const locations = data.locations;
-  const locationTotal = locations.reduce((sum, [, n]) => sum + n, 0);
-  return (
-    <PageMotion className="research-page">
-      <div className="research-heading">
-        <div>
-          <h1>Analytics</h1>
-          <p>
-            Understand patterns across information collected from your searches
-            and monitors.
-          </p>
-        </div>
-        <Tabs
-          label="Analytics time period"
-          items={["24 hours", "7 days", "30 days", "90 days"]}
-          value={period}
-          onChange={setPeriod}
-        />
-      </div>
-      <ResourceState resource={mentions} />
-      <div className="analytics-grid">
-        <section className="chart-card volume-card">
-          <div className="metric-caption">Mention volume</div>
-          <div className="volume-number">
-            <strong>{mentions.error ? "—" : number(data.mentionVolume)}</strong>
-          </div>
-          <p className="metric-subtitle">
-            Returned mentions across{" "}
-            {number(data.activeSources)} sources
-          </p>
-          <div
-            className="bar-chart"
-            role="img"
-            aria-label={`Mention volume for ${period}: ${data.volumeValues.join(", ")}`}
-            key={period}
-          >
-            {data.volumeValues.map((value, i) => (
-              <div className="bar-track" key={i}>
-                <motion.div
-                  className={
-                    i > data.volumeValues.length - 4 ? "bar recent" : "bar"
-                  }
-                  initial={{ height: 0 }}
-                  animate={{ height: `${(value / max) * 100}%` }}
-                  transition={{
-                    duration: reduced ? 0 : 0.45,
-                    delay: reduced ? 0 : i * 0.025,
-                    ease: "easeOut",
-                  }}
-                  title={`${data.timeLabels[i] || i + 1}: ${value}`}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="chart-labels">
-            {data.timeLabels.map((label, i) => (
-              <span key={i}>{label}</span>
-            ))}
-          </div>
-            <p className="list-note">
-              Based on mentions returned for the selected period.
-            </p>
-        </section>
-        <div className="analytics-side">
-          <section className="chart-card">
-            <div className="metric-caption">Source distribution</div>
-            <strong className="card-big-number">
-              {number(data.activeSources)}
-            </strong>
-            <p className="metric-subtitle">Active sources in this view</p>
-            <div className="source-legend">
-              {Object.entries(data.sources).map(([name, value], i) => (
-                <span key={name}>
-                  <i className={`legend-dot color-${i % 3}`} />
-                  {name}{" "}
-                  {sourceTotal ? Math.round((value / sourceTotal) * 100) : 0}%
-                </span>
-              ))}
-            </div>
-          </section>
-          <section className="chart-card">
-            <div className="metric-caption">Discussion tone</div>
-            <div className="tone-head">
-              <strong>{positive}%</strong>
-              <span className="small-badge">
-                {toneTotal
-                  ? positive >= 50
-                    ? "Mostly positive"
-                    : "Mixed discussion"
-                  : "No tone data"}
-              </span>
-            </div>
-            <div className="sentiment-track">
-              {Object.entries(data.tone).map(([name, value]) => (
-                <span
-                  key={name}
-                  className={name}
-                  style={{
-                    width: `${toneTotal ? (value / toneTotal) * 100 : 0}%`,
-                  }}
-                />
-              ))}
-            </div>
-            <div className="tone-legend">
-              {Object.entries(data.tone).map(([name, value]) => (
-                <span key={name}>
-                  {name} {toneTotal ? Math.round((value / toneTotal) * 100) : 0}
-                  %
-                </span>
-              ))}
-            </div>
-          </section>
-        </div>
-        <section className="chart-card">
-          <h2>Trending topics</h2>
-          <ResourceState
-            resource={clusters}
-            empty={!clusters.data?.data?.length}
-          />
-          {[...(clusters.data?.data || [])]
-            .sort((a, b) => Number(b.velocity) - Number(a.velocity))
-            .slice(0, 4)
-            .map((item, i) => (
-              <div className="analytics-topic" key={item.id}>
-                <span>
-                  {String(i + 1).padStart(2, "0")} · {item.title}
-                </span>
-                <strong>{number(item.mention_count)}</strong>
-                <small>{number(item.velocity)}%</small>
-              </div>
-            ))}
-        </section>
-        <section className="chart-card">
-          <h2>Top keywords</h2>
-          <div className="keyword-tags">
-            {keywords.map(([word]) => (
-              <span key={word}>{word}</span>
-            ))}
-          </div>
-          {!keywords.length && (
-            <p className="metric-subtitle">No keywords available.</p>
-          )}
-        </section>
-        <section className="chart-card">
-          <h2>Geographic activity</h2>
-          {locations.map(([location, value]) => (
-            <div className="geo-row" key={location}>
-              <span>{location}</span>
-              <div>
-                <motion.i
-                  initial={{ width: 0 }}
-                  animate={{
-                    width: `${locationTotal ? (value / locationTotal) * 100 : 0}%`,
-                  }}
-                  transition={{ duration: reduced ? 0 : 0.4 }}
-                />
-              </div>
-              <b>
-                {locationTotal ? Math.round((value / locationTotal) * 100) : 0}%
-              </b>
-            </div>
-          ))}
-          {!locations.length && (
-            <p className="metric-subtitle">No location data is available.</p>
-          )}
-        </section>
-      </div>
-    </PageMotion>
-  );
+  if (value === null) return <span className="analytics-unavailable">Not available</span>;
+  if (typeof value !== "object") return <span className="analytics-value">{display(value)}</span>;
+  if (depth > 8) return <p className="metric-subtitle">More detail is not available in this view.</p>;
+  if (Array.isArray(value)) {
+    if (!value.length) return <p className="metric-subtitle">No data available yet.</p>;
+    // A chart is only appropriate when the response explicitly supplies dates
+    // and numeric counts. All other shapes retain their supplied fields below.
+    const timeline = value.every((row) => record(row) && typeof row.date === "string" && typeof row.count === "number" && Number.isFinite(row.count) && row.count >= 0);
+    const maximum = timeline ? Math.max(1, ...value.map((row) => row.count)) : 1;
+    return <>
+      {timeline && <div className="bar-chart" role="img" aria-label={`${title}: ${value.slice(0, visible).map((row) => `${row.date}: ${row.count}`).join(", ")}`}>
+        {value.slice(0, visible).map((row, index) => <div className="bar-track" key={index}>
+          <motion.div className="bar recent" initial={{height: reduced ? `${row.count / maximum * 100}%` : 0}}
+            animate={{height: `${row.count / maximum * 100}%`}} transition={{duration: reduced ? 0 : .4}}
+            title={`${row.date}: ${row.count}`} />
+        </div>)}
+      </div>}
+      <ol className="analytics-records">{value.slice(0, visible).map((item, index) => <li key={index}><AnalyticsValue value={item} title={title} depth={depth + 1} /></li>)}</ol>
+      {visible < value.length && <button className="text-link" onClick={() => setVisible((count) => count + 50)}>Show more ({visible} of {value.length})</button>}
+    </>;
+  }
+  const entries = Object.entries(value);
+  if (!entries.length) return <p className="metric-subtitle">No data available yet.</p>;
+  return <dl className="analytics-fields">{entries.map(([key, item]) => <div key={key}>
+    <dt>{label(key)}</dt><dd><AnalyticsValue value={item} title={label(key)} depth={depth + 1} /></dd>
+  </div>)}</dl>;
+}
+
+function AnalyticsPanel({ endpoint, title }) {
+  const resource = useResource(`/analytics/${endpoint}`);
+  const valid = record(resource.data);
+  const malformed = !resource.loading && !resource.error && resource.data !== null && !valid;
+  const state = malformed ? { ...resource, error: "We couldn’t load this information. Please try again." } : resource;
+  const value = valid && "data" in resource.data ? resource.data.data : resource.data;
+  return <section className={`chart-card analytics-panel analytics-panel-${endpoint}`} aria-label={title} aria-busy={resource.loading}>
+    <h2>{title}</h2>
+    <ResourceState resource={state} />
+    {!state.loading && !state.error && valid && <AnalyticsValue value={value} title={title} />}
+  </section>;
+}
+
+export default function AnalyticsView() {
+  const [version, setVersion] = useState(0);
+  return <PageMotion className="research-page">
+    <div className="research-heading"><div>
+      <h1>Analytics</h1><p>Workspace insights reported by your analytics service.</p>
+    </div><button className="outline-button" onClick={() => setVersion((value) => value + 1)}><RefreshCw size={14} /> Refresh analytics</button></div>
+    <p className="list-note">Coverage and reporting periods follow the information supplied by the service.</p>
+    <div className="dedicated-analytics-grid">{panels.map(([endpoint, title]) => <AnalyticsPanel key={`${version}:${endpoint}`} endpoint={endpoint} title={title} />)}</div>
+  </PageMotion>;
 }

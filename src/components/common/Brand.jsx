@@ -1,9 +1,8 @@
-import { ChartNoAxesColumnIncreasing } from "lucide-react";
 export default function Brand() {
   return (
     <div className="sentinel-brand">
       <span className="brand-mark">
-        <ChartNoAxesColumnIncreasing size={23} strokeWidth={3} />
+        <img src="/sentinel.svg" alt="" width="30" height="30" />
       </span>
       <span>
         <strong>SENTINEL</strong>
