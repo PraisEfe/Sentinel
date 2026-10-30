@@ -28,11 +28,11 @@ export default function AnalyticsView() {
   const geography = useResource("/intelligence/geography", {list:true});
   const overviewScoped = hasReportedScope(overview.data, range);
   const actualDays = reportedDays(overview.data);
-  const actualPeriod = periodLabel(actualDays);
+  const actualPeriod = periodLabel(actualDays, period === "24 hours");
   const periodMismatch = actualDays !== null && Math.abs(actualDays - periods[period]) > .01;
   const comparison = comparisonPeriod(overview.data);
   const newToday = overviewScoped ? metric(overview.data,["totals.new_today","new_today"]) : null;
-  const cardPeriod = (payload) => { const days = reportedDays(payload); return days !== null && Math.abs(days - periods[period]) > .01 ? `Reported ${periodLabel(days)}` : null; };
+  const cardPeriod = (payload) => { const days = reportedDays(payload); return days !== null && Math.abs(days - periods[period]) > .01 ? `Reported ${periodLabel(days, period === "24 hours")}` : null; };
   const total = overviewScoped ? metric(overview.data,["totals.mentions","mention_count","total_mentions","mention_volume","mentions.total"]) : null;
   const sourceCount = overviewScoped ? metric(overview.data,["totals.sources","source_count","active_sources","total_sources"]) : null;
   const growth = overviewScoped ? metric(overview.data,["deltas.mentions_pct","growth_percent","change_percent","growth_percentage","comparison.growth_percent"],true) : null;
@@ -52,10 +52,9 @@ export default function AnalyticsView() {
   const geoMax = Math.max(1,...(places || []).map((item)=>item.count || 0));
   return <PageMotion className="research-page analytics-page">
     <div className="research-heading"><div><h1>Analytics</h1><p>Understand patterns across information collected from your searches and monitors.</p></div>
-      <Tabs label="Analytics time period" items={Object.keys(periods).map((label)=>({id:label,label,disabled:!supportedAnalyticsPeriods[label],title:supportedAnalyticsPeriods[label]?undefined:"Temporarily unavailable"}))} value={period} onChange={setPeriod} />
+      <Tabs label="Analytics time period" items={Object.keys(periods)} value={period} onChange={setPeriod} />
     </div>
     <div className="analytics-context"><span><Globe size={12} /> Workspace activity{discoveryLabel!==null && <small> · {discoveryLabel} average discovery</small>}</span><button className="text-link" onClick={()=>{[overview,volume,sentiment,sources,keywords,discovery,trending,geography].forEach((resource)=>resource.reload());}}><RefreshCw size={12} /> Refresh analytics</button></div>
-    <p className="analytics-availability-note">24-hour and 7-day reports are temporarily unavailable.</p>
     {discovery.error && <Status resource={discovery}/> }
     {periodMismatch && <p className="analytics-scope-note" role="status">Showing totals for the service’s reported {actualPeriod}, instead of the selected {period}.</p>}
     {unconfirmed && <p className="analytics-scope-note" role="status">The service hasn’t confirmed this reporting period. Unverified totals are shown as unavailable.</p>}
@@ -66,7 +65,7 @@ export default function AnalyticsView() {
         <div className="volume-number"><strong>{ready(overview) ? number(total) : "—"}</strong>{growth!==null && <span className={growth<0?"negative-growth":""}><ArrowUpRight size={12} style={{transform:growth<0?"rotate(90deg)":undefined}}/>{growth>0?"+":""}{growth}%</span>}</div>
         <p className="metric-subtitle">Public mentions across {number(sourceCount)} active sources{newToday!==null && <> · {number(newToday)} new today</>}</p>
         {comparison && growth!==null && <p className="analytics-card-caption comparison-caption">Compared with previous {comparison}</p>}
-        {periodMismatch && <p className="metric-subtitle">Chart: daily buckets returned by the service.</p>}
+        {periodMismatch && <p className="metric-subtitle">Chart: {period === "24 hours" ? "hourly" : "daily"} buckets returned by the service.</p>}
         <Status resource={volume} invalid={ready(volume) && volume.data!==null && series===null} empty={series?.length===0} />
         {ready(volume) && series?.length>0 && <>
           <div className="analytics-recharts" role="img" aria-label={`Mention volume for ${period}: ${series.map((point)=>`${labelDate(point.date)}: ${point.count}`).join(", ")}`}>

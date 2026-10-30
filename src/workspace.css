@@ -2041,7 +2041,6 @@ body:has(dialog[open]) {
 .analytics-page .analytics-topic { padding:10px 0; }
 .analytics-page .comparison-caption { margin:8px 0 0; }
 
-.analytics-availability-note { font-size:9px; color:#8a9a90; margin:-10px 0 15px; }
 .analytics-page .workspace-tabs button:disabled { opacity:.45; cursor:not-allowed; }
 .analytics-page .source-legend > span { overflow-wrap:anywhere; max-width:100%; }
 

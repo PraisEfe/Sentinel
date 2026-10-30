@@ -894,8 +894,8 @@ test("analytics restores Recharts layout, changes range consistently and never l
   const calls=await mockApi(page);await login(page);await goTo(page,'Analytics');
   await expect(page.getByRole('tab',{name:'30 days',exact:true})).toHaveAttribute('aria-selected','true');
   await expect(page.locator('.recharts-bar-rectangle').first()).toBeVisible();
-  await expect(page.getByRole('tab',{name:'7 days',exact:true})).toBeDisabled();
-  await expect(page.getByRole('tab',{name:'24 hours',exact:true})).toBeDisabled();
+  await expect(page.getByRole('tab',{name:'7 days',exact:true})).toBeEnabled();
+  await expect(page.getByRole('tab',{name:'24 hours',exact:true})).toBeEnabled();
   await page.getByRole('tab',{name:'90 days',exact:true}).click();
   await expect(page.getByRole('region',{name:'Mention volume'}).getByRole('img')).toHaveAttribute('aria-label',/90 days/);
   const last=calls.filter((call)=>call.path.endsWith('/analytics/overview')).at(-1);
@@ -969,19 +969,31 @@ test('actual production overview renders nested totals and labels the actual 31-
 });
 
 
-test('only live-verified analytics periods can be selected and all panels use the same period parameter',async({page})=>{
+test('all analytics periods use consistent parameters and render hourly or daily counts',async({page})=>{
   const calls=await mockApi(page);await login(page);await goTo(page,'Analytics');
   await expect(page.getByRole('region',{name:'Discussion tone'})).toContainText('59%');
   await expect(page.getByRole('region',{name:'Source distribution'})).toContainText('100%');
   await expect(page.getByRole('region',{name:'Top keywords'})).toContainText('network');
   const selected=page.getByRole('tab',{name:'30 days',exact:true});await selected.focus();await selected.press('ArrowLeft');
-  await expect(page.getByRole('tab',{name:'90 days',exact:true})).toHaveAttribute('aria-selected','true');
-  await expect(page.getByRole('region',{name:'Mention volume'}).getByRole('img')).toHaveAttribute('aria-label',/90 days/);
-  await expect.poll(()=>calls.filter(call=>call.path.includes('/analytics/')&&new URL(call.url).searchParams.get('period')==='90d').length).toBeGreaterThanOrEqual(6);
+  await expect(page.getByRole('tab',{name:'7 days',exact:true})).toHaveAttribute('aria-selected','true');
+  for(const [label,parameter,buckets] of [['24 hours','24h',25],['7 days','7d',8],['30 days','30d',31],['90 days','90d',91]]) {
+    await page.getByRole('tab',{name:label,exact:true}).click();
+    const volume=page.getByRole('region',{name:'Mention volume'});
+    await expect(volume.getByRole('img')).toHaveAttribute('aria-label',new RegExp(label));
+    await expect(page.locator('.analytics-data-table tbody tr')).toHaveCount(buckets);
+    await expect(volume).toContainText('12,482');
+    await expect(volume).toContainText(`Compared with previous ${label}`);
+    await expect(page.locator('.analytics-scope-note')).toHaveCount(0);
+    await expect.poll(()=>calls.filter(call=>call.path.includes('/analytics/')&&new URL(call.url).searchParams.get('period')===parameter).length).toBeGreaterThanOrEqual(6);
+    const chartTotal=await page.locator('.analytics-data-table tbody tr td:last-child').allTextContents();
+    expect(chartTotal.reduce((sum,value)=>sum+Number(value.replaceAll(',','')),0)).toBe(12482);
+    if(parameter==='24h') await expect(volume.getByRole('img')).toHaveAttribute('aria-label',/\d+:\d{2}/);
+  }
   expect(calls.filter(call=>call.path.includes('/analytics/')).every(call=>{
     const params=new URL(call.url).searchParams;
-    return !params.has('from')&&!params.has('to')&&['30d','90d'].includes(params.get('period'));
+    return !params.has('from')&&!params.has('to')&&['24h','7d','30d','90d'].includes(params.get('period'));
   })).toBe(true);
+  await expect(page.getByText('24-hour and 7-day reports are temporarily unavailable.')).toHaveCount(0);
 });
 
 test("password visibility toggles preserve typed values, remain independent and never submit the form", async ({ page }) => {

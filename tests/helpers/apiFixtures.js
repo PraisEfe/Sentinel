@@ -213,12 +213,14 @@ export async function mockApi(page, options = {}) {
       const params = new URL(req.url()).searchParams;
       if (params.has("from") || params.has("to")) return fulfill({message:"Unsupported date filter"},500);
       const period = params.get("period");
-      if (!["30d","90d"].includes(period)) return fulfill({message:"Unsupported period"},500);
-      const days = period === "90d" ? 90 : 30;
+      if (!["24h","7d","30d","90d"].includes(period)) return fulfill({message:"Unsupported period"},500);
+      const days = period === "24h" ? 1 : Number.parseInt(period, 10);
+      const buckets = period === "24h" ? 25 : days + 1;
+      const step = period === "24h" ? 3600000 : 86400000;
       const to = new Date(), from = new Date(to.getTime()-days*86400000);
       const analytics = {
-        overview: { period:`${days}.999999999988d`,compare:`previous_${days}.999999999988d`,totals:{mentions:12482,sources:328,new_today:0,avg_discovery_seconds:360},deltas:{mentions_pct:9.7} },
-        volume: { volume: Array.from({length:days+1},(_,index)=>({date:new Date(from.getTime()+86400000*index).toISOString().slice(0,10),count:100+index*10})) },
+        overview: { period,compare:`previous_${period}`,totals:{mentions:12482,sources:328,new_today:0,avg_discovery_seconds:360},deltas:{mentions_pct:9.7} },
+        volume: { volume: Array.from({length:buckets},(_,index)=>({date:period === "24h" ? new Date(from.getTime()+step*index).toISOString() : new Date(from.getTime()+step*index).toISOString().slice(0,10),count:Math.floor(12482/buckets)+(index===buckets-1?12482%buckets:0)})) },
         sentiment: { sentiment:{positive:0.59,neutral:0.28,negative:0.13} },
         sources: {sources:[{name:"Public news",count:500,share:1}]},
         keywords:{keywords:[{term:"network",count:80}]},

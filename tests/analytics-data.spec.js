@@ -51,3 +51,17 @@ test("numeric keyword terms remain visible without coercing malformed names", ()
   expect(breakdown({ keywords: [{ term: 2026, count: 3 }] }, "keywords")).toEqual([{ name: "2026", count: 3, percentage: null }]);
   expect(breakdown({ keywords: [{ term: null, count: 3 }] }, "keywords")).toBeNull();
 });
+
+test('hourly reporting periods confirm scope and keep hourly volume timestamps',async()=>{
+  const {reportedDays,periodLabel,comparisonPeriod,hasReportedScope}=await import('../src/lib/analytics.js');
+  const overview={period:'24h',compare:'previous_24h',totals:{mentions:3}};
+  expect(reportedDays(overview)).toBe(1);
+  expect(hasReportedScope(overview,range)).toBe(true);
+  expect(periodLabel(reportedDays(overview),true)).toBe('24 hours');
+  expect(comparisonPeriod(overview)).toBe('24 hours');
+  expect(comparisonPeriod({compare:'previous_7d'})).toBe('7 days');
+  expect(periodLabel(reportedDays({period:'1h'}),true)).toBe('1 hour');
+  for(const period of ['0h','-24h','Infinityh','24hours','7w'])expect(reportedDays({period})).toBeNull();
+  const rows=[{date:'2026-10-30T09:00:00Z',count:1},{date:'2026-10-30T08:00:00Z',count:2}];
+  expect(volumeSeries({volume:rows})).toEqual([rows[1],rows[0]]);
+});

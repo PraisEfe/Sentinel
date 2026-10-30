@@ -1,4 +1,4 @@
-export const supportedAnalyticsPeriods = { "30 days": "30d", "90 days": "90d" };
+export const supportedAnalyticsPeriods = { "24 hours": "24h", "7 days": "7d", "30 days": "30d", "90 days": "90d" };
 export const periods = { "24 hours": 1, "7 days": 7, "30 days": 30, "90 days": 90 };
 export const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 export const unwrap = (value) => object(value) && "data" in value ? value.data : value;
@@ -83,17 +83,21 @@ export function reportedDays(payload) {
   const value = unwrap(payload);
   const period = value?.period ?? payload?.period ?? payload?.meta?.period;
   if (typeof period !== "string") return null;
-  const match = /^(\d+(?:\.\d+)?)d$/.exec(period);
-  const days = match ? Number(match[1]) : null;
+  const match = /^(\d+(?:\.\d+)?)([dh])$/.exec(period);
+  const days = match ? Number(match[1]) / (match[2] === "h" ? 24 : 1) : null;
   return days !== null && Number.isFinite(days) && days > 0 ? days : null;
 }
-export function periodLabel(days) {
-  return days === null ? null : `${Number(days.toFixed(2))} ${Math.abs(days - 1) < .0001 ? "day" : "days"}`;
+export function periodLabel(days, hourly = false) {
+  if (days === null) return null;
+  const amount = hourly ? days * 24 : days;
+  const unit = hourly ? "hour" : "day";
+  return `${Number(amount.toFixed(2))} ${Math.abs(amount - 1) < .0001 ? unit : `${unit}s`}`;
 }
 export function comparisonPeriod(payload) {
   const compare = unwrap(payload)?.compare;
   if (typeof compare !== "string" || !compare.startsWith("previous_")) return null;
-  return periodLabel(reportedDays({period:compare.slice("previous_".length)}));
+  const period = compare.slice("previous_".length);
+  return periodLabel(reportedDays({period}), period.endsWith("h"));
 }
 export function hasReportedScope(payload, range) {
   return confirmsRange(payload, range) || reportedDays(payload) !== null;

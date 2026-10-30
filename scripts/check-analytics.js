@@ -44,7 +44,7 @@ try {
       const to = new Date();
       const from = new Date(to.getTime() - 90 * 86400000);
       const variants = process.argv.includes("--supported") ? [
-        ["30d", "?period=30d"], ["90d", "?period=90d"],
+        ["24h", "?period=24h"], ["7d", "?period=7d"], ["30d", "?period=30d"], ["90d", "?period=90d"],
       ] : [
         ["unfiltered", ""],
         ["timestamps", `?${new URLSearchParams({ from: from.toISOString(), to: to.toISOString() })}`],
