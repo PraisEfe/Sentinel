@@ -2,6 +2,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   Activity,
+  Eye,
+  EyeOff,
   LockKeyhole,
   Mail,
   UserRound,
@@ -21,6 +23,8 @@ export default function AuthView({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [remember, setRemember] = useState(true);
   const [terms, setTerms] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -33,6 +37,8 @@ export default function AuthView({
     setError("");
     setMessage("");
     setPassword("");
+    setShowPassword(false);
+    setShowConfirmation(false);
     setConfirmation("");
     navigate(
       next === "signup"
@@ -204,13 +210,16 @@ export default function AuthView({
                   <LockKeyhole />
                   <input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     autoComplete={signup ? "new-password" : "current-password"}
                     required
                     minLength={signup ? 8 : undefined}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
+                  <button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} aria-controls="password" aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff /> : <Eye />}
+                  </button>
                 </div>
                 {signup && (
                   <small className="field-hint">
@@ -226,13 +235,16 @@ export default function AuthView({
                   <LockKeyhole />
                   <input
                     id="confirmation"
-                    type="password"
+                    type={showConfirmation ? "text" : "password"}
                     autoComplete="new-password"
                     required
                     minLength={8}
                     value={confirmation}
                     onChange={(e) => setConfirmation(e.target.value)}
                   />
+                  <button type="button" className="password-toggle" aria-label={showConfirmation ? "Hide confirm password" : "Show confirm password"} aria-controls="confirmation" aria-pressed={showConfirmation} onClick={() => setShowConfirmation(!showConfirmation)}>
+                    {showConfirmation ? <EyeOff /> : <Eye />}
+                  </button>
                 </div>
                 <small className="field-hint">Use at least 8 characters.</small>
               </div>

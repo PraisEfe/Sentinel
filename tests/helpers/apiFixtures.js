@@ -29,6 +29,8 @@ export async function mockApi(page, options = {}) {
   let pushPosts = 0;
   let pushPreferences = 0;
   let monitors = options.empty ? [] : [monitor];
+  let monitorDeletes = 0;
+  const deletedMonitors = new Set();
   let searches = options.empty ? [] : [...history];
   let workspaces = options.noWorkspace
     ? []
@@ -287,6 +289,14 @@ export async function mockApi(page, options = {}) {
     }
     if (path.endsWith("/alerts"))
       return fulfill({ data: alerts, meta: { next_cursor: null } });
+    if (/\/monitors\/m-\d+$/.test(path) && method === "DELETE") {
+      monitorDeletes++;
+      if (options.monitorDeleteError && monitorDeletes === 1) return fulfill({ message: "Internal database failure" }, options.monitorDeleteError);
+      const id = path.split("/").at(-1);
+      deletedMonitors.add(id);
+      monitors = monitors.filter((item) => item.id !== id);
+      return route.fulfill({ status: 204 });
+    }
     if (path.endsWith("/monitors") && method === "POST") {
       monitors = [...monitors, { ...monitor, ...body, id: "m-2" }];
       return fulfill({ data: monitors.at(-1) }, 201);
@@ -301,10 +311,11 @@ export async function mockApi(page, options = {}) {
         data: [
           {
             ...monitor,
+            id: pageNumber === 1 ? "m-1" : "m-2",
             name: pageNumber === 1 ? "MTN Nigeria" : "Cybersecurity",
           },
         ],
-        meta: { total: 2, current_page: pageNumber, last_page: 2 },
+        meta: { total: 2 - deletedMonitors.size, current_page: pageNumber, last_page: deletedMonitors.size ? 1 : 2 },
       });
     }
     if (path.endsWith("/monitors"))

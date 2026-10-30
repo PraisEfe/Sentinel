@@ -334,6 +334,18 @@ export const useAppStore = create(
         void get().refreshWorkspace();
         return result.data;
       },
+      deleteMonitor: async (monitorId) => {
+        const { workspaceId, authVersion } = get();
+        await get().api(`/monitors/${encodeURIComponent(monitorId)}`, { method: "DELETE" });
+        if (get().workspaceId !== workspaceId || get().authVersion !== authVersion) return null;
+        workspaceJob?.controller.abort();
+        workspaceJob = null;
+        const { data, monitorPage } = get();
+        const page = data.monitors.length === 1 && monitorPage > 1 ? monitorPage - 1 : monitorPage;
+        set({ dataKey: "", data: { ...data, monitors: data.monitors.filter((item) => item.id !== monitorId), monitorTotal: Math.max(0, data.monitorTotal - 1) } });
+        await get().loadWorkspace({ page, force: true });
+        return get().workspaceId === workspaceId && get().authVersion === authVersion ? page : null;
+      },
       clearHistory: async () => {
         const { workspaceId, authVersion } = get();
         await get().api("/history/searches", { method: "DELETE" });

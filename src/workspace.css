@@ -2044,3 +2044,11 @@ body:has(dialog[open]) {
 .analytics-availability-note { font-size:9px; color:#8a9a90; margin:-10px 0 15px; }
 .analytics-page .workspace-tabs button:disabled { opacity:.45; cursor:not-allowed; }
 .analytics-page .source-legend > span { overflow-wrap:anywhere; max-width:100%; }
+
+.monitor-delete-button { margin-left:10px; color:#9b4941; }
+.monitor-delete-button:hover { color:#b63228; }
+.delete-monitor-body { padding:20px 24px; font-size:13px; line-height:1.7; }
+.delete-monitor-body p { margin:0; }
+.delete-monitor-body .load-error { margin-top:16px; }
+.primary-button.danger-button { background:#a33e35; }
+.primary-button.danger-button:hover { background:#873229; }

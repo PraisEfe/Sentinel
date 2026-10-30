@@ -983,3 +983,78 @@ test('only live-verified analytics periods can be selected and all panels use th
     return !params.has('from')&&!params.has('to')&&['30d','90d'].includes(params.get('period'));
   })).toBe(true);
 });
+
+test("password visibility toggles preserve typed values, remain independent and never submit the form", async ({ page }) => {
+  const calls = await mockApi(page);
+  await page.goto('/signin');
+  const password = page.getByLabel('Password', { exact: true });
+  await password.fill('p@ssword!123');
+  await expect(password).toHaveAttribute('type', 'password');
+  await page.getByRole('button', { name: 'Show password', exact: true }).click();
+  await expect(password).toHaveAttribute('type', 'text');
+  await expect(password).toHaveValue('p@ssword!123');
+  await page.getByRole('button', { name: 'Hide password', exact: true }).click();
+  await expect(password).toHaveAttribute('type', 'password');
+  expect(calls.some(call => call.path === '/auth/login')).toBe(false);
+  await page.goto('/signup');
+  await page.getByLabel('Password', { exact: true }).fill('new-password');
+  await page.getByLabel('Confirm Password', { exact: true }).fill('new-password');
+  await page.getByRole('button', { name: 'Show confirm password', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Confirm Password', { exact: true })).toHaveAttribute('type', 'text');
+  await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('type', 'password');
+  await page.getByRole('button', { name: 'Show password', exact: true }).click();
+  await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('type', 'text');
+  expect(calls.some(call => call.path === '/auth/register')).toBe(false);
+});
+
+test("monitor deletion requires confirmation, supports cancellation and persists after refresh", async ({ page }) => {
+  const calls = await mockApi(page);
+  await login(page);
+  await goTo(page, 'Monitors');
+  await page.getByRole('button', { name: 'Delete MTN Nigeria', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Delete monitor?' });
+  await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  expect(calls.filter(call => call.method === 'DELETE')).toHaveLength(0);
+  await page.getByRole('button', { name: 'Delete MTN Nigeria', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Delete monitor', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByText('No monitors yet. Create a monitor to start discovering.')).toBeVisible();
+  const deletes = calls.filter(call => call.method === 'DELETE');
+  expect(deletes).toHaveLength(1);
+  expect(deletes[0].path).toBe('/workspaces/w-1/monitors/m-1');
+  expect(deletes[0].headers.authorization).toBe('Bearer test-session-token');
+  await page.reload();
+  await expect(page.getByText('No monitors yet. Create a monitor to start discovering.')).toBeVisible();
+});
+
+for (const status of [403, 500]) test(`monitor deletion ${status} keeps the monitor and permits retry`, async ({ page }) => {
+  const calls = await mockApi(page, { monitorDeleteError: status });
+  await login(page);
+  await goTo(page, 'Monitors');
+  await page.getByRole('button', { name: 'Delete MTN Nigeria', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Delete monitor?' });
+  await dialog.getByRole('button', { name: 'Delete monitor', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText(status === 403 ? 'You don’t have access' : 'We couldn’t complete');
+  await expect(dialog).not.toContainText('database');
+  await expect(page.getByRole('button', { name: 'Delete MTN Nigeria', exact: true })).toBeAttached();
+  await dialog.getByRole('button', { name: 'Delete monitor', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByText('No monitors yet. Create a monitor to start discovering.')).toBeVisible();
+  expect(calls.filter(call => call.method === 'DELETE')).toHaveLength(2);
+});
+
+test("deleting the last monitor on a later page returns to the previous page", async ({ page }) => {
+  const calls = await mockApi(page, { paginated: true });
+  await login(page);
+  await goTo(page, 'Monitors');
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await page.getByRole('button', { name: 'Delete Cybersecurity', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Delete monitor', exact: true }).click();
+  await expect(page).toHaveURL(/\/monitors\?page=1$/);
+  await expect(page.getByRole('button', { name: 'Next', exact: true })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Delete MTN Nigeria', exact: true })).toBeVisible();
+  expect(calls.find(call => call.method === 'DELETE').path).toBe('/workspaces/w-1/monitors/m-2');
+});

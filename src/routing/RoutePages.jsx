@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import {
   Link,
   Navigate,
@@ -9,7 +9,9 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import AuthView from "../components/views/AuthView";
 import DashboardView from "../components/views/DashboardView";
-import MonitorsView from "../components/views/MonitorsView";
+import LoadingState from "../components/common/LoadingState";
+import RouteBoundary from "./RouteBoundary";
+const MonitorsView = lazy(() => import("../components/views/MonitorsView"));
 import LiveSearchView from "../components/views/LiveSearchView";
 import { useAppStore } from "../stores/appStore";
 import { useWorkspace } from "../lib/workspace";
@@ -106,6 +108,7 @@ function useSummary() {
       page: state.monitorPage,
       refresh: state.refreshWorkspace,
       clearHistory: state.clearHistory,
+      deleteMonitor: state.deleteMonitor,
       openMonitor: state.openMonitor,
     })),
   );
@@ -142,12 +145,16 @@ export function MonitorsPage() {
   const navigate = useNavigate();
   const [, setParams] = useSearchParams();
   return (
-    <MonitorsView
+    <RouteBoundary><Suspense fallback={<LoadingState label="Opening monitors…" />}><MonitorsView
       monitors={summary.data.monitors}
       loading={summary.loading}
       error={summary.error}
       onRetry={summary.refresh}
       onCreate={() => summary.openMonitor()}
+      onDelete={async (id) => {
+        const nextPage = await summary.deleteMonitor(id);
+        if (nextPage !== null && nextPage !== summary.page) setParams({ page: String(nextPage) }, { replace: true });
+      }}
       onSelect={(text) =>
         navigate(
           `${workspacePathFor("search")}?${new URLSearchParams({ q: text })}`,
@@ -157,7 +164,7 @@ export function MonitorsPage() {
       lastPage={summary.data.lastPage || 1}
       onPageChange={(page) => setParams({ page: String(page) })}
       total={summary.data.monitorTotal}
-    />
+    /></Suspense></RouteBoundary>
   );
 }
 export function SearchPage() {

@@ -1,5 +1,7 @@
+import { useState } from "react";
+import DeleteMonitorDialog from "../common/DeleteMonitorDialog";
 import LoadingState from "../common/LoadingState";
-import { Activity, ArrowRight, Plus } from "lucide-react";
+import { Activity, ArrowRight, Plus, Trash2 } from "lucide-react";
 import { PageMotion, Pagination } from "../common/WorkspaceUI";
 import { frequencyLabel, number } from "../../lib/workspace";
 import { relativeTime } from "../../lib/format";
@@ -9,12 +11,14 @@ export default function MonitorsView({
   error,
   onRetry,
   onCreate,
+  onDelete,
   onSelect,
   page,
   lastPage,
   onPageChange,
   total,
 }) {
+  const [deleting, setDeleting] = useState(null);
   const active = monitors.filter((item) => item.is_active).length;
   const scans = monitors.map((item) => item.latest_scan).filter(Boolean);
   const fresh = scans.length
@@ -79,7 +83,7 @@ export default function MonitorsView({
                 <th>Total mentions</th>
                 <th>Frequency</th>
                 <th>Status</th>
-                <th aria-label="Open monitor"></th>
+                <th aria-label="Monitor actions"></th>
               </tr>
             </thead>
             <tbody>
@@ -134,6 +138,9 @@ export default function MonitorsView({
                     >
                       <ArrowRight size={15} />
                     </button>
+                    <button className="monitor-delete-button" aria-label={`Delete ${item.name}`} disabled={loading} onClick={() => setDeleting(item)}>
+                      <Trash2 size={15} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -149,6 +156,7 @@ export default function MonitorsView({
           </p>
         )}
       </section>
+      {deleting && <DeleteMonitorDialog monitor={deleting} onClose={() => setDeleting(null)} onDelete={onDelete} />}
       <Pagination
         page={page}
         lastPage={lastPage}
