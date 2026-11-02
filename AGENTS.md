@@ -16,7 +16,7 @@ Component rules. The umbrella `../AGENTS.md` also applies.
 - Browser API calls are same-origin `/api/v1` in every mode. Do not point the browser at the backend domain directly.
 - Production is static `dist/` served by nginx with `/api/v1` proxied to `https://sentinel-api.absg-ohos.cloud`. The Express server in `server/` is a fallback host mode.
 - Public routes: `/`, `/privacy`, `/terms`, `/signin`, `/signup`, `/forgot-password`. `/` shows the landing page when signed out and the dashboard when signed in.
-- Google/Microsoft sign-in buttons are placeholders until the callback flow is implemented.
+- Google/Microsoft sign-in buttons are placeholders until the callback flow is implemented; follow `docs/social-auth.md`.
 
 ## Commands
 
