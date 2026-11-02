@@ -71,7 +71,7 @@ export default function AnalyticsView() {
           <div className="analytics-recharts" role="img" aria-label={`Mention volume for ${period}: ${series.map((point)=>`${labelDate(point.date)}: ${point.count}`).join(", ")}`}>
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={series} margin={{top:12,right:0,bottom:0,left:0}} barCategoryGap="12%" accessibilityLayer>
-                <XAxis dataKey="date" tickFormatter={labelDate} tickLine={false} axisLine={{stroke:"#e0e8e2"}} minTickGap={24} tick={{fontSize:9,fill:"#8a9f91"}}/>
+                <XAxis dataKey="date" tickFormatter={labelDate} tickLine={false} axisLine={{stroke:"#e0e8e2"}} minTickGap={24} tick={{fontSize:11,fill:"#8a9f91"}}/>
                 <YAxis hide domain={[0,"auto"]}/><Tooltip labelFormatter={labelDate} formatter={(value)=>[number(value),"Mentions"]} cursor={{fill:"#f0f5f1"}}/>
                 <Bar dataKey="count" radius={[2,2,0,0]} isAnimationActive={!reduced} animationDuration={450}>
                   {series.map((point,index)=><Cell key={`${point.date}:${index}`} fill={index>=series.length-4?"#4c9270":"#c9dcd1"}/>)}
