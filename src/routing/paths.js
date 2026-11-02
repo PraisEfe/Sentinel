@@ -14,7 +14,8 @@ export function safeReturnTo(value) {
   return typeof value === "string" &&
     value.startsWith("/") &&
     !value.startsWith("//") &&
-    !/^\/(signin|signup|forgot-password)(\/|\?|$)/.test(value)
+    !/[\\\p{Cc}]/u.test(value) &&
+    !/^\/(signin|signup|forgot-password|auth\/callback)(\/|\?|#|$)/.test(value)
     ? value
     : "/";
 }

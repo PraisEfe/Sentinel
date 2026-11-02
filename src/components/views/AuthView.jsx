@@ -9,6 +9,7 @@ import {
   UserRound,
 } from "lucide-react";
 import Brand from "../common/Brand";
+import { safeReturnTo } from "../../routing/paths";
 import { authenticate, request } from "../../lib/api";
 
 export default function AuthView({
@@ -48,6 +49,20 @@ export default function AuthView({
           : "/signin",
       { state: location.state },
     );
+  }
+
+  function startSocial(provider) {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      sessionStorage.setItem("sentinel_social_remember", remember ? "1" : "0");
+      sessionStorage.setItem("sentinel_social_return_to", safeReturnTo(location.state?.from));
+      window.location.assign(`/api/v1/auth/social/${provider}/redirect?${new URLSearchParams({ device_name: "web", remember: remember ? "1" : "0" })}`);
+    } catch {
+      setBusy(false);
+      setError("We couldn’t start sign-in. Allow site storage and try again.");
+    }
   }
 
   async function submit(event) {
@@ -294,17 +309,17 @@ export default function AuthView({
               <div className="social-buttons">
                 <button
                   type="button"
-                  disabled
-                  title="Google sign-in is not available yet"
+                  disabled={busy}
+                  onClick={() => startSocial("google")}
                 >
-                  <b>G</b> Google
+                  <img src="/google.svg" alt="" width="18" height="18" /> Google
                 </button>
                 <button
                   type="button"
-                  disabled
-                  title="Microsoft sign-in is not available yet"
+                  disabled={busy}
+                  onClick={() => startSocial("microsoft")}
                 >
-                  <b>▦</b> Microsoft
+                  <img src="/microsoft.svg" alt="" width="18" height="18" /> Microsoft
                 </button>
               </div>
             </>

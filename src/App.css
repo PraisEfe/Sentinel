@@ -358,10 +358,6 @@ input::placeholder {
   opacity: 1;
   color: #67736b;
 }
-.social-buttons b {
-  color: #37473c;
-  font-size: 13px;
-}
 .auth-switch {
   text-align: center;
   font-size: 13px;
@@ -1370,3 +1366,5 @@ input::placeholder {
 .input-shell .password-toggle:hover { background:#edf4ef; }
 .input-shell .password-toggle svg { width:17px; height:17px; color:#526e60; }
 .password-toggle:focus-visible { outline:2px solid #32815b; outline-offset:2px; }
+
+.social-buttons img { display:block; flex-shrink:0; width:18px; height:18px; }

@@ -137,3 +137,9 @@ curl -fsS https://sentinel-org.absg-ohos.cloud/privacy >/dev/null && echo ok
 curl -fsS https://sentinel-org.absg-ohos.cloud/terms >/dev/null && echo ok
 tail -f /var/log/nginx/error.log
 ```
+
+## Social sign-in
+
+Google/Microsoft buttons navigate through the existing same-origin `/api/v1` proxy. The public `/auth/callback` route must use the SPA fallback, including when its URL contains `code`, `provider`, or `error` query parameters. No OAuth client IDs or secrets are needed in the frontend environment. Backend provider redirect URIs remain unchanged; the backend must send the browser back to `https://sentinel-org.absg-ohos.cloud/auth/callback`.
+
+Automated browser tests cover redirect/exchange/session/onboarding/error flows with controlled responses. Live redirect checks are separate from completing an interactive provider login; verify one real sign-in with each provider after deployment. Do not share callback codes, bearer tokens, or full OAuth redirect URLs in logs or screenshots.

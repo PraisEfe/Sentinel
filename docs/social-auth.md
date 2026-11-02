@@ -1,6 +1,6 @@
 # Social sign-in — frontend implementation guide
 
-The backend social-auth flow is implemented and deployed. This guide covers the remaining frontend work for Google and Microsoft sign-in.
+The backend social-auth flow is implemented and deployed. The frontend flow is now implemented; this guide describes the contract and integration for Google and Microsoft sign-in.
 
 **Do not put OAuth client IDs or secrets in the frontend.** The client secrets live only in the backend `.env`. The browser never calls Google or Microsoft directly for this flow; it only talks to the same-origin `/api/v1` proxy.
 
@@ -80,7 +80,7 @@ The shape matches `/auth/login`. The code is single-use and expires after 120 se
 
 File: `src/components/views/AuthView.jsx`
 
-The Google and Microsoft buttons are currently disabled placeholders. Replace them with real actions:
+The Google and Microsoft buttons now use their bundled brand SVGs and start same-tab sign-in. The integration follows this pattern:
 
 ```jsx
 function startSocial(provider) {
@@ -246,11 +246,17 @@ Minimum coverage:
 
 ## Acceptance checklist
 
-- [ ] Google and Microsoft buttons are enabled.
-- [ ] Redirect uses the same-origin `/api/v1` path.
-- [ ] `/auth/callback` is a public route.
-- [ ] Valid code exchanges for a session and lands on the workspace or onboarding.
-- [ ] Errors are readable and return the user to `/signin`.
-- [ ] No secrets or tokens appear in the frontend repo or URLs.
-- [ ] Playwright coverage added and passing.
-- [ ] `npm run lint` and `npm run build` pass.
+- [x] Google and Microsoft buttons are enabled.
+- [x] Redirect uses the same-origin `/api/v1` path.
+- [x] `/auth/callback` is a public route.
+- [x] Valid code exchanges for a session and lands on the workspace or onboarding.
+- [x] Errors are readable and return the user to `/signin`.
+- [x] No secrets or tokens appear in the frontend repo or URLs.
+- [x] Playwright coverage added and passing.
+- [x] `npm run lint` and `npm run build` pass.
+
+## Verification limits
+
+The frontend uses `SocialCallbackPage.jsx`, removes callback query parameters before exchanging the code, and retains one request promise to avoid duplicate exchanges in React StrictMode. Missing/unknown providers and malformed sessions fail safely. Requested destinations are validated with `safeReturnTo`.
+
+Playwright covers the flow with controlled API/provider responses; live redirect and invalid-code checks do not establish that a real provider account can complete authentication. Google/Microsoft account login, consent, and a valid production exchange require an interactive verification after deployment.

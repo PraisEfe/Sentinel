@@ -16,8 +16,8 @@ test("sign-in matches the split layout, has bundled styling and accessible input
   await expect(page.getByLabel("Work email")).toHaveValue("");
   await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
   await expect(
-    page.getByRole("button", { name: "G Google", exact: true }),
-  ).toBeDisabled();
+    page.getByRole("button", { name: "Google", exact: true }),
+  ).toBeEnabled();
   const story = await page.locator(".auth-story").boundingBox();
   expect(Math.round(story.width)).toBe(641);
   expect(

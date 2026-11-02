@@ -26,6 +26,7 @@ import LoadingState from "./components/common/LoadingState";
 import LandingView from "./components/views/LandingView";
 import LegalView from "./components/views/LegalView";
 import "./landing.css";
+const SocialCallbackPage = lazy(() => import("./components/views/SocialCallbackPage"));
 const AnalyticsView = lazy(() => import("./components/views/AnalyticsView"));
 import AlertsView from "./components/views/AlertsView";
 import SettingsView from "./components/views/SettingsView";
@@ -88,6 +89,7 @@ export default function App() {
       <MotionConfig reducedMotion="user">
         <SessionInitializer />
         <Routes>
+          <Route path="auth/callback" element={<RouteBoundary><Suspense fallback={<LoadingState label="Completing sign-in…" />}><SocialCallbackPage /></Suspense></RouteBoundary>} />
           <Route path="signin" element={<AuthPage mode="signin" />} />
           <Route path="signup" element={<AuthPage mode="signup" />} />
           <Route path="forgot-password" element={<AuthPage mode="forgot" />} />
