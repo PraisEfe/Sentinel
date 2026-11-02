@@ -1,5 +1,7 @@
 # Deployment — Sentinel Frontend
 
+> **Execution rule:** agents must never run SSH commands, locally or remotely, and must never run commands on the VPS. Provide the exact commands for the owner and wait for output.
+
 Target:
 
 - Domain: `https://sentinel-org.absg-ohos.cloud`
