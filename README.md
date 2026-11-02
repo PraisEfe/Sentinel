@@ -25,8 +25,10 @@ React Router handles navigation, deep links, refreshes, query parameters, and br
 
 | Routes | Access |
 | --- | --- |
+| `/` | Public landing page for signed-out visitors; protected workspace dashboard when signed in |
+| `/privacy`, `/terms` | Public legal pages |
 | `/signin`, `/signup`, `/forgot-password` | Public account forms; authenticated users return to their destination |
-| `/`, `/search`, `/monitors`, `/intelligence`, `/analytics`, `/alerts`, `/settings` | Protected, server-verified session and selected workspace required |
+| `/search`, `/monitors`, `/intelligence`, `/analytics`, `/alerts`, `/settings` | Protected, server-verified session and selected workspace required |
 | `/workspaces/new` | Protected account can create its first or an additional workspace |
 
 `ProtectedRoute` redirects signed-out visitors to sign-in and restores the intended internal URL afterwards. A stored token is verified using `/auth/me` before private pages render. Unauthorized API responses expire the session and clear private state. Logout clears device access even if server-side revocation is temporarily unreachable. Client guards improve navigation; backend bearer authentication and authorization still enforce access to every resource.
@@ -87,6 +89,8 @@ It sends an unauthenticated account request and an empty login request through t
 Tests use system Chromium when available. Otherwise run `npx playwright install chromium`, or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to your browser executable. Screenshots and traces from failed runs are saved under ignored `test-results/`.
 
 ## Production
+
+Production deployment for this VPS is documented in [deploy/README.md](deploy/README.md): GitHub Actions → `/opt/sentinel-frontend-deploy.sh` → `deploy/frontend-deploy.sh`, with nginx serving `dist/` and proxying `/api/v1`. The manual runtime below is the fallback for hosts without nginx.
 
 ```sh
 npm ci --include=dev

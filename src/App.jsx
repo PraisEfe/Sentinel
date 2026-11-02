@@ -1,5 +1,12 @@
 import { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import { useAppStore } from "./stores/appStore";
 import ProtectedRoute from "./routing/ProtectedRoute";
@@ -16,6 +23,9 @@ import {
 import IntelligenceView from "./components/views/IntelligenceView";
 import RouteBoundary from "./routing/RouteBoundary";
 import LoadingState from "./components/common/LoadingState";
+import LandingView from "./components/views/LandingView";
+import LegalView from "./components/views/LegalView";
+import "./landing.css";
 const AnalyticsView = lazy(() => import("./components/views/AnalyticsView"));
 import AlertsView from "./components/views/AlertsView";
 import SettingsView from "./components/views/SettingsView";
@@ -50,6 +60,14 @@ function SessionInitializer() {
   }, [initialize]);
   return null;
 }
+function RootPage() {
+  const session = useAppStore((state) => state.session);
+  const location = useLocation();
+  if (location.pathname === "/" && !session) {
+    return <LandingView />;
+  }
+  return <Outlet />;
+}
 function workspaceRoutes() {
   return (
     <>
@@ -73,19 +91,25 @@ export default function App() {
           <Route path="signin" element={<AuthPage mode="signin" />} />
           <Route path="signup" element={<AuthPage mode="signup" />} />
           <Route path="forgot-password" element={<AuthPage mode="forgot" />} />
+          <Route path="privacy" element={<LegalView kind="privacy" />} />
+          <Route path="terms" element={<LegalView kind="terms" />} />
           <Route element={<ProtectedRoute />}>
             <Route path="workspaces/new" element={<NewWorkspacePage />} />
-            <Route
-              path="/"
-              element={
-                <WorkspaceGate>
-                  <WorkspaceLayout />
-                </WorkspaceGate>
-              }
-            >
-              {workspaceRoutes()}
+          </Route>
+          <Route path="/" element={<RootPage />}>
+            <Route element={<ProtectedRoute />}>
+              <Route
+                element={
+                  <WorkspaceGate>
+                    <WorkspaceLayout />
+                  </WorkspaceGate>
+                }
+              >
+                {workspaceRoutes()}
+              </Route>
             </Route>
           </Route>
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </MotionConfig>
     </BrowserRouter>

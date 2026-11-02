@@ -171,7 +171,7 @@ test("expired session is cleared and returns to sign-in", async ({ page }) => {
       JSON.stringify({ token: "test-session-token", user: { id: "u-1" } }),
     ),
   );
-  await page.goto("/");
+  await page.goto("/search");
   await expect(
     page.getByRole("heading", { name: "Sign in to your workspace" }),
   ).toBeVisible();

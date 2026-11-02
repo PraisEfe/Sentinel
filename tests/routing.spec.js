@@ -11,7 +11,6 @@ test("all private URLs redirect unauthenticated visitors before making private A
 }) => {
   const calls = await mockApi(page);
   for (const path of [
-    "/",
     "/search?q=MTN",
     "/monitors",
     "/intelligence",
@@ -31,6 +30,34 @@ test("all private URLs redirect unauthenticated visitors before making private A
   }
   expect(calls).toEqual([]);
 });
+
+test("public home, privacy and terms pages render for signed-out visitors", async ({
+  page,
+}) => {
+  const calls = await mockApi(page);
+
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", {
+      name: "Know what's being said. Understand what matters.",
+    }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "Privacy" }).click();
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(
+    page.getByRole("heading", { name: "Privacy Policy" }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "Terms" }).click();
+  await expect(page).toHaveURL(/\/terms$/);
+  await expect(
+    page.getByRole("heading", { name: "Terms of Service" }),
+  ).toBeVisible();
+
+  expect(calls).toEqual([]);
+});
+
 test("sign-in returns to the requested private deep link with search filters intact", async ({
   page,
 }) => {

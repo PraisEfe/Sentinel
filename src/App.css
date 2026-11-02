@@ -382,6 +382,14 @@ input::placeholder {
   font-size: 8px;
   color: #adb8b0;
 }
+.auth-legal a {
+  color: inherit;
+  text-decoration: none;
+}
+.auth-legal a:hover {
+  color: #237854;
+  text-decoration: underline;
+}
 .workspace-shell {
   display: flex;
   min-height: 100dvh;

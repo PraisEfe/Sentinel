@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   Activity,
@@ -327,8 +327,8 @@ export default function AuthView({
         </div>
         <footer className="auth-legal">
           © {new Date().getFullYear()} Sentinel Intelligence{" "}
-          <span>Privacy</span>
-          <span>Terms</span>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
           <span>Help</span>
         </footer>
       </main>
