@@ -189,7 +189,15 @@ test("logout clears access even when the revocation service is offline", async (
     ),
   ).toBeVisible();
   await page.goBack();
-  await expect(page).toHaveURL(/\/signin$/);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole("heading", {
+      name: "Know what's being said. Understand what matters.",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Main navigation" }),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(
       () =>

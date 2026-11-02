@@ -401,11 +401,19 @@ test("search filters, sorting and saved views send documented fields", async ({
     .getByRole("button", { name: "Search", exact: true })
     .last()
     .click();
-  await page.getByLabel("Sentiment", { exact: true }).selectOption("positive");
-  await page.getByLabel("Language", { exact: true }).selectOption("en");
-  await page.getByLabel("Sort results").selectOption("latest");
-  await page.getByLabel("Source", { exact: true }).selectOption("source-1");
-  await page.getByLabel("Date", { exact: true }).selectOption("7");
+  async function applyFilter(label, value, marker) {
+    const responded = page.waitForResponse((response) =>
+      response.url().includes(marker),
+    );
+    await page.getByLabel(label, { exact: true }).selectOption(value);
+    await responded;
+  }
+
+  await applyFilter("Sentiment", "positive", "sentiment=positive");
+  await applyFilter("Language", "en", "language=en");
+  await applyFilter("Sort results", "latest", "sort=latest");
+  await applyFilter("Source", "source-1", "source_id=source-1");
+  await applyFilter("Date", "7", "from=");
   await page.getByRole("button", { name: "Save this view" }).click();
   await page.getByLabel("View name").fill("Positive MTN news");
   await page.getByRole("button", { name: "Save view", exact: true }).click();
