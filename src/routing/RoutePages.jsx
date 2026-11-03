@@ -187,6 +187,7 @@ export function SearchPage() {
         const next = new URLSearchParams(previous);
         if (value) next.set(key, value);
         else next.delete(key);
+        if (key !== "page") next.delete("page");
         return next;
       },
       { replace: true },

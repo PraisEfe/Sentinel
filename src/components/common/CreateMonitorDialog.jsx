@@ -90,10 +90,14 @@ export default function CreateMonitorDialog({
             .split(",")
             .map((v) => v.trim())
             .filter(Boolean),
-          location_names: locations
-            .split(",")
-            .map((v) => v.trim())
-            .filter(Boolean),
+          ...(locations.trim()
+            ? {
+                location_names: locations
+                  .split(",")
+                  .map((v) => v.trim())
+                  .filter(Boolean),
+              }
+            : {}),
         });
         setCreated(monitor || { unknown: true });
       }

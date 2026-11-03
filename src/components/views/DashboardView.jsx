@@ -50,7 +50,7 @@ export default function DashboardView({
           <h1>Discover what’s happening online.</h1>
           <p>
             Search people, organisations, brands, topics and keywords across the
-            public web.
+            public sources you monitor.
           </p>
           <form
             className="discovery-search"

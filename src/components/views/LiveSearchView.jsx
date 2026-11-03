@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bookmark, Filter, Globe, Search } from "lucide-react";
-import { useResource, useWorkspace, number } from "../../lib/workspace";
+import { frequencyLabel, number, useResource, useWorkspace } from "../../lib/workspace";
 import { relativeTime } from "../../lib/format";
-import { PageMotion, ResourceState, Tabs } from "../common/WorkspaceUI";
+import { PageMotion, Pagination, ResourceState, Tabs } from "../common/WorkspaceUI";
 const channels = [
   ["all", "All"],
   ["news", "News"],
@@ -24,6 +24,7 @@ export default function LiveSearchView({
 }) {
   const { api, preferences } = useWorkspace();
   const [input, setInput] = useState(query);
+  const [resultType, setResultType] = useState("stories");
   const filters = {
     date: "",
     source_id: "",
@@ -31,6 +32,7 @@ export default function LiveSearchView({
     language: "",
     sentiment: "",
     sort: "relevance",
+    page: "",
     ...initialFilters,
   };
   const [saving, setSaving] = useState(false);
@@ -55,6 +57,7 @@ export default function LiveSearchView({
     "sentiment",
     "sort",
     "cluster_id",
+    "page",
   ])
     if (filters[key]) params.set(key, filters[key]);
   if (from) params.set("from", from);
@@ -62,6 +65,14 @@ export default function LiveSearchView({
   const resource = useResource(query ? `/search?${params}` : null, {
     list: true,
   });
+  const sourceSearch = useResource(
+    query ? `/search/sources?${new URLSearchParams({ q: query })}` : null,
+    { list: true },
+  );
+  const monitorSearch = useResource(
+    query ? `/search/monitors?${new URLSearchParams({ q: query })}` : null,
+    { list: true },
+  );
   const sources = useResource("/sources", { list: true });
   useEffect(() => {
     if (resource.data) onSearched();
@@ -72,6 +83,24 @@ export default function LiveSearchView({
   const visible = results.filter(
     (item) => channel === "all" || item.source?.type === channel,
   );
+  const storyTotal = resource.data?.meta?.total ?? results.length;
+  const sourceCount =
+    resource.data?.meta?.source_count ??
+    new Set(results.map((item) => item.source_id || item.source?.id).filter(Boolean))
+      .size;
+  const sourceItems = sourceSearch.data?.data || [];
+  const sourceTotal = sourceSearch.data?.meta?.total ?? sourceItems.length;
+  const monitorItems = monitorSearch.data?.data || [];
+  const monitorTotal = monitorSearch.data?.meta?.total ?? monitorItems.length;
+  const page = Number(filters.page || 1) || 1;
+  const lastPage = resource.data?.meta?.last_page || 1;
+  const description = !query
+    ? "Find the stories and conversations that matter."
+    : resultType === "stories"
+      ? `${number(storyTotal)} matching stories from ${number(sourceCount)} public sources`
+      : resultType === "sources"
+        ? `${number(sourceTotal)} matching sources`
+        : `${number(monitorTotal)} matching monitors`;
   function filter(key, value) {
     onFilterChange(key, value);
   }
@@ -88,7 +117,7 @@ export default function LiveSearchView({
           name: saveName.trim(),
           query,
           filters: [...params.entries()]
-            .filter(([key]) => key !== "q")
+            .filter(([key]) => key !== "q" && key !== "page")
             .map(([key, value]) => `${key}=${value}`),
         },
       });
@@ -165,7 +194,7 @@ export default function LiveSearchView({
         <Search size={17} />
         <input
           aria-label="Search query"
-          placeholder="Search the public web"
+          placeholder="Search your monitored public sources"
           required
           maxLength={500}
           value={input}
@@ -175,12 +204,8 @@ export default function LiveSearchView({
       </form>
       <div className="research-heading">
         <div>
-          <h1>{query || "Search the public web"}</h1>
-          <p>
-            {query
-              ? `${number(results.length)} results from ${number(new Set(results.map((item) => item.source_id || item.source?.id).filter(Boolean)).size)} public sources`
-              : "Find the stories and conversations that matter."}
-          </p>
+          <h1>{query || "Search your monitored public sources"}</h1>
+          <p>{description}</p>
         </div>
         <button
           disabled={!query}
@@ -192,148 +217,249 @@ export default function LiveSearchView({
         </button>
       </div>
       <Tabs
-        label="Search channels"
-        value={channel}
-        onChange={onChannelChange}
-        items={channels.map(([id, label]) => ({
-          id,
-          label: `${label}${id === "all" && results.length ? `  ${number(results.length)}` : ""}`,
-        }))}
+        label="Result types"
+        value={resultType}
+        onChange={setResultType}
+        items={[
+          { id: "stories", label: `Stories${storyTotal ? ` ${number(storyTotal)}` : ""}` },
+          { id: "sources", label: `Sources${sourceTotal ? ` ${number(sourceTotal)}` : ""}` },
+          { id: "monitors", label: `Monitors${monitorTotal ? ` ${number(monitorTotal)}` : ""}` },
+        ]}
       />
-      <div className="search-layout">
-        <aside className="filter-panel">
-          <h2>
-            <Filter size={13} />
-            Refine results
-          </h2>
-          {fields.map(([key, label, options]) => (
-            <label key={key} className="filter-field">
-              {label}
-              <select
-                aria-label={label}
-                value={filters[key]}
-                onChange={(e) => filter(key, e.target.value)}
-              >
-                {options.map(([id, text]) => (
-                  <option key={id} value={id}>
-                    {text}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
-          <ResourceState resource={sources} />
-          <button
-            className="outline-button"
-            disabled={!query}
-            onClick={() => setSaveOpen((v) => !v)}
-          >
-            <Bookmark size={12} />
-            Save this view
-          </button>
-          {saveOpen && (
-            <form className="save-view-form" onSubmit={save}>
-              <label>
-                View name
-                <input
-                  aria-label="View name"
-                  required
-                  maxLength={160}
-                  value={saveName}
-                  onChange={(e) => setSaveName(e.target.value)}
-                />
+      {resultType === "stories" && (
+        <Tabs
+          label="Search channels"
+          value={channel}
+          onChange={onChannelChange}
+          items={channels.map(([id, label]) => ({
+            id,
+            label: `${label}${id === "all" && results.length ? `  ${number(results.length)}` : ""}`,
+          }))}
+        />
+      )}
+      {resultType === "stories" ? (
+        <div className="search-layout">
+          <aside className="filter-panel">
+            <h2>
+              <Filter size={13} />
+              Refine results
+            </h2>
+            {fields.map(([key, label, options]) => (
+              <label key={key} className="filter-field">
+                {label}
+                <select
+                  aria-label={label}
+                  value={filters[key]}
+                  onChange={(e) => filter(key, e.target.value)}
+                >
+                  {options.map(([id, text]) => (
+                    <option key={id} value={id}>
+                      {text}
+                    </option>
+                  ))}
+                </select>
               </label>
-              <button
-                disabled={saving || !saveName.trim()}
-                className="primary-button"
-              >
-                {saving ? "Saving…" : "Save view"}
-              </button>
-            </form>
-          )}
-          {saveMessage && (
-            <p className="inline-success" role="status">
-              {saveMessage}
-            </p>
-          )}
-          {saveError && (
-            <p className="form-error" role="alert">
-              {saveError}
-            </p>
-          )}
-        </aside>
-        <section className="results-panel" aria-label="Search results">
+            ))}
+            <ResourceState resource={sources} />
+            <button
+              className="outline-button"
+              disabled={!query}
+              onClick={() => setSaveOpen((v) => !v)}
+            >
+              <Bookmark size={12} />
+              Save this view
+            </button>
+            {saveOpen && (
+              <form className="save-view-form" onSubmit={save}>
+                <label>
+                  View name
+                  <input
+                    aria-label="View name"
+                    required
+                    maxLength={160}
+                    value={saveName}
+                    onChange={(e) => setSaveName(e.target.value)}
+                  />
+                </label>
+                <button
+                  disabled={saving || !saveName.trim()}
+                  className="primary-button"
+                >
+                  {saving ? "Saving…" : "Save view"}
+                </button>
+              </form>
+            )}
+            {saveMessage && (
+              <p className="inline-success" role="status">
+                {saveMessage}
+              </p>
+            )}
+            {saveError && (
+              <p className="form-error" role="alert">
+                {saveError}
+              </p>
+            )}
+          </aside>
+          <section className="results-panel" aria-label="Search results">
+            <div className="results-toolbar">
+              <span>
+                {number(storyTotal)} matching stories · showing {visible.length} on
+                page {page}
+              </span>
+              <label>
+                Sort by
+                <select
+                  aria-label="Sort results"
+                  value={filters.sort}
+                  onChange={(e) => filter("sort", e.target.value)}
+                >
+                  <option value="relevance">Most Relevant</option>
+                  <option value="latest">Latest first</option>
+                </select>
+              </label>
+            </div>
+            {query ? (
+              <ResourceState resource={resource} empty={!visible.length}>
+                No results match this search. Try another topic or adjust your
+                filters.
+              </ResourceState>
+            ) : (
+              <p className="workspace-empty">
+                Enter a topic above to begin searching.
+              </p>
+            )}
+            {!resource.loading &&
+              !resource.error &&
+              visible.map((item) => (
+                <button
+                  className="result-row"
+                  key={item.id}
+                  onClick={() =>
+                    onSelectResult({ kind: "mention", id: item.id, item })
+                  }
+                >
+                  <span className={`source-icon ${item.source?.type || "web"}`}>
+                    <Globe size={14} />
+                  </span>
+                  <span className="result-channel">
+                    {item.source?.type || "web"}
+                  </span>
+                  <span className="result-content">
+                    <small>
+                      {item.source?.name || "Public source"} <span>·</span>{" "}
+                      {relativeTime(item.published_at)}
+                    </small>
+                    <strong>{item.title || "Untitled mention"}</strong>
+                    <p>{item.body}</p>
+                    <span className="result-meta">
+                      {item.cluster?.mention_count != null && (
+                        <span>{number(item.cluster.mention_count)} mentions</span>
+                      )}
+                      {item.cluster?.source_count != null && (
+                        <span>{number(item.cluster.source_count)} sources</span>
+                      )}
+                      {preferences.detectTone && item.sentiment && (
+                        <span className={`sentiment ${item.sentiment}`}>
+                          {item.sentiment}
+                        </span>
+                      )}
+                      {item.relevance_score != null && (
+                        <span>
+                          {Math.round(Number(item.relevance_score) * 100)}%
+                          relevance
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            <Pagination
+              page={page}
+              lastPage={lastPage}
+              onChange={(value) => filter("page", value > 1 ? String(value) : "")}
+              loading={resource.loading}
+            />
+          </section>
+        </div>
+      ) : resultType === "sources" ? (
+        <section className="results-panel" aria-label="Matching sources">
           <div className="results-toolbar">
-            <span>Showing {visible.length} representative results</span>
-            <label>
-              Sort by
-              <select
-                aria-label="Sort results"
-                value={filters.sort}
-                onChange={(e) => filter("sort", e.target.value)}
-              >
-                <option value="relevance">Most Relevant</option>
-                <option value="latest">Latest first</option>
-              </select>
-            </label>
+            <span>{number(sourceTotal)} matching sources</span>
           </div>
-          {query ? (
-            <ResourceState resource={resource} empty={!visible.length}>
-              No results match this search. Try another topic or adjust your
-              filters.
-            </ResourceState>
-          ) : (
-            <p className="workspace-empty">
-              Enter a topic above to begin searching.
-            </p>
-          )}
-          {!resource.loading &&
-            !resource.error &&
-            visible.map((item) => (
+          <ResourceState resource={sourceSearch} empty={!sourceItems.length}>
+            No sources match this search.
+          </ResourceState>
+          {!sourceSearch.loading &&
+            !sourceSearch.error &&
+            sourceItems.map((item) => {
+              const source = item.source || item;
+              return (
+                <button
+                  className="result-row"
+                  key={source.id}
+                  onClick={() => {
+                    setResultType("stories");
+                    filter("source_id", source.id);
+                  }}
+                >
+                  <span className={`source-icon ${source.type || "web"}`}>
+                    <Globe size={14} />
+                  </span>
+                  <span className="result-channel">{source.type || "web"}</span>
+                  <span className="result-content">
+                    <small>
+                      {source.provider || "source"} · {item.coverage || "Global"}
+                    </small>
+                    <strong>{source.name}</strong>
+                    <p>
+                      {item.available === false
+                        ? "Inactive upstream"
+                        : item.enabled_for_workspace === false
+                          ? "Disabled for this workspace"
+                          : "Available for this workspace"}
+                    </p>
+                  </span>
+                </button>
+              );
+            })}
+        </section>
+      ) : (
+        <section className="results-panel" aria-label="Matching monitors">
+          <div className="results-toolbar">
+            <span>{number(monitorTotal)} matching monitors</span>
+          </div>
+          <ResourceState resource={monitorSearch} empty={!monitorItems.length}>
+            No monitors match this search.
+          </ResourceState>
+          {!monitorSearch.loading &&
+            !monitorSearch.error &&
+            monitorItems.map((monitor) => (
               <button
                 className="result-row"
-                key={item.id}
-                onClick={() =>
-                  onSelectResult({ kind: "mention", id: item.id, item })
-                }
+                key={monitor.id}
+                onClick={() => onSearch(monitor.query || monitor.name)}
               >
-                <span className={`source-icon ${item.source?.type || "web"}`}>
-                  <Globe size={14} />
+                <span className={`source-icon ${monitor.type || "topic"}`}>
+                  <Search size={14} />
                 </span>
-                <span className="result-channel">
-                  {item.source?.type || "web"}
-                </span>
+                <span className="result-channel">{monitor.type || "topic"}</span>
                 <span className="result-content">
                   <small>
-                    {item.source?.name || "Public source"} <span>·</span>{" "}
-                    {relativeTime(item.published_at)}
+                    {monitor.is_active ? "Active" : "Paused"} ·{" "}
+                    {frequencyLabel(monitor.frequency)}
                   </small>
-                  <strong>{item.title || "Untitled mention"}</strong>
-                  <p>{item.body}</p>
-                  <span className="result-meta">
-                    {item.cluster?.mention_count != null && (
-                      <span>{number(item.cluster.mention_count)} mentions</span>
-                    )}
-                    {item.cluster?.source_count != null && (
-                      <span>{number(item.cluster.source_count)} sources</span>
-                    )}
-                    {preferences.detectTone && item.sentiment && (
-                      <span className={`sentiment ${item.sentiment}`}>
-                        {item.sentiment}
-                      </span>
-                    )}
-                    {item.relevance_score != null && (
-                      <span>
-                        {Math.round(Number(item.relevance_score) * 100)}%
-                        relevance
-                      </span>
-                    )}
-                  </span>
+                  <strong>{monitor.name}</strong>
+                  <p>{monitor.query}</p>
+                  {monitor.mention_count != null && (
+                    <span className="result-meta">
+                      <span>{number(monitor.mention_count)} mentions</span>
+                    </span>
+                  )}
                 </span>
               </button>
             ))}
         </section>
-      </div>
+      )}
     </PageMotion>
   );
 }
