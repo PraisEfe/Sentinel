@@ -8,6 +8,7 @@ export function useWorkspace() {
       api: store.api,
       user: store.user,
       workspaceId: store.workspaceId,
+      workspaces: store.workspaces,
       authVersion: store.authVersion,
       preferences: store.preferences,
       save: store.savePreferences,
@@ -16,9 +17,11 @@ export function useWorkspace() {
     })),
   );
   const key = `${state.user?.id}:${state.workspaceId}`;
+  const workspace = state.workspaces.find((item) => item.id === state.workspaceId);
   return {
     api: state.api,
     user: state.user,
+    canOversee: Boolean(workspace?.can_oversee),
     scopeKey: `${state.authVersion}:${state.workspaceId}`,
     preferences: state.preferences[key] || defaultPreferences,
     savePreferences: state.save,

@@ -12241,6 +12241,21 @@
                                 "null"
                             ]
                         }
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "workspace",
+                                "oversight",
+                                null
+                            ]
+                        }
                     }
                 ],
                 "responses": {
@@ -12256,6 +12271,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
@@ -12471,6 +12489,21 @@
                             "type": "string",
                             "format": "uuid"
                         }
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "workspace",
+                                "oversight",
+                                null
+                            ]
+                        }
                     }
                 ],
                 "responses": {
@@ -12494,6 +12527,7 @@
                                                                 "type": "object",
                                                                 "required": [
                                                                     "terms",
+                                                                    "workspace",
                                                                     "sources"
                                                                 ]
                                                             }
@@ -12551,6 +12585,12 @@
                                 }
                             }
                         }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
@@ -15770,6 +15810,9 @@
                     "source": {
                         "$ref": "#/components/schemas/SourceResource"
                     },
+                    "workspace": {
+                        "$ref": "#/components/schemas/WorkspaceResource"
+                    },
                     "cluster": {
                         "anyOf": [
                             {
@@ -16012,6 +16055,9 @@
                                 "is_auto"
                             ]
                         }
+                    },
+                    "workspace": {
+                        "$ref": "#/components/schemas/WorkspaceResource"
                     },
                     "sources": {
                         "type": "array",
@@ -17200,6 +17246,9 @@
                     "owner_id": {
                         "type": "string"
                     },
+                    "can_oversee": {
+                        "type": "string"
+                    },
                     "created_at": {
                         "type": [
                             "string",
@@ -17226,6 +17275,7 @@
                     "locale",
                     "settings",
                     "owner_id",
+                    "can_oversee",
                     "created_at",
                     "updated_at"
                 ],

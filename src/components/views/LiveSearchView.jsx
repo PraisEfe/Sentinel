@@ -22,7 +22,7 @@ export default function LiveSearchView({
   channel = "all",
   onChannelChange,
 }) {
-  const { api, preferences } = useWorkspace();
+  const { api, canOversee, preferences } = useWorkspace();
   const [input, setInput] = useState(query);
   const suggestions = useSearchSuggestions(input);
   const [resultType, setResultType] = useState("stories");
@@ -34,6 +34,7 @@ export default function LiveSearchView({
     sentiment: "",
     sort: "relevance",
     page: "",
+    scope: "workspace",
     ...initialFilters,
   };
   const [saving, setSaving] = useState(false);
@@ -62,6 +63,7 @@ export default function LiveSearchView({
   ])
     if (filters[key]) params.set(key, filters[key]);
   if (from) params.set("from", from);
+  if (filters.scope === "oversight") params.set("scope", "oversight");
   params.set("collapse", preferences.groupStories ? "1" : "0");
   const resource = useResource(query ? `/search?${params}` : null, {
     list: true,
@@ -70,8 +72,10 @@ export default function LiveSearchView({
     query ? `/search/sources?${new URLSearchParams({ q: query })}` : null,
     { list: true },
   );
+  const monitorParams = new URLSearchParams({ q: query || "" });
+  if (filters.scope === "oversight") monitorParams.set("scope", "oversight");
   const monitorSearch = useResource(
-    query ? `/search/monitors?${new URLSearchParams({ q: query })}` : null,
+    query ? `/search/monitors?${monitorParams}` : null,
     { list: true },
   );
   const sources = useResource("/sources", { list: true });
@@ -95,13 +99,15 @@ export default function LiveSearchView({
   const monitorTotal = monitorSearch.data?.meta?.total ?? monitorItems.length;
   const page = Number(filters.page || 1) || 1;
   const lastPage = resource.data?.meta?.last_page || 1;
+  const scopeSuffix =
+    filters.scope === "oversight" ? " across your office and descendants" : "";
   const description = !query
     ? "Find the stories and conversations that matter."
     : resultType === "stories"
-      ? `${number(storyTotal)} matching stories from ${number(sourceCount)} public sources`
+      ? `${number(storyTotal)} matching stories from ${number(sourceCount)} public sources${scopeSuffix}`
       : resultType === "sources"
         ? `${number(sourceTotal)} matching sources`
-        : `${number(monitorTotal)} matching monitors`;
+        : `${number(monitorTotal)} matching monitors${scopeSuffix}`;
   function filter(key, value) {
     onFilterChange(key, value);
   }
@@ -233,6 +239,21 @@ export default function LiveSearchView({
           { id: "monitors", label: `Monitors${monitorTotal ? ` ${number(monitorTotal)}` : ""}` },
         ]}
       />
+      {canOversee && (
+        <label className="filter-field scope-field">
+          Search scope
+          <select
+            aria-label="Search scope"
+            value={filters.scope}
+            onChange={(e) =>
+              filter("scope", e.target.value === "oversight" ? "oversight" : "")
+            }
+          >
+            <option value="workspace">This office</option>
+            <option value="oversight">This office and descendants</option>
+          </select>
+        </label>
+      )}
       {resultType === "stories" && (
         <Tabs
           label="Search channels"
@@ -355,6 +376,11 @@ export default function LiveSearchView({
                     <small>
                       {item.source?.name || "Public source"} <span>·</span>{" "}
                       {relativeTime(item.published_at)}
+                      {filters.scope === "oversight" && item.workspace?.name && (
+                        <>
+                          {" "}<span>·</span> {item.workspace.name}
+                        </>
+                      )}
                     </small>
                     <strong>{item.title || "Untitled mention"}</strong>
                     <p>{item.body}</p>
@@ -454,6 +480,9 @@ export default function LiveSearchView({
                   <small>
                     {monitor.is_active ? "Active" : "Paused"} ·{" "}
                     {frequencyLabel(monitor.frequency)}
+                    {filters.scope === "oversight" && monitor.workspace?.name && (
+                      <> · {monitor.workspace.name}</>
+                    )}
                   </small>
                   <strong>{monitor.name}</strong>
                   <p>{monitor.query}</p>
