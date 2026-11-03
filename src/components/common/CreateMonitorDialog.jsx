@@ -22,6 +22,7 @@ export default function CreateMonitorDialog({
   const [topic, setTopic] = useState(initialTopic);
   const [include, setInclude] = useState("");
   const [exclude, setExclude] = useState("");
+  const [locations, setLocations] = useState("");
   const [type, setType] = useState("topic");
   const [frequency, setFrequency] = useState(null);
   const [selected, setSelected] = useState(["news", "social", "web", "blogs"]);
@@ -86,6 +87,10 @@ export default function CreateMonitorDialog({
             .map((v) => v.trim())
             .filter(Boolean),
           exclude_keywords: exclude
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean),
+          location_names: locations
             .split(",")
             .map((v) => v.trim())
             .filter(Boolean),
@@ -188,6 +193,16 @@ export default function CreateMonitorDialog({
                   value={exclude}
                   onChange={(e) => setExclude(e.target.value)}
                   maxLength={2000}
+                />
+              </label>
+              <label className="field-label" htmlFor="monitor-location">
+                Location (optional)
+                <input
+                  id="monitor-location"
+                  placeholder="e.g. Abia State, Umuahia"
+                  value={locations}
+                  onChange={(e) => setLocations(e.target.value)}
+                  maxLength={500}
                 />
               </label>
               <details className="monitor-advanced">
