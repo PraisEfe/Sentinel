@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bookmark, Filter, Globe, Search } from "lucide-react";
-import { frequencyLabel, number, useResource, useWorkspace } from "../../lib/workspace";
+import { frequencyLabel, number, useResource, useSearchSuggestions, useWorkspace } from "../../lib/workspace";
 import { relativeTime } from "../../lib/format";
 import { PageMotion, Pagination, ResourceState, Tabs } from "../common/WorkspaceUI";
 const channels = [
@@ -24,6 +24,7 @@ export default function LiveSearchView({
 }) {
   const { api, preferences } = useWorkspace();
   const [input, setInput] = useState(query);
+  const suggestions = useSearchSuggestions(input);
   const [resultType, setResultType] = useState("stories");
   const filters = {
     date: "",
@@ -195,11 +196,17 @@ export default function LiveSearchView({
         <input
           aria-label="Search query"
           placeholder="Search your monitored public sources"
+          list="search-suggestions"
           required
           maxLength={500}
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
+        <datalist id="search-suggestions">
+          {suggestions.map((suggestion) => (
+            <option key={suggestion} value={suggestion} />
+          ))}
+        </datalist>
         <button className="primary-button">Search</button>
       </form>
       <div className="research-heading">

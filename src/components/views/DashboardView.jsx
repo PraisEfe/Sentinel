@@ -9,6 +9,7 @@ import {
   Search,
 } from "lucide-react";
 import { relativeTime } from "../../lib/format";
+import { useSearchSuggestions } from "../../lib/workspace";
 
 export default function DashboardView({
   onSearch,
@@ -27,6 +28,7 @@ export default function DashboardView({
   monitorsOnly = false,
 }) {
   const [query, setQuery] = useState("");
+  const suggestions = useSearchSuggestions(query);
   const [clearing, setClearing] = useState(false);
   const [clearError, setClearError] = useState("");
   async function clearHistory() {
@@ -63,11 +65,17 @@ export default function DashboardView({
             <input
               aria-label="Search the public web"
               placeholder="Search people, organisations, brands, topics and keywords…"
+              list="home-search-suggestions"
               maxLength={500}
               required
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            <datalist id="home-search-suggestions">
+              {suggestions.map((suggestion) => (
+                <option key={suggestion} value={suggestion} />
+              ))}
+            </datalist>
             <button className="primary-button" type="submit">
               Search
             </button>

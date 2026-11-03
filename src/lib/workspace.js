@@ -71,6 +71,42 @@ export function useResource(path, { list = false } = {}) {
     reload,
   };
 }
+
+export function useSearchSuggestions(term) {
+  const { api, scopeKey } = useWorkspace();
+  const [items, setItems] = useState([]);
+  useEffect(() => {
+    const value = term.trim();
+    if (value.length < 2) {
+      return;
+    }
+    let active = true;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const result = await api(
+          `/search/suggestions?${new URLSearchParams({ q: value })}`,
+          { signal: controller.signal },
+        );
+        if (active)
+          setItems(
+            (result?.data || [])
+              .filter((item) => typeof item === "string")
+              .slice(0, 10),
+          );
+      } catch {
+        if (active) setItems([]);
+      }
+    }, 200);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [api, scopeKey, term]);
+  return term.trim().length >= 2 ? items : [];
+}
+
 export const number = (value) => {
   if (value == null || value === "") return "—";
   const parsed =

@@ -354,6 +354,8 @@ export async function mockApi(page, options = {}) {
       });
     if (path.endsWith("/alerts/counts"))
       return fulfill({ unread: 3, critical: 0, high: 0, normal: 3 });
+    if (path.endsWith("/search/suggestions"))
+      return fulfill({ data: ["MTN Nigeria"] });
     if (path.endsWith("/search/sources"))
       return fulfill({ data: [], meta: { total: 0 } });
     if (path.endsWith("/search/monitors"))
