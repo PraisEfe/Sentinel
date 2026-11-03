@@ -12473,6 +12473,89 @@
                 }
             }
         },
+        "/workspaces/{workspace}/search/live": {
+            "get": {
+                "operationId": "search.live",
+                "tags": [
+                    "Search"
+                ],
+                "parameters": [
+                    {
+                        "name": "workspace",
+                        "in": "path",
+                        "required": true,
+                        "description": "The workspace ID",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 500
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "query": {
+                                                    "type": "string"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "provider": {
+                                                    "type": "string",
+                                                    "const": "google_news"
+                                                },
+                                                "fetched_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "query",
+                                                "total",
+                                                "provider",
+                                                "fetched_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/workspaces/{workspace}/search/monitors": {
             "get": {
                 "operationId": "search.monitors",

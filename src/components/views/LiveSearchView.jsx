@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bookmark, Filter, Globe, Search } from "lucide-react";
+import { Bookmark, ExternalLink, Filter, Globe, Search } from "lucide-react";
 import { frequencyLabel, number, useResource, useSearchSuggestions, useWorkspace } from "../../lib/workspace";
 import { relativeTime } from "../../lib/format";
 import { PageMotion, Pagination, ResourceState, Tabs } from "../common/WorkspaceUI";
@@ -78,6 +78,12 @@ export default function LiveSearchView({
     query ? `/search/monitors?${monitorParams}` : null,
     { list: true },
   );
+  const liveSearch = useResource(
+    query && resultType === "live"
+      ? `/search/live?${new URLSearchParams({ q: query })}`
+      : null,
+    { list: true },
+  );
   const sources = useResource("/sources", { list: true });
   useEffect(() => {
     if (resource.data) onSearched();
@@ -97,6 +103,8 @@ export default function LiveSearchView({
   const sourceTotal = sourceSearch.data?.meta?.total ?? sourceItems.length;
   const monitorItems = monitorSearch.data?.data || [];
   const monitorTotal = monitorSearch.data?.meta?.total ?? monitorItems.length;
+  const liveItems = liveSearch.data?.data || [];
+  const liveTotal = liveSearch.data?.meta?.total ?? liveItems.length;
   const page = Number(filters.page || 1) || 1;
   const lastPage = resource.data?.meta?.last_page || 1;
   const scopeSuffix =
@@ -107,7 +115,9 @@ export default function LiveSearchView({
       ? `${number(storyTotal)} matching stories from ${number(sourceCount)} public sources${scopeSuffix}`
       : resultType === "sources"
         ? `${number(sourceTotal)} matching sources`
-        : `${number(monitorTotal)} matching monitors${scopeSuffix}`;
+        : resultType === "live"
+          ? `${number(liveTotal)} live web results · not saved to this workspace`
+          : `${number(monitorTotal)} matching monitors${scopeSuffix}`;
   function filter(key, value) {
     onFilterChange(key, value);
   }
@@ -237,9 +247,10 @@ export default function LiveSearchView({
           { id: "stories", label: `Stories${storyTotal ? ` ${number(storyTotal)}` : ""}` },
           { id: "sources", label: `Sources${sourceTotal ? ` ${number(sourceTotal)}` : ""}` },
           { id: "monitors", label: `Monitors${monitorTotal ? ` ${number(monitorTotal)}` : ""}` },
+          { id: "live", label: `Live web${liveTotal ? ` ${number(liveTotal)}` : ""}` },
         ]}
       />
-      {canOversee && (
+      {canOversee && resultType !== "live" && (
         <label className="filter-field scope-field">
           Search scope
           <select
@@ -455,6 +466,50 @@ export default function LiveSearchView({
                 </button>
               );
             })}
+        </section>
+      ) : resultType === "live" ? (
+        <section className="results-panel" aria-label="Live web results">
+          <div className="results-toolbar">
+            <span>{number(liveTotal)} live web results · not saved</span>
+          </div>
+          <p className="analytics-card-caption">
+            Live results come from Google News and are not stored in this
+            workspace. Use “Monitor this topic” to collect them continuously.
+          </p>
+          <ResourceState resource={liveSearch} empty={!liveItems.length}>
+            No live web results match this search.
+          </ResourceState>
+          {!liveSearch.loading &&
+            !liveSearch.error &&
+            liveItems.map((item) => (
+              <a
+                className="result-row"
+                key={item.external_id}
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span className="source-icon web">
+                  <Globe size={14} />
+                </span>
+                <span className="result-channel">live web</span>
+                <span className="result-content">
+                  <small>
+                    {item.publisher || "Google News"} <span>·</span>{" "}
+                    {item.published_at
+                      ? relativeTime(item.published_at)
+                      : "just now"}
+                  </small>
+                  <strong>{item.title}</strong>
+                  <p>{item.snippet}</p>
+                  <span className="result-meta">
+                    <span>
+                      Open on the web <ExternalLink size={11} />
+                    </span>
+                  </span>
+                </span>
+              </a>
+            ))}
         </section>
       ) : (
         <section className="results-panel" aria-label="Matching monitors">

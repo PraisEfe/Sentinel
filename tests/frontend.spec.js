@@ -1078,3 +1078,14 @@ test("deleting the last monitor on a later page returns to the previous page", a
   await expect(page.getByRole('button', { name: 'Delete MTN Nigeria', exact: true })).toBeVisible();
   expect(calls.find(call => call.method === 'DELETE').path).toBe('/workspaces/w-1/monitors/m-2');
 });
+
+test("live web search shows external results without saving them", async ({ page }) => {
+  const calls = await mockApi(page);
+  await login(page);
+  await page.goto("/search?q=MTN");
+  await page.getByRole("tab", { name: /Live web/ }).click();
+  await expect(page.getByText("Live MTN result")).toBeVisible();
+  await expect(page.getByText(/not saved to this workspace/)).toBeVisible();
+  expect(calls.some((call) => call.path.endsWith("/search/live"))).toBe(true);
+  expect(page.url()).not.toContain("live-1");
+});

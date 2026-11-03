@@ -354,6 +354,19 @@ export async function mockApi(page, options = {}) {
       });
     if (path.endsWith("/alerts/counts"))
       return fulfill({ unread: 3, critical: 0, high: 0, normal: 3 });
+    if (path.endsWith("/search/live"))
+      return fulfill({
+        data: [{
+          external_id: "live-1",
+          title: "Live MTN result",
+          url: "https://example.com/live",
+          snippet: "Live snippet from the open web.",
+          publisher: "Example Publisher",
+          published_at: new Date().toISOString(),
+          provider: "google_news",
+        }],
+        meta: { total: 1, provider: "google_news" },
+      });
     if (path.endsWith("/search/suggestions"))
       return fulfill({ data: ["MTN Nigeria"] });
     if (path.endsWith("/search/sources"))
