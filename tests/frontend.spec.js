@@ -624,7 +624,7 @@ test("all updated screens work on mobile with reduced motion and without runtime
     await goTo(page, name);
     await expect(
       page.getByRole("heading", {
-        name: name === "Search" ? "Search the public web" : name,
+        name: name === "Search" ? "Search your monitored public sources" : name,
         exact: true,
       }),
     ).toBeVisible();
