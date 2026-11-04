@@ -709,16 +709,15 @@ test("search encodes story grouping as API-compatible booleans, including after 
 });
 
 
-test("Latest and Most Mentioned retry their shared failed endpoint and recover without demo data", async ({ page }) => {
+test("Intelligence views retry their own failed endpoints without demo data", async ({ page }) => {
   await mockApi(page);
-  let attempts = 0;
-  let failing = true;
+  let exploreFailing = true;
+  let mostFailing = true;
   await page.route("**/api/v1/workspaces/w-1/explore?*", async (route) => {
-    attempts++;
     await route.fulfill({
-      status: failing ? 500 : 200,
+      status: exploreFailing ? 500 : 200,
       contentType: "application/json",
-      body: JSON.stringify(failing ? { message: "Server Error" } : {
+      body: JSON.stringify(exploreFailing ? { message: "Server Error" } : {
         data: [
           { id: "cluster-low", title: "Less mentioned", mention_count: 2 },
           { id: "cluster-high", title: "Most mentioned live story", mention_count: 80 },
@@ -726,23 +725,38 @@ test("Latest and Most Mentioned retry their shared failed endpoint and recover w
       }),
     });
   });
+  await page.route("**/api/v1/workspaces/w-1/intelligence/most-mentioned", async (route) => {
+    await route.fulfill({
+      status: mostFailing ? 500 : 200,
+      contentType: "application/json",
+      body: JSON.stringify(mostFailing ? { message: "Server Error" } : {
+        data: [{
+          monitor_id: "m-1",
+          name: "Most mentioned monitor",
+          mention_count: 80,
+          previous_count: 40,
+          delta_pct: 100,
+        }],
+      }),
+    });
+  });
   await login(page);
   await goTo(page, "Intelligence");
   await expect(page.locator(".cluster-panel").getByRole("alert")).toContainText("We couldn’t complete that request. Please try again.");
   await expect(page.locator(".cluster-row")).toHaveCount(0);
-  const initialAttempts = attempts;
-  await page.getByRole("tab", { name: "Most Mentioned", exact: true }).click();
-  await expect.poll(() => attempts).toBeGreaterThan(initialAttempts);
-  await expect(page.locator(".cluster-panel").getByRole("alert")).toBeVisible();
-  failing = false;
+  exploreFailing = false;
   await page.locator(".cluster-panel").getByRole("button", { name: "Try again" }).click();
   await expect(page.locator(".cluster-row")).toHaveCount(2);
-  await expect(page.locator(".cluster-row").first()).toContainText("Most mentioned live story");
+  await expect(page.getByText("Most mentioned live story", { exact: true })).toBeVisible();
   await expect(page.locator(".cluster-panel").getByRole("alert")).toHaveCount(0);
-  await page.getByRole("tab", { name: "Latest", exact: true }).click();
-  await expect(page.locator(".cluster-row").first()).toContainText("Less mentioned");
-});
 
+  await page.getByRole("tab", { name: "Most Mentioned", exact: true }).click();
+  await expect(page.locator(".cluster-panel").getByRole("alert")).toBeVisible();
+  mostFailing = false;
+  await page.locator(".cluster-panel").getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByText("Most mentioned monitor", { exact: true })).toBeVisible();
+  await expect(page.locator(".cluster-panel").getByRole("alert")).toHaveCount(0);
+});
 test("discovery errors do not prevent independent Trending and Emerging tabs from loading", async ({ page }) => {
   await mockApi(page);
   await page.route("**/api/v1/workspaces/w-1/explore?*", (route) => route.fulfill({
