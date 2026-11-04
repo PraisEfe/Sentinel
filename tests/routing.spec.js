@@ -70,9 +70,9 @@ test("sign-in returns to the requested private deep link with search filters int
     /\/search\?q=MTN&sentiment=positive&language=en$/,
   );
   await expect(page.getByLabel("Search query")).toHaveValue("MTN");
-  await expect(page.getByLabel("Sentiment", { exact: true })).toHaveValue(
-    "positive",
-  );
+  await expect(
+    page.getByRole("combobox", { name: "Sentiment", exact: true }),
+  ).toHaveAttribute("data-value", "positive");
   await expect(
     page.getByRole("button", { name: /Verified backend result/ }),
   ).toBeVisible();
@@ -211,7 +211,8 @@ test("workspace selection uses Zustand across pages and persists only an authori
 }) => {
   const calls = await mockApi(page, { multipleWorkspaces: true });
   await login(page);
-  await page.getByLabel("Workspace", { exact: true }).selectOption("w-2");
+  await page.getByRole('combobox', { name: 'Workspace', exact: true }).click();
+  await page.locator('[role="option"][data-value="w-2"]').click();
   await expect(
     page.getByRole("button", { name: /Workspace two monitor/ }),
   ).toBeVisible();
@@ -220,9 +221,9 @@ test("workspace selection uses Zustand across pages and persists only an authori
     page.getByRole("button", { name: /Workspace two monitor/ }).first(),
   ).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel("Workspace", { exact: true })).toHaveValue(
-    "w-2",
-  );
+  await expect(
+    page.getByRole("combobox", { name: "Workspace", exact: true }),
+  ).toHaveAttribute("data-value", "w-2");
   expect(calls.some((call) => call.path === "/workspaces/w-2/monitors")).toBe(
     true,
   );
@@ -340,22 +341,25 @@ test("bootstrap errors keep private pages closed and can be retried safely", asy
 test("signed-in users create another workspace, switch back and retain both after refresh", async ({ page }) => {
   const calls = await mockApi(page);
   await login(page);
-  await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue('w-1');
+  await expect(page.getByRole('combobox',{name:'Workspace',exact:true})).toHaveAttribute('data-value','w-1');
   await page.getByRole('link',{name:'New workspace',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Create another workspace'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Create workspace',exact:true})).toBeDisabled();
   await page.getByLabel('Workspace name').fill('Second research team');
   await page.getByRole('button',{name:'Create workspace',exact:true}).click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue('w-2');
-  await expect(page.getByLabel('Workspace',{exact:true}).locator('option')).toHaveCount(2);
+  await expect(page.getByRole('combobox',{name:'Workspace',exact:true})).toHaveAttribute('data-value','w-2');
+  await page.getByRole('combobox',{name:'Workspace',exact:true}).click();
+  await expect(page.getByRole('option')).toHaveCount(2);
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('button',{name:/Workspace two monitor/})).toBeVisible();
   const created = calls.find((call) => call.path === '/workspaces' && call.method === 'POST');
   expect(created.body.name).toBe('Second research team');
   expect(created.headers.authorization).toBe('Bearer test-session-token');
   await page.reload();
-  await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue('w-2');
-  await page.getByLabel('Workspace',{exact:true}).selectOption('w-1');
+  await expect(page.getByRole('combobox',{name:'Workspace',exact:true})).toHaveAttribute('data-value','w-2');
+  await page.getByRole('combobox',{name:'Workspace',exact:true}).click();
+  await page.locator('[role="option"][data-value="w-1"]').click();
   await expect(page.getByRole('button',{name:/MTN Nigeria organisation/})).toBeVisible();
   await expect(page.getByRole('button',{name:/Workspace two monitor/})).toHaveCount(0);
 });
@@ -365,7 +369,7 @@ test("workspace creation can be cancelled and permission failures preserve the c
   await login(page);
   await page.getByRole('link',{name:'New workspace',exact:true}).click();
   await page.getByRole('link',{name:'Cancel and return to workspace'}).click();
-  await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue('w-1');
+  await expect(page.getByRole('combobox',{name:'Workspace',exact:true})).toHaveAttribute('data-value','w-1');
   expect(calls.some((call) => call.path === '/workspaces' && call.method === 'POST')).toBe(false);
   await page.getByRole('link',{name:'New workspace',exact:true}).click();
   await page.getByLabel('Workspace name').fill('Private research');
@@ -373,8 +377,10 @@ test("workspace creation can be cancelled and permission failures preserve the c
   await expect(page.getByRole('alert')).toHaveText('You don’t have access to this action.');
   await expect(page.getByLabel('Workspace name')).toHaveValue('Private research');
   await page.getByRole('link',{name:'Cancel and return to workspace'}).click();
-  await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue('w-1');
-  await expect(page.getByLabel('Workspace',{exact:true}).locator('option')).toHaveCount(1);
+  await expect(page.getByRole('combobox',{name:'Workspace',exact:true})).toHaveAttribute('data-value','w-1');
+  await page.getByRole('combobox',{name:'Workspace',exact:true}).click();
+  await expect(page.getByRole('option')).toHaveCount(1);
+  await page.keyboard.press('Escape');
 });
 
 test("new brand mark is shared by sign-in, sidebar and favicon", async ({ page }) => {

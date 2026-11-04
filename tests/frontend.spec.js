@@ -657,9 +657,12 @@ test("failed settings writes report the error without a success message", async 
   await expect(page.getByText("Changes saved.", { exact: true })).toHaveCount(
     0,
   );
-  await expect(page.getByLabel("Default monitoring frequency")).toHaveValue(
-    "10m",
-  );
+  await expect(
+    page.getByRole("combobox", {
+      name: "Default monitoring frequency",
+      exact: true,
+    }),
+  ).toHaveAttribute("data-value", "10m");
 });
 
 test("wizard cannot create a monitor when no sources are available", async ({

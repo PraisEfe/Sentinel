@@ -96,6 +96,7 @@ export default function ModernSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
+        data-value={value}
         disabled={disabled}
         onClick={() => {
           if (!open) {
