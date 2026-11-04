@@ -51,6 +51,10 @@ export default function LiveSearchView({
         : "",
     [filters.date, searchTime],
   );
+  const monitorId = filters.monitor_id || "";
+  const monitorName = filters.monitor_name || "";
+  const monitorScope = Boolean(monitorId);
+  const hasSearch = Boolean(query || monitorId);
   const params = new URLSearchParams();
   if (query) params.set("q", query);
   for (const key of [
@@ -61,12 +65,16 @@ export default function LiveSearchView({
     "sort",
     "cluster_id",
     "page",
+    "monitor_id",
   ])
     if (filters[key]) params.set(key, filters[key]);
   if (from) params.set("from", from);
   if (filters.scope === "oversight") params.set("scope", "oversight");
-  params.set("collapse", preferences.groupStories ? "1" : "0");
-  const resource = useResource(query ? `/search?${params}` : null, {
+  params.set(
+    "collapse",
+    monitorScope ? "0" : preferences.groupStories ? "1" : "0",
+  );
+  const resource = useResource(hasSearch ? `/search?${params}` : null, {
     list: true,
   });
   const sourceSearch = useResource(
@@ -110,9 +118,11 @@ export default function LiveSearchView({
   const lastPage = resource.data?.meta?.last_page || 1;
   const scopeSuffix =
     filters.scope === "oversight" ? " across your office and descendants" : "";
-  const description = !query
+  const description = !hasSearch
     ? "Find the stories and conversations that matter."
-    : resultType === "stories"
+    : monitorScope
+      ? `${number(storyTotal)} mentions from ${number(sourceCount)} public sources`
+      : resultType === "stories"
       ? `${number(storyTotal)} matching stories from ${number(sourceCount)} public sources${scopeSuffix}`
       : resultType === "sources"
         ? `${number(sourceTotal)} matching sources`
@@ -135,7 +145,7 @@ export default function LiveSearchView({
           name: saveName.trim(),
           query,
           filters: [...params.entries()]
-            .filter(([key]) => key !== "q" && key !== "page")
+            .filter(([key]) => !["q", "page", "monitor_name"].includes(key))
             .map(([key, value]) => `${key}=${value}`),
         },
       });
@@ -212,7 +222,11 @@ export default function LiveSearchView({
         <Search size={17} />
         <input
           aria-label="Search query"
-          placeholder="Search your monitored public sources"
+          placeholder={
+            monitorScope
+              ? "Search within this monitor"
+              : "Search your monitored public sources"
+          }
           list="search-suggestions"
           required
           maxLength={500}
@@ -228,7 +242,11 @@ export default function LiveSearchView({
       </form>
       <div className="research-heading">
         <div>
-          <h1>{query || "Search your monitored public sources"}</h1>
+          <h1>
+            {monitorScope
+              ? monitorName || "Monitor mentions"
+              : query || "Search your monitored public sources"}
+          </h1>
           <p>{description}</p>
         </div>
         <button
@@ -240,6 +258,7 @@ export default function LiveSearchView({
           Monitor this topic
         </button>
       </div>
+      {!monitorScope && (
       <Tabs
         label="Result types"
         value={resultType}
@@ -251,7 +270,8 @@ export default function LiveSearchView({
           { id: "live", label: `Live web${liveTotal ? ` ${number(liveTotal)}` : ""}` },
         ]}
       />
-      {canOversee && resultType !== "live" && (
+      )}
+      {canOversee && !monitorScope && resultType !== "live" && (
         <label className="filter-field scope-field">
           Search scope
           <ModernSelect

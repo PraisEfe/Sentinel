@@ -155,9 +155,12 @@ export function MonitorsPage() {
         const nextPage = await summary.deleteMonitor(id);
         if (nextPage !== null && nextPage !== summary.page) setParams({ page: String(nextPage) }, { replace: true });
       }}
-      onSelect={(text) =>
+      onSelect={(monitor) =>
         navigate(
-          `${workspacePathFor("search")}?${new URLSearchParams({ q: text })}`,
+          `${workspacePathFor("search")}?${new URLSearchParams({
+            monitor_id: monitor.id,
+            monitor_name: monitor.name,
+          })}`,
         )
       }
       page={summary.page}

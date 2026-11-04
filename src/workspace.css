@@ -2037,3 +2037,52 @@ body:has(dialog[open]) {
 .delete-monitor-body .load-error { margin-top:16px; }
 .primary-button.danger-button { background:#a33e35; }
 .primary-button.danger-button:hover { background:#873229; }
+
+.analytics-intro {
+  margin: 0 0 14px;
+  max-width: 860px;
+  color: #5d7265;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.analytics-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.kpi-card {
+  min-width: 0;
+}
+.kpi-value {
+  display: block;
+  margin: 6px 0 4px;
+  color: #1b3b2a;
+  font-size: 28px;
+  letter-spacing: -0.6px;
+}
+.kpi-caption {
+  margin: 0;
+  color: #6b7f72;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.kpi-delta {
+  margin: 8px 0 0;
+  color: #237a55;
+  font-size: 12px;
+  font-weight: 600;
+}
+.kpi-delta.negative-growth {
+  color: #b4483f;
+}
+@media (max-width: 900px) {
+  .analytics-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .analytics-kpis {
+    grid-template-columns: 1fr;
+  }
+}

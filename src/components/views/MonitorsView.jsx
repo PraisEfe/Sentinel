@@ -92,7 +92,7 @@ export default function MonitorsView({
                   <td>
                     <button
                       className="table-topic"
-                      onClick={() => onSelect(item.query || item.name)}
+                      onClick={() => onSelect(item)}
                     >
                       <span className={`topic-avatar tone-${i % 4}`}>
                         {item.name
@@ -134,7 +134,7 @@ export default function MonitorsView({
                   <td>
                     <button
                       aria-label={`View ${item.name}`}
-                      onClick={() => onSelect(item.query || item.name)}
+                      onClick={() => onSelect(item)}
                     >
                       <ArrowRight size={15} />
                     </button>

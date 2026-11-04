@@ -55,6 +55,30 @@ export default function AnalyticsView() {
       <Tabs label="Analytics time period" items={Object.keys(periods)} value={period} onChange={setPeriod} />
     </div>
     <div className="analytics-context"><span><Globe size={12} /> Workspace activity{discoveryLabel!==null && <small> · {discoveryLabel} average discovery</small>}</span><button className="text-link" onClick={()=>{[overview,volume,sentiment,sources,keywords,discovery,trending,geography].forEach((resource)=>resource.reload());}}><RefreshCw size={12} /> Refresh analytics</button></div>
+    <p className="analytics-intro">This report covers only this workspace. It counts public mentions collected from the sources and monitors you selected, for the period shown below. Data from other offices or users is never included.</p>
+    <div className="analytics-kpis">
+      <section className="chart-card kpi-card" aria-label="Total mentions">
+        <div className="metric-caption">Total mentions</div>
+        <strong className="kpi-value">{overviewScoped ? number(total) : "—"}</strong>
+        <p className="kpi-caption">Public mentions in {periodMismatch ? `the reported ${actualPeriod}` : period}.</p>
+        {growth!==null && <p className={`kpi-delta${growth<0?" negative-growth":""}`}>{growth>0?"+":""}{growth}% vs previous {comparison || "period"}</p>}
+      </section>
+      <section className="chart-card kpi-card" aria-label="New mentions today">
+        <div className="metric-caption">New today</div>
+        <strong className="kpi-value">{overviewScoped && newToday!==null ? number(newToday) : "—"}</strong>
+        <p className="kpi-caption">Mentions first discovered today.</p>
+      </section>
+      <section className="chart-card kpi-card" aria-label="Distinct sources">
+        <div className="metric-caption">Sources</div>
+        <strong className="kpi-value">{overviewScoped ? number(sourceCount) : "—"}</strong>
+        <p className="kpi-caption">Distinct public sources that produced at least one mention.</p>
+      </section>
+      <section className="chart-card kpi-card" aria-label="Average discovery time">
+        <div className="metric-caption">Avg discovery</div>
+        <strong className="kpi-value">{discoveryLabel ?? "—"}</strong>
+        <p className="kpi-caption">Average time from publication to discovery.</p>
+      </section>
+    </div>
     {discovery.error && <Status resource={discovery}/> }
     {periodMismatch && <p className="analytics-scope-note" role="status">Showing totals for the service’s reported {actualPeriod}, instead of the selected {period}.</p>}
     {unconfirmed && <p className="analytics-scope-note" role="status">The service hasn’t confirmed this reporting period. Unverified totals are shown as unavailable.</p>}
@@ -84,26 +108,26 @@ export default function AnalyticsView() {
 
       </section>
       <div className="analytics-side">
-        <section className="chart-card" aria-label="Source distribution"><div className="metric-caption">Source distribution</div><strong className="card-big-number">{number(sourceCount)}</strong><p className="metric-subtitle">Active sources{periodMismatch ? ` · reported ${actualPeriod}` : ""}</p>
+        <section className="chart-card" aria-label="Source distribution"><div className="metric-caption">Source distribution</div><strong className="card-big-number">{number(sourceCount)}</strong><p className="metric-subtitle">Distinct sources in this period{periodMismatch ? ` · reported ${actualPeriod}` : ""}</p>
           <Status resource={sources} invalid={ready(sources) && sources.data!==null && sourceRows===null}/>
           {periodMismatch && sourceRows && <p className="metric-subtitle">Breakdown: {periodLabel(reportedDays(sources.data)) || actualPeriod || period}</p>}
           {ready(sources) && sourceRows && <div className="source-legend">{sourceRows.map((row,index)=><span key={row.name}><i className={`legend-dot color-${index%3}`}/>{row.name} {row.percentage!==null?pct(row.percentage):`${number(row.count)} mentions`}</span>)}</div>}
           {ready(sources) && sourceRows?.length===0 && <p className="metric-subtitle">No source data available.</p>}
           {sourceTotal===0 && sourceRows?.length>0 && sourceRows.every((item)=>item.count!==null) && <p className="metric-subtitle">No mentions in these sources.</p>}
         </section>
-        <section className="chart-card" aria-label="Discussion tone"><div className="metric-caption">Discussion tone</div>{cardPeriod(sentiment.data) && <p className="metric-subtitle">{cardPeriod(sentiment.data)}</p>}<Status resource={sentiment} invalid={ready(sentiment) && sentiment.data!==null && tone===null}/>
+        <section className="chart-card" aria-label="Discussion tone"><div className="metric-caption">Discussion tone</div><p className="metric-subtitle">Sentiment of mentions in this period.</p>{cardPeriod(sentiment.data) && <p className="metric-subtitle">{cardPeriod(sentiment.data)}</p>}<Status resource={sentiment} invalid={ready(sentiment) && sentiment.data!==null && tone===null}/>
           <div className="tone-head"><strong>{pct(positive)}</strong><span className="small-badge">{positive===null?"No tone data":positive>=60?"Mostly positive":"Mixed tone"}</span></div>
           {tone && <><div className="sentiment-track" aria-label="Sentiment distribution">{tone.entries.map((item)=><span key={item.name} className={item.name} style={{width:`${item.percentage??0}%`}}/>)}</div><div className="tone-legend">{tone.entries.map((item)=><span key={item.name}>{item.name} {pct(item.percentage)}</span>)}</div></>}
         </section>
       </div>
-      <section className="chart-card" aria-label="Trending topics"><h2>Trending topics</h2><p className="analytics-card-caption">Latest available activity</p><Status resource={trending} empty={topics.length===0}/>
+      <section className="chart-card" aria-label="Trending topics"><h2>Trending topics</h2><p className="analytics-card-caption">Latest 24 hours · not limited to the selected period.</p><Status resource={trending} empty={topics.length===0}/>
         {ready(trending) && topics.slice(0,4).map((item,index)=><div className="analytics-topic" key={item.cluster_id||index}><span>{String(index+1).padStart(2,"0")} · {item.title}</span><strong>{number(item.mention_count)}</strong><small title="Reported velocity">{number(item.velocity)}</small></div>)}
       </section>
-      <section className="chart-card" aria-label="Top keywords"><h2>Top keywords</h2>{cardPeriod(keywords.data) && <p className="metric-subtitle">{cardPeriod(keywords.data)}</p>}<Status resource={keywords} invalid={ready(keywords) && keywords.data!==null && keywordRows===null}/>
+      <section className="chart-card" aria-label="Top keywords"><h2>Top keywords</h2><p className="metric-subtitle">Most frequent terms across titles and snippets.</p>{cardPeriod(keywords.data) && <p className="metric-subtitle">{cardPeriod(keywords.data)}</p>}<Status resource={keywords} invalid={ready(keywords) && keywords.data!==null && keywordRows===null}/>
         {ready(keywords) && keywordRows && <div className="keyword-tags">{keywordRows.slice(0,12).map((item)=><span key={item.name}>{item.name}</span>)}</div>}
         {ready(keywords) && (!keywordRows || keywordRows.length===0) && <p className="metric-subtitle">No verified keywords available for this period.</p>}
       </section>
-      <section className="chart-card" aria-label="Geographic activity"><h2>Geographic activity</h2><p className="analytics-card-caption">Latest available locations</p><Status resource={geography} invalid={ready(geography) && geography.data!==null && places===null} empty={places?.length===0}/>
+      <section className="chart-card" aria-label="Geographic activity"><h2>Geographic activity</h2><p className="analytics-card-caption">Latest 24 hours · known locations only.</p><Status resource={geography} invalid={ready(geography) && geography.data!==null && places===null} empty={places?.length===0}/>
         {ready(geography) && places?.slice(0,4).map((item)=><div className="geo-row" key={item.name}><span>{item.name}</span><div><i style={{width:`${item.percentage??(item.count??0)/geoMax*100}%`}}/></div><b>{item.percentage!==null?pct(item.percentage):number(item.count)}</b></div>)}
       </section>
     </div>
