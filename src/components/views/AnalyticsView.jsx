@@ -22,10 +22,8 @@ export default function AnalyticsView() {
   const sources = useResource(`/analytics/sources${query}`);
   const keywords = useResource(`/analytics/keywords${query}`);
   const discovery = useResource(`/analytics/discovery-time${query}`);
-  // These intelligence endpoints have no documented date filter. Their cards
-  // explicitly describe latest available data instead of implying period scope.
-  const trending = useResource("/intelligence/trending", {list:true});
-  const geography = useResource("/intelligence/geography", {list:true});
+  const trending = useResource(`/intelligence/trending${query}`, {list:true});
+  const geography = useResource(`/intelligence/geography${query}`, {list:true});
   const overviewScoped = hasReportedScope(overview.data, range);
   const actualDays = reportedDays(overview.data);
   const actualPeriod = periodLabel(actualDays, period === "24 hours");
@@ -120,14 +118,14 @@ export default function AnalyticsView() {
           {tone && <><div className="sentiment-track" aria-label="Sentiment distribution">{tone.entries.map((item)=><span key={item.name} className={item.name} style={{width:`${item.percentage??0}%`}}/>)}</div><div className="tone-legend">{tone.entries.map((item)=><span key={item.name}>{item.name} {pct(item.percentage)}</span>)}</div></>}
         </section>
       </div>
-      <section className="chart-card" aria-label="Trending topics"><h2>Trending topics</h2><p className="analytics-card-caption">Latest 24 hours · not limited to the selected period.</p><Status resource={trending} empty={topics.length===0}/>
+      <section className="chart-card" aria-label="Trending topics"><h2>Trending topics</h2><p className="analytics-card-caption">Stories ranked by velocity for the selected period.</p><Status resource={trending} empty={topics.length===0}/>
         {ready(trending) && topics.slice(0,4).map((item,index)=><div className="analytics-topic" key={item.cluster_id||index}><span>{String(index+1).padStart(2,"0")} · {item.title}</span><strong>{number(item.mention_count)}</strong><small title="Reported velocity">{number(item.velocity)}</small></div>)}
       </section>
       <section className="chart-card" aria-label="Top keywords"><h2>Top keywords</h2><p className="metric-subtitle">Most frequent terms across titles and snippets.</p>{cardPeriod(keywords.data) && <p className="metric-subtitle">{cardPeriod(keywords.data)}</p>}<Status resource={keywords} invalid={ready(keywords) && keywords.data!==null && keywordRows===null}/>
         {ready(keywords) && keywordRows && <div className="keyword-tags">{keywordRows.slice(0,12).map((item)=><span key={item.name}>{item.name}</span>)}</div>}
         {ready(keywords) && (!keywordRows || keywordRows.length===0) && <p className="metric-subtitle">No verified keywords available for this period.</p>}
       </section>
-      <section className="chart-card" aria-label="Geographic activity"><h2>Geographic activity</h2><p className="analytics-card-caption">Latest 24 hours · known locations only.</p><Status resource={geography} invalid={ready(geography) && geography.data!==null && places===null} empty={places?.length===0}/>
+      <section className="chart-card" aria-label="Geographic activity"><h2>Geographic activity</h2><p className="analytics-card-caption">Known locations only · selected period.</p><Status resource={geography} invalid={ready(geography) && geography.data!==null && places===null} empty={places?.length===0}/>
         {ready(geography) && places?.slice(0,4).map((item)=><div className="geo-row" key={item.name}><span>{item.name}</span><div><i style={{width:`${item.percentage??(item.count??0)/geoMax*100}%`}}/></div><b>{item.percentage!==null?pct(item.percentage):number(item.count)}</b></div>)}
       </section>
     </div>
