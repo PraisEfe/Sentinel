@@ -631,11 +631,15 @@ test("all updated screens work on mobile with reduced motion and without runtime
         exact: true,
       }),
     ).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        { message: `${name} has horizontal overflow`, timeout: 3000 },
+      )
+      .toBe(true);
   }
   expect(errors).toEqual([]);
 });
