@@ -34,8 +34,16 @@ import { workspacePathFor } from "./routing/paths";
 import "./App.css";
 
 function IntelligencePage() {
+  const navigate = useNavigate();
   const openResult = useAppStore((state) => state.openResult);
-  return <IntelligenceView onSelectCluster={openResult} />;
+  return (
+    <IntelligenceView
+      onSelectCluster={openResult}
+      onInspectTopic={(q) =>
+        navigate(`${workspacePathFor("search")}?${new URLSearchParams({ q })}`)
+      }
+    />
+  );
 }
 function AlertsPage() {
   const navigate = useNavigate();

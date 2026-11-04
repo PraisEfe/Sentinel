@@ -9920,6 +9920,73 @@
                 }
             }
         },
+        "/workspaces/{workspace}/intelligence/pulse": {
+            "get": {
+                "operationId": "intelligence.pulse",
+                "tags": [
+                    "Intelligence"
+                ],
+                "parameters": [
+                    {
+                        "name": "workspace",
+                        "in": "path",
+                        "required": true,
+                        "description": "The workspace ID",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "new_mentions": {
+                                                    "type": "integer"
+                                                },
+                                                "new_clusters": {
+                                                    "type": "integer"
+                                                },
+                                                "sources_scanned": {
+                                                    "type": "integer"
+                                                },
+                                                "window": {
+                                                    "type": "string",
+                                                    "const": "1h"
+                                                }
+                                            },
+                                            "required": [
+                                                "new_mentions",
+                                                "new_clusters",
+                                                "sources_scanned",
+                                                "window"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/invitations/{token}": {
             "get": {
                 "operationId": "invitation.inspect",
@@ -15873,7 +15940,7 @@
                     },
                     "relevance_score": {
                         "type": [
-                            "string",
+                            "number",
                             "null"
                         ]
                     },
@@ -16865,6 +16932,10 @@
                     "status": {
                         "$ref": "#/components/schemas/StoryClusterStatus"
                     },
+                    "tags": {
+                        "type": "array",
+                        "items": {}
+                    },
                     "created_at": {
                         "type": [
                             "string",
@@ -16906,6 +16977,7 @@
                     "last_seen_at",
                     "velocity",
                     "status",
+                    "tags",
                     "created_at",
                     "updated_at"
                 ],

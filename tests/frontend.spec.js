@@ -1096,3 +1096,15 @@ test("live web search shows external results without saving them", async ({ page
   expect(calls.some((call) => call.path.endsWith("/search/live"))).toBe(true);
   expect(page.url()).not.toContain("live-1");
 });
+
+test("intelligence most mentioned uses ranked monitors and pulse metrics", async ({ page }) => {
+  const calls = await mockApi(page);
+  await login(page);
+  await page.goto("/intelligence");
+  await page.getByRole("tab", { name: "Most Mentioned" }).click();
+  await expect(page.getByText("MTN Nigeria", { exact: true })).toBeVisible();
+  await expect(page.getByText("42 mentions in this window.")).toBeVisible();
+  await expect(page.getByText("New in the last hour")).toBeVisible();
+  await expect(page.getByText("Sources scanned")).toBeVisible();
+  expect(calls.some((call) => call.path.endsWith("/intelligence/most-mentioned"))).toBe(true);
+});

@@ -240,6 +240,20 @@ export async function mockApi(page, options = {}) {
         ]}],
       }], next_cursor:older ? "older" : null});
     }
+    if (path.endsWith("/intelligence/most-mentioned"))
+      return fulfill({
+        data: [{
+          monitor_id: "m-1",
+          name: "MTN Nigeria",
+          mention_count: 42,
+          previous_count: 30,
+          delta_pct: 40,
+        }],
+      });
+    if (path.endsWith("/intelligence/pulse"))
+      return fulfill({
+        data: { new_mentions: 12, new_clusters: 3, sources_scanned: 8, window: "1h" },
+      });
     if (path.endsWith("/intelligence/geography")) return fulfill({data:[{location:"Lagos",count:36,percentage:36},{location:"Abuja",count:23,percentage:23}]});
     if (path.endsWith("/saved-searches"))
       return fulfill({ data: { id: "saved-1", ...body } }, 201);
