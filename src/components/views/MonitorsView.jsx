@@ -63,7 +63,7 @@ export default function MonitorsView({
           </div>
           <div>
             <strong>{fresh === null ? "—" : number(fresh)}</strong>
-            <small>New mentions · latest scans</small>
+            <small>New items collected · latest scans</small>
           </div>
           <div>
             <strong>{number(total)}</strong>
@@ -79,8 +79,8 @@ export default function MonitorsView({
             <thead>
               <tr>
                 <th>Monitor</th>
-                <th>New activity</th>
-                <th>Total mentions</th>
+                <th>New items</th>
+                <th>Matched mentions</th>
                 <th>Frequency</th>
                 <th>Status</th>
                 <th aria-label="Monitor actions"></th>
@@ -147,6 +147,9 @@ export default function MonitorsView({
             </tbody>
           </table>
         </div>
+        <p className="metric-subtitle monitors-legend">
+          New items are everything newly fetched from a monitor’s sources. Matched mentions are the subset that actually matched the monitor.
+        </p>
         {loading && (
           <LoadingState label="Updating your monitors…" rows={3} />
         )}

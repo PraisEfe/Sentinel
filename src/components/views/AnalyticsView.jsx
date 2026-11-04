@@ -53,18 +53,18 @@ export default function AnalyticsView() {
       <Tabs label="Analytics time period" items={Object.keys(periods)} value={period} onChange={setPeriod} />
     </div>
     <div className="analytics-context"><span><Globe size={12} /> Workspace activity{discoveryLabel!==null && <small> · {discoveryLabel} average discovery</small>}</span><button className="text-link" onClick={()=>{[overview,volume,sentiment,sources,keywords,discovery,trending,geography].forEach((resource)=>resource.reload());}}><RefreshCw size={12} /> Refresh analytics</button></div>
-    <p className="analytics-intro">This report covers only this workspace. It counts public mentions collected from the sources and monitors you selected, for the period shown below. Data from other offices or users is never included.</p>
+    <p className="analytics-intro">This report covers only this workspace. It counts every public mention collected from your enabled sources for the period shown, including items that did not match a specific monitor. Monitor totals count only matched mentions. Data from other offices or users is never included.</p>
     <div className="analytics-kpis">
-      <section className="chart-card kpi-card" aria-label="Total mentions">
-        <div className="metric-caption">Total mentions</div>
+      <section className="chart-card kpi-card" aria-label="Collected mentions">
+        <div className="metric-caption">Collected mentions</div>
         <strong className="kpi-value">{overviewScoped ? number(total) : "—"}</strong>
-        <p className="kpi-caption">Public mentions in {periodMismatch ? `the reported ${actualPeriod}` : period}.</p>
+        <p className="kpi-caption">All collected public mentions in {periodMismatch ? `the reported ${actualPeriod}` : period}.</p>
         {growth!==null && <p className={`kpi-delta${growth<0?" negative-growth":""}`}>{growth>0?"+":""}{growth}% vs previous {comparison || "period"}</p>}
       </section>
       <section className="chart-card kpi-card" aria-label="New mentions today">
         <div className="metric-caption">New today</div>
         <strong className="kpi-value">{overviewScoped && newToday!==null ? number(newToday) : "—"}</strong>
-        <p className="kpi-caption">Mentions first discovered today.</p>
+        <p className="kpi-caption">Collected mentions first discovered today.</p>
       </section>
       <section className="chart-card kpi-card" aria-label="Distinct sources">
         <div className="metric-caption">Sources</div>
@@ -85,7 +85,7 @@ export default function AnalyticsView() {
         <div className="metric-caption">Mention volume · {periodMismatch ? `reported ${actualPeriod}` : period}</div>
         <Status resource={overview} />
         <div className="volume-number"><strong>{ready(overview) ? number(total) : "—"}</strong>{growth!==null && <span className={growth<0?"negative-growth":""}><ArrowUpRight size={12} style={{transform:growth<0?"rotate(90deg)":undefined}}/>{growth>0?"+":""}{growth}%</span>}</div>
-        <p className="metric-subtitle">Public mentions across {number(sourceCount)} active sources{newToday!==null && <> · {number(newToday)} new today</>}</p>
+        <p className="metric-subtitle">Collected public mentions across {number(sourceCount)} active sources{newToday!==null && <> · {number(newToday)} new today</>}</p>
         {comparison && growth!==null && <p className="analytics-card-caption comparison-caption">Compared with previous {comparison}</p>}
         {periodMismatch && <p className="metric-subtitle">Chart: {period === "24 hours" ? "hourly" : "daily"} buckets returned by the service.</p>}
         <Status resource={volume} invalid={ready(volume) && volume.data!==null && series===null} empty={series?.length===0} />
