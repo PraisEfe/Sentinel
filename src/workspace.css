@@ -30,14 +30,13 @@
   padding: 9px 17px;
   font-size: 13px;
 }
-.research-heading > select,
-.settings-field select {
-  border: 1px solid #d4dfd7;
-  border-radius: 5px;
-  background: white;
+.research-heading > select {
+  min-width: 160px;
   font-size: 13px;
-  padding: 9px 12px;
-  color: #394d40;
+}
+.settings-field select {
+  width: 100%;
+  font-size: 13px;
 }
 .workspace-tabs {
   display: flex;
@@ -145,11 +144,6 @@
 .filter-field select {
   display: block;
   width: 100%;
-  border: 1px solid #d4e0d7;
-  border-radius: 4px;
-  background: #fafcfb;
-  color: #405647;
-  padding: 8px 9px;
   margin-top: 7px;
   font-size: 13px;
   text-transform: none;
@@ -214,11 +208,6 @@
   flex-shrink: 0;
 }
 .results-toolbar select {
-  border: 1px solid #d3dfd6;
-  background: white;
-  border-radius: 4px;
-  color: #394f41;
-  padding: 7px 9px;
   font-size: 13px;
   min-width: 110px;
 }
@@ -505,8 +494,7 @@ body:has(dialog[open]) {
 .wizard-body .field-label {
   font-size: 13px;
 }
-.wizard-body .field-label > input,
-.wizard-body .field-label > select {
+.wizard-body .field-label > input {
   padding: 10px 12px;
   font-size: 14px;
 }
@@ -561,9 +549,6 @@ body:has(dialog[open]) {
 }
 .monitor-advanced select {
   margin-top: 8px;
-  border: 1px solid #d1dfd6;
-  border-radius: 4px;
-  padding: 7px;
   font-size: 13px;
 }
 .result-drawer {

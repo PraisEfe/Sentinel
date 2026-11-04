@@ -38,6 +38,36 @@ input:focus-visible,
 select:focus-visible {
   outline: none;
 }
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: auto;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23526e60' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 0.6rem;
+  border: 1px solid #dfe5e1;
+  border-radius: 8px;
+  color: #1b2822;
+  padding: 10px 2.4rem 10px 0.8rem;
+  font-size: 14px;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+select:hover:not(:disabled) {
+  border-color: #c8d4cc;
+}
+select:focus-visible {
+  border-color: #32815b;
+  box-shadow: 0 0 0 3px rgb(50 129 91 / 14%);
+}
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background-color: #f5f8f6;
+}
 h1,
 h2,
 p {
@@ -534,12 +564,20 @@ input::placeholder {
   display: block;
   width: 100%;
   border: 1px solid #2a3d31;
-  background: #18281e;
+  background-color: #18281e;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23cfe0d4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.6rem;
   color: #dce8df;
   font-size: 14px;
   margin-top: 6px;
-  border-radius: 4px;
-  padding: 8px;
+  border-radius: 8px;
+  padding: 9px 2rem 9px 10px;
+}
+.workspace-picker select:focus {
+  border-color: #3f7a5e;
+  box-shadow: 0 0 0 3px rgb(63 122 94 / 25%);
 }
 .mobile-close,
 .mobile-menu {
@@ -930,8 +968,7 @@ input::placeholder {
 .workspace-gate .auth-form {
   margin-top: 0;
 }
-.field-label > input,
-.field-label > select {
+.field-label > input {
   display: block;
   width: 100%;
   border: 1px solid #c8d4cc;
@@ -941,8 +978,12 @@ input::placeholder {
   font-size: 14px;
   margin-top: 7px;
 }
-.field-label > input:focus,
-.field-label > select:focus {
+.field-label > select {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+}
+.field-label > input:focus {
   border-color: #32815b;
   box-shadow: 0 0 0 3px #32815b15;
 }
