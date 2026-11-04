@@ -68,6 +68,120 @@ select:disabled {
   opacity: 0.6;
   background-color: #f5f8f6;
 }
+
+.modern-select {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+.modern-select.inline {
+  width: auto;
+  min-width: 160px;
+}
+.modern-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid #dfe5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #1b2822;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: left;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+.modern-select-trigger:hover:not(:disabled) {
+  border-color: #c8d4cc;
+}
+.modern-select-trigger:focus-visible {
+  border-color: #32815b;
+  box-shadow: 0 0 0 3px rgb(50 129 91 / 14%);
+  outline: none;
+}
+.modern-select-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background: #f5f8f6;
+}
+.modern-select-chevron {
+  flex-shrink: 0;
+  color: #526e60;
+  transition: transform 140ms ease;
+}
+.modern-select-trigger[aria-expanded="true"] .modern-select-chevron {
+  transform: rotate(180deg);
+}
+.modern-select-panel {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid #dfe5e1;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgb(23 33 29 / 14%);
+}
+.modern-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: #314c3b;
+  font-size: 14px;
+  text-align: left;
+}
+.modern-select-option:hover,
+.modern-select-option.active {
+  background: #edf4ef;
+}
+.modern-select-option[aria-selected="true"] {
+  background: #e3f0e8;
+  color: #1d6045;
+  font-weight: 600;
+}
+.modern-select-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.modern-select.dark .modern-select-trigger {
+  border-color: #2a3d31;
+  background-color: #18281e;
+  color: #dce8df;
+}
+.modern-select.dark .modern-select-trigger:hover:not(:disabled) {
+  border-color: #3f7a5e;
+}
+.modern-select.dark .modern-select-chevron {
+  color: #cfe0d4;
+}
+.modern-select.dark .modern-select-panel {
+  border-color: #2a3d31;
+  background: #18281e;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 45%);
+}
+.modern-select.dark .modern-select-option {
+  color: #dce8df;
+}
+.modern-select.dark .modern-select-option:hover,
+.modern-select.dark .modern-select-option.active {
+  background: #21382a;
+}
+.modern-select.dark .modern-select-option[aria-selected="true"] {
+  background: #254a35;
+  color: #ffffff;
+}
 h1,
 h2,
 p {

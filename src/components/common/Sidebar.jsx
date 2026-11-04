@@ -14,6 +14,7 @@ import {
 import { NavLink, Link } from "react-router-dom";
 import { workspacePathFor } from "../../routing/paths";
 import Brand from "./Brand";
+import ModernSelect from "./ModernSelect";
 const navigation = [
   ["dashboard", "Home", Home],
   ["search", "Search", Search],
@@ -61,17 +62,13 @@ export default function Sidebar({
         {workspaces.length > 0 && (
           <label className="workspace-picker">
             Workspace
-            <select
-              aria-label="Workspace"
+            <ModernSelect
+              ariaLabel="Workspace"
               value={workspace?.id || ""}
-              onChange={(e) => onWorkspaceChange(e.target.value)}
-            >
-              {workspaces.map((item) => (
-                <option value={item.id} key={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+              onChange={onWorkspaceChange}
+              options={workspaces.map((item) => ({ value: item.id, label: item.name }))}
+              variant="dark"
+            />
           </label>
         )}
         <Link className="workspace-create" to="/workspaces/new" onClick={onClose}>

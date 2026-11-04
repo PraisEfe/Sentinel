@@ -10,6 +10,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { PageMotion, ResourceState, Toggle } from "../common/WorkspaceUI";
+import ModernSelect from "../common/ModernSelect";
 import { enabled, useResource, useWorkspace } from "../../lib/workspace";
 const tabs = [
   ["Search & discovery", "Set default sources and views", Search],
@@ -183,27 +184,22 @@ function SettingsPanel({ tab }) {
             <details className="settings-advanced"><summary>Advanced monitoring settings</summary>
             <label className="settings-field">
               Monitoring frequency
-              <select
-                aria-label="Default monitoring frequency"
+              <ModernSelect
+                ariaLabel="Default monitoring frequency"
                 value={get("frequency", data.frequency || "")}
-                onChange={(e) => change("frequency", e.target.value)}
-              >
-                <option value="" disabled>
-                  Choose frequency
-                </option>
-                {[
-                  ["5m", "5 minutes"],
-                  ["10m", "10 minutes"],
-                  ["20m", "20 minutes"],
-                  ["30m", "30 minutes"],
-                  ["1h", "1 hour"],
-                  ["24h", "24 hours"],
-                ].map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => change("frequency", value)}
+                options={[
+                  { value: "", label: "Choose frequency", disabled: true },
+                  ...([
+                    ["5m", "5 minutes"],
+                    ["10m", "10 minutes"],
+                    ["20m", "20 minutes"],
+                    ["30m", "30 minutes"],
+                    ["1h", "1 hour"],
+                    ["24h", "24 hours"],
+                  ].map(([value, label]) => ({ value, label }))),
+                ]}
+              />
             </label>
             <label className="settings-field">
               History to include (days)
@@ -238,9 +234,16 @@ function SettingsPanel({ tab }) {
             <BrowserPushSettings deliveryEnabled={!!data.channels?.web_push} onChange={resource.reload} />
             <details className="settings-advanced"><summary>Advanced notification settings</summary>
               <label className="settings-field">Digest frequency
-                <select aria-label="Digest frequency" value={get("digest_cadence", data.digest_cadence || "20m")} onChange={(event) => change("digest_cadence", event.target.value)}>
-                  <option value="20m">Every 20 minutes</option><option value="daily">Daily</option><option value="weekly">Weekly</option>
-                </select>
+                <ModernSelect
+                  ariaLabel="Digest frequency"
+                  value={get("digest_cadence", data.digest_cadence || "20m")}
+                  onChange={(value) => change("digest_cadence", value)}
+                  options={[
+                    { value: "20m", label: "Every 20 minutes" },
+                    { value: "daily", label: "Daily" },
+                    { value: "weekly", label: "Weekly" },
+                  ]}
+                />
               </label>
               <Toggle label="High-relevance results" checked={get("notify_high_relevance", data.alerts?.high_relevance)} onChange={(value) => change("notify_high_relevance", value)} />
               <Toggle label="Workspace push delivery" description="Allow delivery for this workspace to registered devices. Use Enable on this device above to register this browser."

@@ -405,7 +405,8 @@ test("search filters, sorting and saved views send documented fields", async ({
     const responded = page.waitForResponse((response) =>
       response.url().includes(marker),
     );
-    await page.getByLabel(label, { exact: true }).selectOption(value);
+    await page.getByRole("combobox", { name: label, exact: true }).click();
+    await page.locator(`[role="option"][data-value="${value}"]`).click();
     await responded;
   }
 
@@ -488,7 +489,8 @@ test("alerts mark read through the API and notification frequency can be changed
   await expect(
     page.getByRole("button", { name: /Network outage is trending/ }),
   ).toBeVisible();
-  await page.getByLabel("Notification digest frequency").selectOption("daily");
+  await page.getByRole("combobox", { name: "Notification digest frequency", exact: true }).click();
+  await page.locator('[role="option"][data-value="daily"]').click();
   await expect(page.getByText("Notification digest · daily")).toBeVisible();
   await page.getByRole("button", { name: "Mark all as read" }).click();
   await expect(
@@ -514,7 +516,8 @@ test("settings save server-supported defaults, sources and notifications", async
   await goTo(page, "Settings");
   await page.getByRole("button", { name: /Monitoring defaults/ }).click();
   await page.getByText("Advanced monitoring settings", { exact: true }).click();
-  await page.getByLabel("Default monitoring frequency").selectOption("10m");
+  await page.getByRole("combobox", { name: "Default monitoring frequency", exact: true }).click();
+  await page.locator('[role="option"][data-value="10m"]').click();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(
     page.getByRole("status").filter({ hasText: "Changes saved." }),
@@ -645,7 +648,8 @@ test("failed settings writes report the error without a success message", async 
   await goTo(page, "Settings");
   await page.getByRole("button", { name: /Monitoring defaults/ }).click();
   await page.getByText("Advanced monitoring settings", { exact: true }).click();
-  await page.getByLabel("Default monitoring frequency").selectOption("10m");
+  await page.getByRole("combobox", { name: "Default monitoring frequency", exact: true }).click();
+  await page.locator('[role="option"][data-value="10m"]').click();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("alert")).toHaveText(
     "We couldn’t complete that request. Please try again.",

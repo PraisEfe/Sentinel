@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Activity, ArrowRight, Clock3, Globe } from "lucide-react";
 import { PageMotion, ResourceState, Tabs } from "../common/WorkspaceUI";
 import { useResource, useWorkspace } from "../../lib/workspace";
+import ModernSelect from "../common/ModernSelect";
 import { relativeTime } from "../../lib/format";
 export default function AlertsView({
   onNavigateSettings,
@@ -68,23 +69,23 @@ export default function AlertsView({
           <h1>Alerts</h1>
           <p>Updates generated from the searches and topics you monitor.</p>
         </div>
-        <select
-          aria-label="Notification digest frequency"
+        <ModernSelect
+          ariaLabel="Notification digest frequency"
+          className="inline"
           disabled={busy || notification.loading || !!notification.error}
           value={cadence || ""}
-          onChange={(e) =>
+          onChange={(value) =>
             action("/settings/notifications", "PATCH", {
-              digest_cadence: e.target.value,
+              digest_cadence: value,
             })
           }
-        >
-          <option value="" disabled>
-            Digest frequency
-          </option>
-          <option value="20m">20 minutes</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-        </select>
+          options={[
+            { value: "", label: "Digest frequency", disabled: true },
+            { value: "20m", label: "20 minutes" },
+            { value: "daily", label: "Daily" },
+            { value: "weekly", label: "Weekly" },
+          ]}
+        />
       </div>
       <div className="alert-tabs">
         <Tabs

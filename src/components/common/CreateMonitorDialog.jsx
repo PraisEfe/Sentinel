@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 import { enabled, useResource, useWorkspace } from "../../lib/workspace";
 import { ResourceState } from "./WorkspaceUI";
+import ModernSelect from "./ModernSelect";
 const sourceGroups = [
   ["news", "News & media", ["news"]],
   ["social", "Public social content", ["social"]],
@@ -214,20 +215,15 @@ export default function CreateMonitorDialog({
                 <label className="field-label" htmlFor="monitor-type">
                   Type
                 </label>
-                <select
-                  aria-label="Type"
+                <ModernSelect
                   id="monitor-type"
+                  ariaLabel="Type"
                   value={type}
-                  onChange={(e) => setType(e.target.value)}
-                >
-                  {["person", "organisation", "topic", "keyword"].map(
-                    (value) => (
-                      <option value={value} key={value}>
-                        {value}
-                      </option>
-                    ),
+                  onChange={setType}
+                  options={["person", "organisation", "topic", "keyword"].map(
+                    (value) => ({ value, label: value }),
                   )}
-                </select>
+                />
               </details>
             </>
           )}
@@ -265,24 +261,20 @@ export default function CreateMonitorDialog({
             <>
               <label className="field-label" htmlFor="monitor-frequency">
                 Monitoring frequency
-                <select
+                <ModernSelect
                   id="monitor-frequency"
+                  ariaLabel="Monitoring frequency"
                   value={selectedFrequency}
-                  onChange={(e) => setFrequency(e.target.value)}
-                >
-                  {[
+                  onChange={setFrequency}
+                  options={[
                     ["5m", "5 minutes"],
                     ["10m", "10 minutes"],
                     ["20m", "20 minutes"],
                     ["30m", "30 minutes"],
                     ["1h", "1 hour"],
                     ["24h", "24 hours"],
-                  ].map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                  ].map(([value, label]) => ({ value, label }))}
+                />
               </label>
               <div>
                 <p className="wizard-label">Notifications</p>

@@ -3,6 +3,7 @@ import { Bookmark, ExternalLink, Filter, Globe, Search } from "lucide-react";
 import { frequencyLabel, number, useResource, useSearchSuggestions, useWorkspace } from "../../lib/workspace";
 import { relativeTime } from "../../lib/format";
 import { PageMotion, Pagination, ResourceState, Tabs } from "../common/WorkspaceUI";
+import ModernSelect from "../common/ModernSelect";
 const channels = [
   ["all", "All"],
   ["news", "News"],
@@ -253,16 +254,18 @@ export default function LiveSearchView({
       {canOversee && resultType !== "live" && (
         <label className="filter-field scope-field">
           Search scope
-          <select
-            aria-label="Search scope"
+          <ModernSelect
+            ariaLabel="Search scope"
+            className="inline"
             value={filters.scope}
-            onChange={(e) =>
-              filter("scope", e.target.value === "oversight" ? "oversight" : "")
+            onChange={(value) =>
+              filter("scope", value === "oversight" ? "oversight" : "")
             }
-          >
-            <option value="workspace">This office</option>
-            <option value="oversight">This office and descendants</option>
-          </select>
+            options={[
+              { value: "workspace", label: "This office" },
+              { value: "oversight", label: "This office and descendants" },
+            ]}
+          />
         </label>
       )}
       {resultType === "stories" && (
@@ -286,17 +289,12 @@ export default function LiveSearchView({
             {fields.map(([key, label, options]) => (
               <label key={key} className="filter-field">
                 {label}
-                <select
-                  aria-label={label}
+                <ModernSelect
+                  ariaLabel={label}
                   value={filters[key]}
-                  onChange={(e) => filter(key, e.target.value)}
-                >
-                  {options.map(([id, text]) => (
-                    <option key={id} value={id}>
-                      {text}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => filter(key, value)}
+                  options={options.map(([id, text]) => ({ value: id, label: text }))}
+                />
               </label>
             ))}
             <ResourceState resource={sources} />
@@ -347,14 +345,16 @@ export default function LiveSearchView({
               </span>
               <label>
                 Sort by
-                <select
-                  aria-label="Sort results"
+                <ModernSelect
+                  ariaLabel="Sort results"
+                  className="inline"
                   value={filters.sort}
-                  onChange={(e) => filter("sort", e.target.value)}
-                >
-                  <option value="relevance">Most Relevant</option>
-                  <option value="latest">Latest first</option>
-                </select>
+                  onChange={(value) => filter("sort", value)}
+                  options={[
+                    { value: "relevance", label: "Most Relevant" },
+                    { value: "latest", label: "Latest first" },
+                  ]}
+                />
               </label>
             </div>
             {query ? (
