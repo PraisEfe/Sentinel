@@ -2086,3 +2086,43 @@ body:has(dialog[open]) {
     grid-template-columns: 1fr;
   }
 }
+
+/* Monitor detail */
+.monitor-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  text-decoration: none;
+}
+.monitor-detail-stats {
+  margin-bottom: 18px;
+}
+.monitor-detail-stats .monitor-overview {
+  border-bottom: 0;
+  flex-wrap: wrap;
+  gap: 16px 0;
+}
+.monitor-detail-stats .monitors-legend {
+  border-top: 1px solid #e1e8e3;
+  margin: 0;
+  padding: 12px 20px;
+}
+.monitor-detail-feed {
+  margin-bottom: 16px;
+}
+.match-terms {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  padding-left: 10px;
+  border-left: 1px solid #dde6df;
+}
+.match-chip {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #edf3ef;
+  color: #3f6b52;
+  font-size: 11px;
+}

@@ -1132,13 +1132,13 @@ test("clicking a monitor opens its complete mention feed", async ({ page }) => {
   await login(page);
   await goTo(page, "Monitors");
   await page.getByRole("button", { name: /MTN Nigeria organisation/ }).click();
-  await expect(page).toHaveURL(/monitor_id=m-1/);
-  await expect.poll(() => calls.filter((call) => call.path.endsWith("/search")).length).toBeGreaterThan(0);
-  const search = calls.filter((call) => call.path.endsWith("/search")).at(-1);
-  const params = new URL(search.url).searchParams;
-  expect(params.get("monitor_id")).toBe("m-1");
-  expect(params.get("collapse")).toBe("0");
-  expect(params.get("q")).toBeNull();
+  await expect(page).toHaveURL(/\/monitors\/m-1$/);
+  await expect
+    .poll(() =>
+      calls.filter((call) => call.path.endsWith("/monitors/m-1/mentions")).length,
+    )
+    .toBeGreaterThan(0);
   await expect(page.getByRole("heading", { name: "MTN Nigeria", exact: true })).toBeVisible();
   await expect(page.getByText("Verified backend result", { exact: true })).toBeVisible();
+  await expect(page.getByText("Matched: MTN Nigeria", { exact: true })).toBeVisible();
 });

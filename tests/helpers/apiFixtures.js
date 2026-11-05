@@ -305,6 +305,15 @@ export async function mockApi(page, options = {}) {
     }
     if (path.endsWith("/alerts"))
       return fulfill({ data: alerts, meta: { next_cursor: null } });
+    if (/\/monitors\/m-\d+\/mentions$/.test(path))
+      return fulfill({
+        data: [{ ...mention, relevance_score: 0.9, matched_terms: ["MTN Nigeria"] }],
+        meta: { next_cursor: null, prev_cursor: null },
+      });
+    if (/\/monitors\/m-\d+$/.test(path) && method === "GET") {
+      const id = path.split("/").at(-1);
+      return fulfill({ data: monitors.find((item) => item.id === id) || monitor });
+    }
     if (/\/monitors\/m-\d+$/.test(path) && method === "DELETE") {
       monitorDeletes++;
       if (options.monitorDeleteError && monitorDeletes === 1) return fulfill({ message: "Internal database failure" }, options.monitorDeleteError);

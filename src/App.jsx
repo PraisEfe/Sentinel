@@ -14,6 +14,7 @@ import WorkspaceLayout from "./routing/WorkspaceLayout";
 import {
   AuthPage,
   HomePage,
+  MonitorDetailPage,
   MonitorsPage,
   NewWorkspacePage,
   NotFoundPage,
@@ -83,6 +84,7 @@ function workspaceRoutes() {
       <Route index element={<HomePage />} />
       <Route path="search" element={<SearchPage />} />
       <Route path="monitors" element={<MonitorsPage />} />
+      <Route path="monitors/:monitorId" element={<MonitorDetailPage />} />
       <Route path="intelligence" element={<IntelligencePage />} />
       <Route path="analytics" element={<RouteBoundary><Suspense fallback={<LoadingState label="Opening analytics…" />}><AnalyticsView /></Suspense></RouteBoundary>} />
       <Route path="alerts" element={<AlertsPage />} />

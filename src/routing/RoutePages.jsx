@@ -12,6 +12,7 @@ import DashboardView from "../components/views/DashboardView";
 import LoadingState from "../components/common/LoadingState";
 import RouteBoundary from "./RouteBoundary";
 const MonitorsView = lazy(() => import("../components/views/MonitorsView"));
+const MonitorDetailView = lazy(() => import("../components/views/MonitorDetailView"));
 import LiveSearchView from "../components/views/LiveSearchView";
 import { useAppStore } from "../stores/appStore";
 import { useWorkspace } from "../lib/workspace";
@@ -156,18 +157,23 @@ export function MonitorsPage() {
         if (nextPage !== null && nextPage !== summary.page) setParams({ page: String(nextPage) }, { replace: true });
       }}
       onSelect={(monitor) =>
-        navigate(
-          `${workspacePathFor("search")}?${new URLSearchParams({
-            monitor_id: monitor.id,
-            monitor_name: monitor.name,
-          })}`,
-        )
+        navigate(`${workspacePathFor("monitors")}/${monitor.id}`)
       }
       page={summary.page}
       lastPage={summary.data.lastPage || 1}
       onPageChange={(page) => setParams({ page: String(page) })}
       total={summary.data.monitorTotal}
     /></Suspense></RouteBoundary>
+  );
+}
+export function MonitorDetailPage() {
+  const openResult = useAppStore((state) => state.openResult);
+  return (
+    <RouteBoundary>
+      <Suspense fallback={<LoadingState label="Opening monitor…" />}>
+        <MonitorDetailView onSelectResult={openResult} />
+      </Suspense>
+    </RouteBoundary>
   );
 }
 export function SearchPage() {

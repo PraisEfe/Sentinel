@@ -360,8 +360,9 @@ export default function LiveSearchView({
           <section className="results-panel" aria-label="Search results">
             <div className="results-toolbar">
               <span>
-                {number(storyTotal)} matching stories · showing {visible.length} on
-                page {page}
+                {number(storyTotal)}{" "}
+                {monitorScope ? "matched mentions" : "matching stories"} ·
+                showing {visible.length} on page {page}
               </span>
               <label>
                 Sort by
@@ -377,10 +378,11 @@ export default function LiveSearchView({
                 />
               </label>
             </div>
-            {query ? (
+            {query || monitorScope ? (
               <ResourceState resource={resource} empty={!visible.length}>
-                No results match this search. Try another topic or adjust your
-                filters.
+                {monitorScope
+                  ? "No mentions match this monitor yet."
+                  : "No results match this search. Try another topic or adjust your filters."}
               </ResourceState>
             ) : (
               <p className="workspace-empty">
