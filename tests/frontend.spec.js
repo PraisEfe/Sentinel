@@ -1131,7 +1131,13 @@ test("clicking a monitor opens its complete mention feed", async ({ page }) => {
   const calls = await mockApi(page);
   await login(page);
   await goTo(page, "Monitors");
-  await page.getByRole("button", { name: /MTN Nigeria organisation/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Monitors", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("table")
+    .getByRole("button", { name: /MTN Nigeria organisation/ })
+    .click();
   await expect(page).toHaveURL(/\/monitors\/m-1$/);
   await expect
     .poll(() =>
