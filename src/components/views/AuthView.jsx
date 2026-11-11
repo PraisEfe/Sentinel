@@ -4,11 +4,14 @@ import {
   Activity,
   Eye,
   EyeOff,
+  Hash,
   LockKeyhole,
   Mail,
+  MapPin,
   UserRound,
 } from "lucide-react";
 import Brand from "../common/Brand";
+import { NIGERIA_STATES } from "../../lib/nigeriaStates";
 import { safeReturnTo } from "../../routing/paths";
 import { authenticate, request } from "../../lib/api";
 
@@ -21,6 +24,8 @@ export default function AuthView({
   const navigate = useNavigate();
   const location = useLocation();
   const [name, setName] = useState("");
+  const [staffId, setStaffId] = useState("");
+  const [stateName, setStateName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -81,6 +86,14 @@ export default function AuthView({
       setError("Enter your full name.");
       return;
     }
+    if (signup && !staffId.trim()) {
+      setError("Enter your government staff ID.");
+      return;
+    }
+    if (signup && !stateName.trim()) {
+      setError("Select your state.");
+      return;
+    }
     if (signup && password !== confirmation) {
       setError("Passwords do not match.");
       return;
@@ -102,6 +115,8 @@ export default function AuthView({
         if (signup)
           Object.assign(fields, {
             name: name.trim(),
+            staff_id: staffId.trim(),
+            state: stateName.trim(),
             password_confirmation: confirmation,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           });
@@ -145,21 +160,21 @@ export default function AuthView({
             {forgot
               ? "RESET YOUR PASSWORD"
               : signup
-                ? "CREATE WORKSPACE"
+                ? "CREATE ACCOUNT"
                 : "WELCOME BACK"}
           </span>
           <h2>
             {forgot
               ? "Let’s get you back in"
               : signup
-                ? "Start discovering what matters"
+                ? "Register your official account"
                 : "Sign in to your workspace"}
           </h2>
           <p className="form-subtitle">
             {forgot
               ? "Enter your email and we’ll send a password reset link."
               : signup
-                ? "Create your research workspace in less than a minute."
+                ? "Use your government staff ID. An administrator will verify your account before access is granted."
                 : "Continue discovering and monitoring what matters online."}
           </p>
           {notice && (
@@ -189,6 +204,47 @@ export default function AuthView({
                     onChange={(e) => setName(e.target.value)}
                   />
                 </div>
+              </label>
+            )}
+            {signup && (
+              <label className="field-label" htmlFor="staff-id">
+                Staff ID
+                <div className="input-shell">
+                  <Hash />
+                  <input
+                    id="staff-id"
+                    required
+                    maxLength={64}
+                    placeholder="e.g. AB-001"
+                    value={staffId}
+                    onChange={(e) => setStaffId(e.target.value)}
+                  />
+                </div>
+                <small className="field-hint">
+                  Your government staff ID, used to verify you against the
+                  authorised personnel list.
+                </small>
+              </label>
+            )}
+            {signup && (
+              <label className="field-label" htmlFor="state">
+                State
+                <div className="input-shell">
+                  <MapPin />
+                  <input
+                    id="state"
+                    required
+                    list="nigeria-states"
+                    placeholder="Abia"
+                    value={stateName}
+                    onChange={(e) => setStateName(e.target.value)}
+                  />
+                </div>
+                <datalist id="nigeria-states">
+                  {NIGERIA_STATES.map((state) => (
+                    <option key={state} value={state} />
+                  ))}
+                </datalist>
               </label>
             )}
             <label className="field-label" htmlFor="email">

@@ -105,22 +105,33 @@ export const useAppStore = create(
         set({ boot: { loading: true, error: "" } });
         job.promise = (async () => {
           try {
-            const [account, list] = await Promise.all([
-              request("/auth/me", {
-                token: session.token,
-                signal: controller.signal,
-              }),
-              requestList("/workspaces", {
-                token: session.token,
-                signal: controller.signal,
-              }),
-            ]);
+            const account = await request("/auth/me", {
+              token: session.token,
+              signal: controller.signal,
+            });
             if (get().authVersion !== authVersion || controller.signal.aborted)
               return;
             if (!account.user?.id)
               throw new ApiError(
                 "The server returned an unexpected account response. Please try again.",
               );
+            // Unverified accounts cannot read workspaces yet. Stop here so the
+            // pending-approval screen can render instead of a load error.
+            if (!account.user.is_approved) {
+              set({
+                user: account.user,
+                workspaces: [],
+                workspaceId: "",
+                boot: { loading: false, error: "" },
+              });
+              return;
+            }
+            const list = await requestList("/workspaces", {
+              token: session.token,
+              signal: controller.signal,
+            });
+            if (get().authVersion !== authVersion || controller.signal.aborted)
+              return;
             const saved = get().workspaceSelections[account.user.id];
             const workspaceId = list.data.some(
               (workspace) => workspace.id === saved,

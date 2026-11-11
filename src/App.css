@@ -1082,6 +1082,29 @@ input::placeholder {
 .workspace-gate .auth-form {
   margin-top: 0;
 }
+.pending-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.pending-details div {
+  border: 1px solid #d9e4dc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #f7faf8;
+}
+.pending-details dt {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7d8a81;
+}
+.pending-details dd {
+  margin: 4px 0 0;
+  font-weight: 600;
+  color: #263a2d;
+}
 .field-label > input {
   display: block;
   width: 100%;
@@ -1523,3 +1546,63 @@ input::placeholder {
 .password-toggle:focus-visible { outline:2px solid #32815b; outline-offset:2px; }
 
 .social-buttons img { display:block; flex-shrink:0; width:18px; height:18px; }
+
+/* Team / invitations */
+.team-invite {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 20px;
+}
+.team-invite .settings-field {
+  margin: 0;
+}
+.team-heading {
+  margin: 22px 0 8px;
+  font-size: 15px;
+  color: #1f3555;
+}
+.team-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #dbe5df;
+  border-radius: 8px;
+}
+.team-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.team-table th,
+.team-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e8efeb;
+  vertical-align: middle;
+}
+.team-table th {
+  background: #f7faf8;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7d8a81;
+}
+.team-table select {
+  padding: 4px 6px;
+  border: 1px solid #c8d4cc;
+  border-radius: 4px;
+  background: #fff;
+}
+.team-actions {
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+}
+.team-actions .danger {
+  color: #a23b3b;
+}
+@media (max-width: 720px) {
+  .team-invite {
+    grid-template-columns: 1fr;
+  }
+}

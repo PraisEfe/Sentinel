@@ -1,12 +1,14 @@
 import LoadingState from "../components/common/LoadingState";
+import PendingApprovalView from "../components/views/PendingApprovalView";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../stores/appStore";
 
 export default function ProtectedRoute() {
-  const { session, boot, initializeSession, logout, notice } = useAppStore(
+  const { session, user, boot, initializeSession, logout, notice } = useAppStore(
     useShallow((state) => ({
       session: state.session,
+      user: state.user,
       boot: state.boot,
       initializeSession: state.initializeSession,
       logout: state.logout,
@@ -45,5 +47,6 @@ export default function ProtectedRoute() {
         {notice && <p role="alert">{notice}</p>}
       </main>
     );
+  if (user && !user.is_approved) return <PendingApprovalView />;
   return <Outlet />;
 }

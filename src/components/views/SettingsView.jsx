@@ -8,7 +8,9 @@ import {
   Radio,
   Search,
   UserRound,
+  Users,
 } from "lucide-react";
+import TeamSettings from "./TeamSettings";
 import { PageMotion, ResourceState, Toggle } from "../common/WorkspaceUI";
 import ModernSelect from "../common/ModernSelect";
 import { enabled, useResource, useWorkspace } from "../../lib/workspace";
@@ -17,6 +19,7 @@ const tabs = [
   ["Monitoring defaults", "Manage monitoring behaviour", Radio],
   ["Notifications", "Receive updates", Bell],
   ["Sources & languages", "Manage sources and languages", Globe],
+  ["Team", "Manage members and invitations", Users],
   ["Account", "Manage account", UserRound],
 ];
 function SettingsPanel({ tab }) {
@@ -345,6 +348,7 @@ export default function SettingsView({ initialTab = "Search & discovery" }) {
     "Monitoring defaults": "monitoring",
     Notifications: "notifications",
     "Sources & languages": "sources",
+    Team: "team",
     Account: "account",
   };
   const tab =
@@ -377,7 +381,11 @@ export default function SettingsView({ initialTab = "Search & discovery" }) {
             </button>
           ))}
         </nav>
-        <SettingsPanel key={tab} tab={tab} />
+        {tab === "Team" ? (
+          <TeamSettings />
+        ) : (
+          <SettingsPanel key={tab} tab={tab} />
+        )}
       </div>
     </PageMotion>
   );

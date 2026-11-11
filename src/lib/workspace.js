@@ -21,7 +21,10 @@ export function useWorkspace() {
   return {
     api: state.api,
     user: state.user,
+    workspaceId: state.workspaceId,
+    workspace,
     canOversee: Boolean(workspace?.can_oversee),
+    canManageMembers: Boolean(workspace?.can_manage_members),
     scopeKey: `${state.authVersion}:${state.workspaceId}`,
     preferences: state.preferences[key] || defaultPreferences,
     savePreferences: state.save,

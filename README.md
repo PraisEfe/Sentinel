@@ -28,6 +28,7 @@ React Router handles navigation, deep links, refreshes, query parameters, and br
 | `/` | Public landing page for signed-out visitors; protected workspace dashboard when signed in |
 | `/privacy`, `/terms` | Public legal pages |
 | `/signin`, `/signup`, `/forgot-password` | Public account forms; authenticated users return to their destination |
+| `/invitations/:token` | Public invitation acceptance; sign-in/sign-up preserves the return path. Pending users may accept but still need approval |
 | `/search`, `/monitors`, `/intelligence`, `/analytics`, `/alerts`, `/settings` | Protected, server-verified session and selected workspace required |
 | `/monitors/{id}` | Protected monitor detail; the monitor's matched-mention feed |
 | `/auth/callback` | Public Google/Microsoft sign-in callback; exchanges a one-time code and restores session/onboarding |
@@ -120,6 +121,9 @@ Before deployment, resolve the reported authenticated `GET /api/v1/workspaces/{w
 The shipped app has no demo route, sample workspace service, or mock analytics. React Router defines public authentication routes and a protected workspace layout. Zustand manages shared session/workspace state; `src/lib/api.js` is the HTTP transport, and `useResource` manages page request loading, cancellation, validation, and retries. Views render API results or explicit empty/error states. API test fixtures live under `tests` and are not imported into the application bundle. Figma exports and fetch scripts are not runtime or build dependencies.
 
 ## Settings behavior
+
+- **Settings → Team** lists members and pending invitations and lets owners, admins, or state oversight holders invite, change roles, remove members, and revoke invitations. It is hidden behind a permission message for other users.
+- Sign-up collects staff ID and state; unapproved accounts see the pending/rejected screen instead of workspaces.
 
 Monitoring, notifications, and source groups save through the workspace settings endpoints. New monitors read the saved monitoring defaults before creation. Disabling the twenty-minute scan shortcut selects thirty minutes; disabling the twenty-minute digest selects daily delivery, since the contract has no disabled cadence. Historical matching uses thirty days when enabled and the API minimum of one day otherwise. Advanced sections retain precise schedules, individual sources, and account profile fields.
 
