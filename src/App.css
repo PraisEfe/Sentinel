@@ -1606,3 +1606,21 @@ input::placeholder {
     grid-template-columns: 1fr;
   }
 }
+
+/* Unit selects in auth/pending forms */
+.field-label > select {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  border: 1px solid #c8d4cc;
+  background: #ffffff;
+  border-radius: 5px;
+  padding: 12px;
+  font-size: 14px;
+  color: #263a2d;
+}
+.field-label > select:focus {
+  border-color: #32815b;
+  box-shadow: 0 0 0 3px #32815b15;
+  outline: none;
+}

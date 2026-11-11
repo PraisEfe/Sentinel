@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Activity,
   Eye,
@@ -7,11 +7,9 @@ import {
   Hash,
   LockKeyhole,
   Mail,
-  MapPin,
   UserRound,
 } from "lucide-react";
 import Brand from "../common/Brand";
-import { NIGERIA_STATES } from "../../lib/nigeriaStates";
 import { safeReturnTo } from "../../routing/paths";
 import { authenticate, request } from "../../lib/api";
 
@@ -25,7 +23,9 @@ export default function AuthView({
   const location = useLocation();
   const [name, setName] = useState("");
   const [staffId, setStaffId] = useState("");
-  const [stateName, setStateName] = useState("");
+  const [unitId, setUnitId] = useState("");
+  const [units, setUnits] = useState([]);
+  const [unitsError, setUnitsError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -38,6 +38,21 @@ export default function AuthView({
   const [message, setMessage] = useState("");
   const signup = mode === "signup";
   const forgot = mode === "forgot";
+
+  useEffect(() => {
+    let active = true;
+    request("/units")
+      .then((result) => {
+        if (!active) return;
+        setUnits(Array.isArray(result?.data) ? result.data : []);
+      })
+      .catch(() => {
+        if (active) setUnitsError("We couldn’t load the unit list. Please try again.");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function changeMode(next) {
     setError("");
@@ -90,8 +105,8 @@ export default function AuthView({
       setError("Enter your government staff ID.");
       return;
     }
-    if (signup && !stateName.trim()) {
-      setError("Select your state.");
+    if (signup && !unitId) {
+      setError("Select your unit.");
       return;
     }
     if (signup && password !== confirmation) {
@@ -116,7 +131,7 @@ export default function AuthView({
           Object.assign(fields, {
             name: name.trim(),
             staff_id: staffId.trim(),
-            state: stateName.trim(),
+            unit_id: unitId,
             password_confirmation: confirmation,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           });
@@ -227,24 +242,25 @@ export default function AuthView({
               </label>
             )}
             {signup && (
-              <label className="field-label" htmlFor="state">
-                State
-                <div className="input-shell">
-                  <MapPin />
-                  <input
-                    id="state"
-                    required
-                    list="nigeria-states"
-                    placeholder="Abia"
-                    value={stateName}
-                    onChange={(e) => setStateName(e.target.value)}
-                  />
-                </div>
-                <datalist id="nigeria-states">
-                  {NIGERIA_STATES.map((state) => (
-                    <option key={state} value={state} />
+              <label className="field-label" htmlFor="unit">
+                Unit or state
+                <select
+                  id="unit"
+                  required
+                  value={unitId}
+                  onChange={(e) => setUnitId(e.target.value)}
+                >
+                  <option value="">Select your unit</option>
+                  {units.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name} — {unit.state}
+                    </option>
                   ))}
-                </datalist>
+                </select>
+                <small className="field-hint">
+                  The state or unit your authorised personnel list was registered under.
+                </small>
+                {unitsError && <small className="form-error">{unitsError}</small>}
               </label>
             )}
             <label className="field-label" htmlFor="email">
