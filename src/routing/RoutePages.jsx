@@ -132,7 +132,7 @@ function useSummary() {
   );
 }
 export function HomePage() {
-  const { preferences } = useWorkspace();
+  const { preferences, canManageMonitors } = useWorkspace();
   const summary = useSummary();
   const navigate = useNavigate();
   const [, setParams] = useSearchParams();
@@ -145,6 +145,7 @@ export function HomePage() {
       onSearch={search}
       onSelectTopic={search}
       onOpenAddMonitor={() => summary.openMonitor()}
+      canManageMonitors={canManageMonitors}
       monitors={summary.data.monitors}
       history={preferences.showHistory === false ? [] : summary.data.history}
       loading={summary.loading}
@@ -160,6 +161,7 @@ export function HomePage() {
 }
 export function MonitorsPage() {
   const summary = useSummary();
+  const { canManageMonitors } = useWorkspace();
   const navigate = useNavigate();
   const [, setParams] = useSearchParams();
   return (
@@ -169,6 +171,7 @@ export function MonitorsPage() {
       error={summary.error}
       onRetry={summary.refresh}
       onCreate={() => summary.openMonitor()}
+      canManageMonitors={canManageMonitors}
       onDelete={async (id) => {
         const nextPage = await summary.deleteMonitor(id);
         if (nextPage !== null && nextPage !== summary.page) setParams({ page: String(nextPage) }, { replace: true });
@@ -195,7 +198,7 @@ export function MonitorDetailPage() {
 }
 export function SearchPage() {
   const [params, setParams] = useSearchParams();
-  const { onRefresh, scopeKey } = useWorkspace();
+  const { onRefresh, scopeKey, canManageMonitors } = useWorkspace();
   const actions = useAppStore(
     useShallow((state) => ({
       openResult: state.openResult,
@@ -227,6 +230,7 @@ export function SearchPage() {
       onSearched={onRefresh}
       onSelectResult={actions.openResult}
       onMonitor={actions.openMonitor}
+      canManageMonitors={canManageMonitors}
       initialFilters={filters}
       onFilterChange={filter}
       channel={params.get("channel") || "all"}

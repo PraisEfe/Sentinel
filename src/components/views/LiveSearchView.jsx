@@ -18,6 +18,7 @@ export default function LiveSearchView({
   onSearched,
   onSelectResult,
   onMonitor,
+  canManageMonitors = true,
   initialFilters = {},
   onFilterChange,
   channel = "all",
@@ -249,14 +250,16 @@ export default function LiveSearchView({
           </h1>
           <p>{description}</p>
         </div>
-        <button
-          disabled={!query}
-          className="outline-button"
-          onClick={() => onMonitor(query)}
-        >
-          <Bookmark size={14} />
-          Monitor this topic
-        </button>
+        {canManageMonitors && (
+          <button
+            disabled={!query}
+            className="outline-button"
+            onClick={() => onMonitor(query)}
+          >
+            <Bookmark size={14} />
+            Monitor this topic
+          </button>
+        )}
       </div>
       {!monitorScope && (
       <Tabs

@@ -11,6 +11,7 @@ export default function MonitorsView({
   error,
   onRetry,
   onCreate,
+  canManageMonitors = true,
   onDelete,
   onSelect,
   page,
@@ -42,10 +43,12 @@ export default function MonitorsView({
           <h1>Monitors</h1>
           <p>Track topics and receive updates as new information appears.</p>
         </div>
-        <button className="primary-button" onClick={onCreate}>
-          <Plus size={14} />
-          Add monitor
-        </button>
+        {canManageMonitors && (
+          <button className="primary-button" onClick={onCreate}>
+            <Plus size={14} />
+            Add monitor
+          </button>
+        )}
       </div>
       {error && (
         <div className="load-error" role="alert">

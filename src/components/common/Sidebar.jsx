@@ -71,9 +71,11 @@ export default function Sidebar({
             />
           </label>
         )}
-        <Link className="workspace-create" to="/workspaces/new" onClick={onClose}>
-          <Plus size={14} /> New workspace
-        </Link>
+        {user?.can_create_workspace && (
+          <Link className="workspace-create" to="/workspaces/new" onClick={onClose}>
+            <Plus size={14} /> New workspace
+          </Link>
+        )}
         <div className="nav-caption">EXPLORE</div>
         <nav aria-label="Main navigation">
           {navigation.map(([id, label, Icon]) => (

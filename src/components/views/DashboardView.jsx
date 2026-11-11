@@ -15,6 +15,7 @@ export default function DashboardView({
   onSearch,
   onSelectTopic,
   onOpenAddMonitor,
+  canManageMonitors = true,
   monitors = [],
   history = [],
   loading,
@@ -159,9 +160,11 @@ export default function DashboardView({
               <h2 id="monitors-heading">Monitored topics</h2>
               <p>Continuous discovery for saved searches</p>
             </div>
-            <button className="outline-button" onClick={onOpenAddMonitor}>
-              <Plus size={15} /> Add monitor
-            </button>
+            {canManageMonitors && (
+              <button className="outline-button" onClick={onOpenAddMonitor}>
+                <Plus size={15} /> Add monitor
+              </button>
+            )}
           </div>
           <div className="monitored-list">
             {monitors.map((monitor, index) => (
@@ -208,9 +211,11 @@ export default function DashboardView({
             {!loading && !monitors.length && (
               <div className="empty-state">
                 <p>No monitored topics yet.</p>
+                {canManageMonitors && (
                 <button className="text-link" onClick={onOpenAddMonitor}>
                   Create your first monitor
                 </button>
+                )}
               </div>
             )}
           </div>

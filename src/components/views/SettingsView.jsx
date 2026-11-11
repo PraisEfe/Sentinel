@@ -343,6 +343,7 @@ function SettingsPanel({ tab }) {
 }
 export default function SettingsView({ initialTab = "Search & discovery" }) {
   const [params, setParams] = useSearchParams();
+  const { canManageMembers, canManageSettings } = useWorkspace();
   const sectionKeys = {
     "Search & discovery": "discovery",
     "Monitoring defaults": "monitoring",
@@ -351,9 +352,17 @@ export default function SettingsView({ initialTab = "Search & discovery" }) {
     Team: "team",
     Account: "account",
   };
+  const visibleTabs = tabs.filter(([name]) => {
+    if (name === "Team") return canManageMembers;
+    if (name === "Monitoring defaults" || name === "Sources & languages")
+      return canManageSettings;
+    return true;
+  });
   const tab =
-    tabs.find(([name]) => sectionKeys[name] === params.get("section"))?.[0] ||
-    initialTab;
+    visibleTabs.find(([name]) => sectionKeys[name] === params.get("section"))?.[0] ||
+    (visibleTabs.some(([name]) => name === initialTab)
+      ? initialTab
+      : visibleTabs[0][0]);
   const setTab = (name) => setParams({ section: sectionKeys[name] });
   return (
     <PageMotion className="research-page">
@@ -365,7 +374,7 @@ export default function SettingsView({ initialTab = "Search & discovery" }) {
       </div>
       <div className="settings-layout">
         <nav aria-label="Settings sections" className="settings-nav">
-          {tabs.map(([name, subtitle, Icon]) => (
+          {visibleTabs.map(([name, subtitle, Icon]) => (
             <button
               key={name}
               aria-current={tab === name ? "page" : undefined}

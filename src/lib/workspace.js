@@ -18,13 +18,21 @@ export function useWorkspace() {
   );
   const key = `${state.user?.id}:${state.workspaceId}`;
   const workspace = state.workspaces.find((item) => item.id === state.workspaceId);
+  const role = workspace?.role || null;
   return {
     api: state.api,
     user: state.user,
     workspaceId: state.workspaceId,
     workspace,
+    role,
     canOversee: Boolean(workspace?.can_oversee),
-    canManageMembers: Boolean(workspace?.can_manage_members),
+    canManageMembers:
+      Boolean(workspace?.can_manage_members) || role === "owner" || role === "admin",
+    canManageMonitors:
+      workspace?.can_manage_monitors ?? Boolean(role),
+    canManageSettings:
+      Boolean(workspace?.can_manage_settings) || role === "owner" || role === "admin",
+    canCreateWorkspace: Boolean(state.user?.can_create_workspace),
     scopeKey: `${state.authVersion}:${state.workspaceId}`,
     preferences: state.preferences[key] || defaultPreferences,
     savePreferences: state.save,
