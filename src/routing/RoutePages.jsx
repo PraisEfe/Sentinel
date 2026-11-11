@@ -43,10 +43,12 @@ export function AuthPage({ mode }) {
   );
 }
 export function NewWorkspacePage() {
-  const { workspaceId, createWorkspace } = useAppStore(
+  const { workspaceId, createWorkspace, user, logout } = useAppStore(
     useShallow((state) => ({
       workspaceId: state.workspaceId,
       createWorkspace: state.createWorkspace,
+      user: state.user,
+      logout: state.logout,
     })),
   );
   const location = useLocation();
@@ -69,6 +71,21 @@ export function NewWorkspacePage() {
       setBusy(false);
     }
   }
+  if (!user?.can_create_workspace) {
+    return (
+      <main className="workspace-gate">
+        <h1>Workspace creation is managed by your unit head</h1>
+        <p>
+          Ask your Head of Service or Commissioner to create the unit workspace
+          and add you to it.
+        </p>
+        <button className="text-link" onClick={logout}>
+          Sign out
+        </button>
+      </main>
+    );
+  }
+
   return (
     <main className="workspace-gate">
       <h1>{additional ? "Create another workspace" : "Create your research workspace"}</h1>
@@ -218,16 +235,39 @@ export function SearchPage() {
   );
 }
 export function WorkspaceGate({ children }) {
-  const workspaceId = useAppStore((state) => state.workspaceId);
+  const { workspaceId, user, logout } = useAppStore(
+    useShallow((state) => ({
+      workspaceId: state.workspaceId,
+      user: state.user,
+      logout: state.logout,
+    })),
+  );
   const location = useLocation();
-  if (!workspaceId)
+
+  if (!workspaceId) {
+    if (user?.can_create_workspace)
+      return (
+        <Navigate
+          to="/workspaces/new"
+          replace
+          state={{ from: location.pathname + location.search }}
+        />
+      );
+
     return (
-      <Navigate
-        to="/workspaces/new"
-        replace
-        state={{ from: location.pathname + location.search }}
-      />
+      <main className="workspace-gate">
+        <h1>Your workspace is not ready yet</h1>
+        <p>
+          Your unit head has not created the unit workspace or has not added you
+          yet. Ask your Head of Service or Commissioner to add you.
+        </p>
+        <button className="text-link" onClick={logout}>
+          Sign out
+        </button>
+      </main>
     );
+  }
+
   return children;
 }
 export function NotFoundPage() {
