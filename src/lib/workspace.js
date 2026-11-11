@@ -27,7 +27,15 @@ export function useWorkspace() {
     role,
     canOversee: Boolean(workspace?.can_oversee),
     canManageMembers:
-      Boolean(workspace?.can_manage_members) || role === "owner" || role === "admin",
+      Boolean(workspace?.can_manage_members) ||
+      role === "owner" ||
+      role === "admin" ||
+      (state.user?.oversight_scopes || []).some(
+        (scope) =>
+          scope.can_manage_members &&
+          scope.state === workspace?.state &&
+          (!scope.unit_id || scope.unit_id === workspace?.unit_id),
+      ),
     canManageMonitors:
       workspace?.can_manage_monitors ?? Boolean(role),
     canManageSettings:
