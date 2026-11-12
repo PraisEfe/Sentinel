@@ -1,10 +1,10 @@
 # Social sign-in — frontend implementation guide
 
-The backend social-auth flow is implemented and deployed. The frontend flow is now implemented; this guide describes the contract and integration for Google and Microsoft sign-in.
+The social-auth flow and final local-verification behavior are implemented in the local backend/frontend worktrees. The current changes are uncommitted and undeployed; this guide describes the local contract for Google and Microsoft sign-in.
 
 **Do not put OAuth client IDs or secrets in the frontend.** The client secrets live only in the backend `.env`. The browser never calls Google or Microsoft directly for this flow; it only talks to the same-origin `/api/v1` proxy.
 
-## Backend contract (already live)
+## Backend contract (current local code)
 
 | Step | Endpoint |
 |---|---|
@@ -47,11 +47,12 @@ Known `error` values:
 
 - `access_denied` — user cancelled at the provider
 - `invalid_state` — expired or reused state
-- `email_unverified` — Google did not assert a verified email
 - `email_missing` — provider returned no usable email
 - `account_disabled` — local account is disabled
 - `account_unavailable` — account was deleted or cannot be linked
 - `social_login_failed` — unexpected provider/backend failure
+
+Provider email verification is intentionally not a callback failure. Google or Microsoft marks the local email verified only when the provider payload contains an explicitly true verified-email claim. A missing or false claim still completes social sign-in without changing local verification state; an unverified account uses local verification delivery when available and is routed to Sentinel's verification gate.
 
 ### 3. Exchange the code
 
@@ -127,7 +128,7 @@ Responsibilities:
    - Validate that the response contains `token` and `user.id`.
    - Read `sentinel_social_remember` from `sessionStorage`, then remove it.
    - Call `acceptSession({ token, user }, remember)` from the app store.
-   - Navigate to `/`. `WorkspaceGate` sends a user with no workspace to `/workspaces/new`.
+   - Navigate to `/`. Email verification, roster status, server approval, current assignments and canonical capabilities determine whether the user opens a workspace, an eligibility gate, or capability-gated `/workspaces/new`.
 4. On failure, show the message and a **Back to sign in** link.
 
 Sketch:
@@ -199,7 +200,6 @@ Error messages can be local to the callback page:
 |---|---|
 | `access_denied` | Sign-in was cancelled. |
 | `invalid_state` | This sign-in link expired. Please try again. |
-| `email_unverified` | Your provider email is not verified. |
 | `email_missing` | Your provider did not share an email address. |
 | `account_disabled` | This account is disabled. |
 | `account_unavailable` | This account is not available. |
@@ -227,12 +227,13 @@ Minimum coverage:
 - Google button sets `remember` and navigates to the correct redirect URL.
 - Microsoft button does the same.
 - `/auth/callback` exchanges a valid code and lands on the workspace.
-- Callback with no workspace lands on `/workspaces/new`.
+- Callback with no workspace lands on `/workspaces/new` only when the refreshed account has workspace-creation capability; otherwise it shows the pending/no-assignment gate.
 - Callback with `error=access_denied` shows the message and a working sign-in link.
 - Exchange `422` shows a recoverable error.
 - The token never appears in the URL.
 - Callback route is public (no session required).
 - `remember=0` stores the session in `sessionStorage`; `1` uses `localStorage`.
+- Explicit provider-verified claims mark the local email verified; missing/false claims neither fail the callback nor verify the email, so an unverified account reaches the local verification gate.
 
 ## Do not
 
@@ -242,7 +243,7 @@ Minimum coverage:
 - Do not change the registered redirect URIs; they must stay:
   - `https://sentinel-api.absg-ohos.cloud/api/v1/auth/social/google/callback`
   - `https://sentinel-api.absg-ohos.cloud/api/v1/auth/social/microsoft/callback`
-- Do not create a workspace automatically; the existing `/workspaces/new` flow handles onboarding.
+- Do not create a workspace automatically; `/workspaces/new` is available only when refreshed server capabilities allow Unit-aware root/child creation.
 
 ## Acceptance checklist
 
@@ -251,6 +252,7 @@ Minimum coverage:
 - [x] `/auth/callback` is a public route.
 - [x] Valid code exchanges for a session and lands on the workspace or onboarding.
 - [x] Errors are readable and return the user to `/signin`.
+- [x] Missing/false provider verification claims do not fail the callback or verify the email; only explicit true claims mark it verified.
 - [x] No secrets or tokens appear in the frontend repo or URLs.
 - [x] Playwright coverage added and passing.
 - [x] `npm run lint` and `npm run build` pass.
@@ -259,4 +261,4 @@ Minimum coverage:
 
 The frontend uses `SocialCallbackPage.jsx`, removes callback query parameters before exchanging the code, and retains one request promise to avoid duplicate exchanges in React StrictMode. Missing/unknown providers and malformed sessions fail safely. Requested destinations are validated with `safeReturnTo`.
 
-Playwright covers the flow with controlled API/provider responses; live redirect and invalid-code checks do not establish that a real provider account can complete authentication. Google/Microsoft account login, consent, and a valid production exchange require an interactive verification after deployment.
+Playwright covers the flow with controlled API/provider responses, including the explicit-true versus missing/false verification-claim contract. Live redirect and invalid-code checks do not establish that a real provider account can complete authentication. Google/Microsoft account login, consent, local verification delivery, and a valid production exchange require interactive verification after deployment.

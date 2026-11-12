@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { request } from "../../lib/api";
 import { useAppStore } from "../../stores/appStore";
 
 export default function PendingApprovalView() {
-  const { user, session, initializeSession, updateUser, logout } = useAppStore(
+  const { user, session, refreshAuthorization, updateUser, logout } = useAppStore(
     useShallow((state) => ({
       user: state.user,
       session: state.session,
-      initializeSession: state.initializeSession,
+      refreshAuthorization: state.refreshAuthorization,
       updateUser: state.updateUser,
       logout: state.logout,
     })),
@@ -22,6 +22,7 @@ export default function PendingApprovalView() {
     user?.official_title || "",
   );
   const [busy, setBusy] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -41,6 +42,34 @@ export default function PendingApprovalView() {
     return () => {
       active = false;
     };
+  }, []);
+
+  async function refreshStatus({ quiet = false } = {}) {
+    if (statusBusy) return;
+    setStatusBusy(true);
+    if (!quiet) {
+      setError("");
+      setMessage("");
+    }
+    try {
+      const result = await refreshAuthorization();
+      if (!quiet && result?.user && !result.user.is_approved)
+        setMessage("Your approval status has not changed yet.");
+    } catch (failure) {
+      if (!quiet) setError(failure.message);
+    } finally {
+      setStatusBusy(false);
+    }
+  }
+
+  const refreshOnFocus = useEffectEvent(() => {
+    void refreshStatus({ quiet: true });
+  });
+
+  useEffect(() => {
+    const onFocus = () => refreshOnFocus();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   async function submit(event) {
@@ -63,7 +92,7 @@ export default function PendingApprovalView() {
       const updated = result?.data ?? result;
       updateUser(updated);
       if (updated?.is_approved) {
-        await initializeSession();
+        await refreshAuthorization();
         return;
       }
       setMessage(
@@ -143,7 +172,7 @@ export default function PendingApprovalView() {
             />
           </label>
           <label className="field-label" htmlFor="pending-unit">
-            Unit or state
+            Unit
             <select
               id="pending-unit"
               required
@@ -157,6 +186,10 @@ export default function PendingApprovalView() {
                 </option>
               ))}
             </select>
+            <small className="field-hint">
+              Your Unit is your organisation and staff roster boundary. The
+              State shown in the list is its jurisdiction.
+            </small>
           </label>
           <label className="field-label" htmlFor="pending-title">
             Title (optional)
@@ -188,6 +221,14 @@ export default function PendingApprovalView() {
       )}
 
       <p>Please contact your Head of Service administrator for verification.</p>
+
+      <button
+        className="primary-button"
+        onClick={() => refreshStatus()}
+        disabled={statusBusy || busy}
+      >
+        {statusBusy ? "Checking…" : "Refresh approval status"}
+      </button>
 
       <button className="text-link" onClick={logout}>
         Sign out

@@ -32,6 +32,7 @@ export default function Sidebar({
   user,
   workspace,
   workspaces = [],
+  canCreateWorkspace = false,
   onWorkspaceChange,
 }) {
   const initials = (user?.name || "Your account")
@@ -71,9 +72,9 @@ export default function Sidebar({
             />
           </label>
         )}
-        {user?.can_create_workspace && (
+        {canCreateWorkspace && (
           <Link className="workspace-create" to="/workspaces/new" onClick={onClose}>
-            <Plus size={14} /> New workspace
+            <Plus size={14} /> New office workspace
           </Link>
         )}
         <div className="nav-caption">EXPLORE</div>

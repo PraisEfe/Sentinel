@@ -13,6 +13,9 @@ import Brand from "../common/Brand";
 import { safeReturnTo } from "../../routing/paths";
 import { authenticate, request } from "../../lib/api";
 
+const PASSWORD_RESET_REQUESTED_MESSAGE =
+  "If that account exists, a reset link will be sent.";
+
 export default function AuthView({
   onAuthenticate,
   initialMode = "signin",
@@ -40,6 +43,7 @@ export default function AuthView({
   const forgot = mode === "forgot";
 
   useEffect(() => {
+    if (!signup) return undefined;
     let active = true;
     request("/units")
       .then((result) => {
@@ -52,7 +56,7 @@ export default function AuthView({
     return () => {
       active = false;
     };
-  }, []);
+  }, [signup]);
 
   function changeMode(next) {
     setError("");
@@ -116,11 +120,11 @@ export default function AuthView({
     setBusy(true);
     try {
       if (forgot) {
-        const result = await request("/auth/forgot-password", {
+        await request("/auth/forgot-password", {
           method: "POST",
           body: { email: email.trim() },
         });
-        setMessage(result.message);
+        setMessage(PASSWORD_RESET_REQUESTED_MESSAGE);
       } else {
         const fields = {
           email: email.trim(),
@@ -243,7 +247,7 @@ export default function AuthView({
             )}
             {signup && (
               <label className="field-label" htmlFor="unit">
-                Unit or state
+                Unit
                 <select
                   id="unit"
                   required
@@ -258,7 +262,8 @@ export default function AuthView({
                   ))}
                 </select>
                 <small className="field-hint">
-                  The state or unit your authorised personnel list was registered under.
+                  Your Unit is your organisation and staff roster boundary. The
+                  State shown is its jurisdiction.
                 </small>
                 {unitsError && <small className="form-error">{unitsError}</small>}
               </label>

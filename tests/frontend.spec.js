@@ -82,6 +82,10 @@ test("signup validates confirmation and terms, then sends documented register pa
   const calls = await mockApi(page);
   await page.goto("/signup");
   await page.getByLabel("Full name").fill("Ada Okafor");
+  await page.getByLabel(/Staff ID/).fill("AB-001");
+  await page.locator("#unit").selectOption("unit-1");
+  expect(calls.length).toBeGreaterThan(0);
+  expect(new Set(calls.map((call) => call.path))).toEqual(new Set(["/units"]));
   await page.getByLabel("Email", { exact: true }).fill("ada@example.com");
   await page.getByLabel("Password", { exact: true }).fill("correct-password");
   await page
@@ -110,6 +114,8 @@ test("signup validates confirmation and terms, then sends documented register pa
   const body = calls.find((call) => call.path === "/auth/register").body;
   expect(body).toMatchObject({
     name: "Ada Okafor",
+    staff_id: "AB-001",
+    unit_id: "unit-1",
     email: "ada@example.com",
     password: "correct-password",
     password_confirmation: "correct-password",
@@ -262,17 +268,21 @@ test("new account with no workspace can create one and sees real empty states", 
   await page.getByLabel("Password", { exact: true }).fill("correct-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Create your research workspace" }),
+    page.getByRole("heading", { name: "Create your office workspace" }),
   ).toBeVisible();
-  await page.getByLabel("Workspace name").fill("My workspace");
+  await page.getByLabel("Office workspace name").fill("My workspace");
   await page
     .getByRole("button", { name: "Create workspace", exact: true })
     .click();
   await expect(page.getByText("No monitored topics yet.")).toBeVisible();
   expect(
     calls.find((call) => call.path === "/workspaces" && call.method === "POST")
-      .body.name,
-  ).toBe("My workspace");
+      .body,
+  ).toMatchObject({
+    name: "My workspace",
+    level: "office",
+    unit_id: "unit-1",
+  });
 });
 
 test("partial API failure is visible and does not substitute demo monitors", async ({

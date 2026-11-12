@@ -18,7 +18,7 @@ export default function LiveSearchView({
   onSearched,
   onSelectResult,
   onMonitor,
-  canManageMonitors = true,
+  canManageMonitors = false,
   initialFilters = {},
   onFilterChange,
   channel = "all",

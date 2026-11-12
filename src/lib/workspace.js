@@ -2,50 +2,78 @@ import { useEffect, useState, useCallback } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { defaultPreferences, useAppStore } from "../stores/appStore";
 
+export function workspaceCapabilities(workspace) {
+  const canonical =
+    workspace?.capabilities &&
+    typeof workspace.capabilities === "object" &&
+    !Array.isArray(workspace.capabilities)
+      ? workspace.capabilities
+      : null;
+
+  return {
+    canView: canonical ? canonical.view === true : false,
+    canOversee: canonical ? canonical.oversee_read === true : false,
+    canManageMembers: canonical
+      ? canonical.manage_members === true
+      : workspace?.can_manage_members === true,
+    canManageMonitors: canonical
+      ? canonical.manage_monitors === true
+      : workspace?.can_manage_monitors === true,
+    canManageSettings: canonical
+      ? canonical.manage_settings === true
+      : workspace?.can_manage_settings === true,
+    canCreateWorkspace: canonical
+      ? canonical.create_workspace === true
+      : false,
+  };
+}
+
+export function canCreateAnyWorkspace(user, workspaces = []) {
+  return (
+    user?.can_create_workspace === true ||
+    workspaces.some(
+      (workspace) => workspaceCapabilities(workspace).canCreateWorkspace,
+    )
+  );
+}
+
 export function useWorkspace() {
   const state = useAppStore(
     useShallow((store) => ({
       api: store.api,
+      authenticatedApi: store.authenticatedApi,
       user: store.user,
       workspaceId: store.workspaceId,
       workspaces: store.workspaces,
       authVersion: store.authVersion,
+      authorizationVersion: store.authorizationVersion,
       preferences: store.preferences,
       save: store.savePreferences,
       updateUser: store.updateUser,
       onRefresh: store.refreshWorkspace,
+      refreshAuthorization: store.refreshAuthorization,
     })),
   );
   const key = `${state.user?.id}:${state.workspaceId}`;
   const workspace = state.workspaces.find((item) => item.id === state.workspaceId);
   const role = workspace?.role || null;
+  const capabilities = workspaceCapabilities(workspace);
   return {
     api: state.api,
+    authenticatedApi: state.authenticatedApi,
     user: state.user,
     workspaceId: state.workspaceId,
     workspace,
+    workspaces: state.workspaces,
     role,
-    canOversee: Boolean(workspace?.can_oversee),
-    canManageMembers:
-      Boolean(workspace?.can_manage_members) ||
-      role === "owner" ||
-      role === "admin" ||
-      (state.user?.oversight_scopes || []).some(
-        (scope) =>
-          scope.can_manage_members &&
-          scope.state === workspace?.state &&
-          (!scope.unit_id || scope.unit_id === workspace?.unit_id),
-      ),
-    canManageMonitors:
-      workspace?.can_manage_monitors ?? Boolean(role),
-    canManageSettings:
-      Boolean(workspace?.can_manage_settings) || role === "owner" || role === "admin",
-    canCreateWorkspace: Boolean(state.user?.can_create_workspace),
-    scopeKey: `${state.authVersion}:${state.workspaceId}`,
+    ...capabilities,
+    canCreateWorkspace: canCreateAnyWorkspace(state.user, state.workspaces),
+    scopeKey: `${state.authVersion}:${state.authorizationVersion}:${state.workspaceId}`,
     preferences: state.preferences[key] || defaultPreferences,
     savePreferences: state.save,
     onUserUpdate: state.updateUser,
     onRefresh: state.onRefresh,
+    refreshAuthorization: state.refreshAuthorization,
   };
 }
 export function useResource(path, { list = false } = {}) {

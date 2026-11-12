@@ -15,7 +15,11 @@ import { useAppStore } from "../stores/appStore";
 import { useWorkspace } from "../lib/workspace";
 import { workspacePathFor } from "./paths";
 export default function WorkspaceLayout() {
-  const { scopeKey } = useWorkspace();
+  const {
+    scopeKey,
+    canCreateWorkspace,
+    canManageMonitors,
+  } = useWorkspace();
   const location = useLocation();
   const navigate = useNavigate();
   const outlet = useOutlet();
@@ -62,7 +66,7 @@ export default function WorkspaceLayout() {
   } = state;
   useEffect(() => {
     void loadWorkspace({ page });
-  }, [workspaceId, page, loadWorkspace]);
+  }, [workspaceId, page, loadWorkspace, scopeKey]);
   useEffect(() => {
     setSidebarOpen(false);
     closeResult();
@@ -94,6 +98,7 @@ export default function WorkspaceLayout() {
         user={state.user}
         workspace={workspace}
         workspaces={state.workspaces}
+        canCreateWorkspace={canCreateWorkspace}
         onWorkspaceChange={(id) => {
           state.selectWorkspace(id);
           navigate("/", { replace: true });
@@ -114,7 +119,7 @@ export default function WorkspaceLayout() {
         )}
         <main>
           <motion.div
-            key={`${scopeKey}:${location.pathname}`}
+            key={`${state.workspaceId}:${location.pathname}`}
             initial={{ opacity: reduced ? 1 : 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: reduced ? 0 : 0.16 }}
@@ -128,9 +133,10 @@ export default function WorkspaceLayout() {
         onClose={state.closeResult}
         onMonitor={state.openMonitor}
         onRelated={related}
+        canManageMonitors={canManageMonitors}
       />
       <AnimatePresence>
-        {state.createOpen && (
+        {state.createOpen && canManageMonitors && (
           <CreateMonitorDialog
             initialTopic={state.monitorSeed}
             onClose={state.closeMonitor}

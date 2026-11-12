@@ -4,8 +4,53 @@ import { readFileSync } from "node:fs";
 const spec = JSON.parse(
   readFileSync(new URL("../../docs/openapi.json", import.meta.url), "utf8"),
 );
-const user = { id: "u-1", name: "Ada Okafor", email: "ada@example.com" };
-const workspace = { id: "w-1", name: "Research workspace" };
+const capabilities = {
+  view: true,
+  oversee_read: true,
+  manage_members: true,
+  manage_monitors: true,
+  manage_settings: true,
+  create_workspace: true,
+};
+const unit = {
+  id: "unit-1",
+  name: "Finance Unit",
+  state: "Abia",
+  type: "ministry",
+  status: "active",
+};
+const user = {
+  id: "u-1",
+  name: "Ada Okafor",
+  email: "ada@example.com",
+  staff_id: "AB-001",
+  unit_id: unit.id,
+  unit,
+  state: unit.state,
+  verification_status: "approved",
+  is_approved: true,
+  is_roster_active: true,
+  email_verified_at: new Date().toISOString(),
+  is_email_verified: true,
+  email_verification_required: false,
+  can_create_workspace: true,
+  oversight_scopes: [
+    { state: unit.state, unit_id: unit.id, can_manage_members: true },
+  ],
+};
+const workspace = {
+  id: "w-1",
+  parent_id: null,
+  name: "Research workspace",
+  state: unit.state,
+  unit_id: unit.id,
+  owner_id: user.id,
+  role: "owner",
+  capabilities,
+  can_manage_members: true,
+  can_manage_monitors: true,
+  can_manage_settings: true,
+};
 const monitor = {
   id: "m-1",
   name: "MTN Nigeria",
@@ -25,6 +70,7 @@ const history = [
 
 export async function mockApi(page, options = {}) {
   const calls = [];
+  const units = Array.isArray(options.units) ? options.units : [unit];
   let subscriptions = [];
   let pushPosts = 0;
   let pushPreferences = 0;
@@ -32,14 +78,115 @@ export async function mockApi(page, options = {}) {
   let monitorDeletes = 0;
   const deletedMonitors = new Set();
   let searches = options.empty ? [] : [...history];
+  const primaryWorkspace = {
+    ...workspace,
+    ...(options.workspace || {}),
+    capabilities: Object.hasOwn(options, "capabilities")
+      ? options.capabilities
+      : workspace.capabilities,
+    owner_id: Object.hasOwn(options.workspace || {}, "owner_id")
+      ? options.workspace.owner_id
+      : (options.workspace?.role || workspace.role) === "owner"
+        ? user.id
+        : "u-owner",
+  };
   let workspaces = options.noWorkspace
     ? []
     : options.multipleWorkspaces
-      ? [workspace, { id: "w-2", name: "Second workspace" }]
-      : [workspace];
-  let account = { ...user };
+      ? [
+          primaryWorkspace,
+          {
+            ...primaryWorkspace,
+            id: "w-2",
+            parent_id: "w-1",
+            name: "Second workspace",
+            owner_id: "u-owner-2",
+            role: "admin",
+          },
+        ]
+      : [primaryWorkspace];
+  let account = { ...user, ...(options.account || {}) };
+  if (options.account?.is_email_verified === false) {
+    account.email_verified_at = null;
+    account.email_verification_required = true;
+  }
+  if (options.account?.is_email_verified === true) {
+    account.email_verification_required = false;
+  }
+  let workspaceCreated = false;
+  const people = [
+    user,
+    {
+      id: "u-2",
+      name: "Brenda Eze",
+      email: "brenda@example.com",
+      staff_id: "AB-002",
+      official_title: "Analyst",
+      unit_id: unit.id,
+      is_approved: true,
+      is_disabled: false,
+      is_roster_active: true,
+    },
+    {
+      id: "u-3",
+      name: "Chidi Nwosu",
+      email: "chidi@example.com",
+      staff_id: "AB-003",
+      official_title: "Research Officer",
+      unit_id: unit.id,
+      is_approved: true,
+      is_disabled: false,
+      is_roster_active: true,
+    },
+    {
+      id: "u-4",
+      name: "Dami Uche",
+      email: "dami@example.com",
+      staff_id: "AB-004",
+      official_title: "Policy Officer",
+      unit_id: unit.id,
+      is_approved: true,
+      is_disabled: false,
+      is_roster_active: true,
+    },
+    ...Array.from({ length: 8 }, (_, index) => ({
+      id: `u-${index + 5}`,
+      name: `Unit Staff ${index + 1}`,
+      email: `staff${index + 1}@example.com`,
+      staff_id: `AB-${String(index + 5).padStart(3, "0")}`,
+      official_title: "Officer",
+      unit_id: unit.id,
+    })),
+  ];
+  const memberships = {
+    "u-1": Object.hasOwn(options, "actorMembership")
+      ? options.actorMembership
+        ? {
+            "w-1": {
+              can_oversee: false,
+              ...options.actorMembership,
+            },
+          }
+        : {}
+      : { "w-1": { role: "owner", can_oversee: false } },
+    "u-2": { "w-1": { role: "member", can_oversee: false } },
+    "u-3": {},
+    "u-4": { "w-2": { role: "admin", can_oversee: false } },
+  };
+  let invitations = [
+    {
+      id: "invite-1",
+      email: "new.official@example.com",
+      role: "member",
+      expires_at: new Date(Date.now() + 86400000).toISOString(),
+    },
+  ];
   let historyDeletes = 0;
   let preferenceAttempts = 0;
+  let resendAttempts = 0;
+  let verificationAttempts = 0;
+  let forgotAttempts = 0;
+  let passwordResetAttempts = 0;
   let alerts = [
     {
       id: "alert-1",
@@ -117,28 +264,54 @@ export async function mockApi(page, options = {}) {
     // Assert that every request maps to the supplied OpenAPI contract.
     const template = path
       .replace(/\/workspaces\/w-[12]/, "/workspaces/{workspace}")
+      .replace(/\/units\/[^/]+\/members$/, "/units/{unit}/members")
+      .replace(
+        /(\/workspaces\/\{workspace\}\/members)\/[^/]+\/move$/,
+        "$1/{user}/move",
+      )
+      .replace(
+        /(\/workspaces\/\{workspace\}\/members)\/[^/]+$/,
+        "$1/{user}",
+      )
+      .replace(
+        /(\/workspaces\/\{workspace\}\/invitations)\/[^/]+$/,
+        "$1/{invitation}",
+      )
       .replace(/\/monitors\/m-\d+/, "/monitors/{monitor}")
       .replace(/\/mentions\/mention-\d+/, "/mentions/{mention}")
       .replace(/\/clusters\/cluster-\d+/, "/clusters/{cluster}")
       .replace(/\/alerts\/alert-\d+/, "/alerts/{alert}")
       .replace(/\/push\/subscriptions\/push-\d+/, "/push/subscriptions/{id}");
-    expect(
-      spec.paths[template]?.[method.toLowerCase()],
-      `${method} ${path} must exist in OpenAPI`,
-    ).toBeTruthy();
+    const operation = spec.paths[template]?.[method.toLowerCase()];
+    const ownershipTransferDeferred =
+      method === "POST" && /\/workspaces\/[^/]+\/ownership-transfer$/.test(path);
+    const emailVerificationDeferred =
+      method === "POST" &&
+      ["/auth/email/resend", "/auth/email/verify"].includes(path);
+    if (!ownershipTransferDeferred && !emailVerificationDeferred)
+      expect(
+        operation,
+        `${method} ${path} must exist in OpenAPI`,
+      ).toBeTruthy();
     const requestSchema =
-      spec.paths[template]?.[method.toLowerCase()]?.requestBody?.content?.[
-        "application/json"
-      ]?.schema?.$ref;
+      operation?.requestBody?.content?.["application/json"]?.schema?.$ref;
     if (requestSchema) {
       const schema = spec.components.schemas[requestSchema.split("/").at(-1)];
       for (const field of schema.required || [])
         expect(body).toHaveProperty(field);
     }
     if (
-      !["/auth/login", "/auth/register", "/auth/forgot-password"].includes(path)
+      ![
+        "/auth/login",
+        "/auth/register",
+        "/auth/forgot-password",
+        "/auth/reset-password",
+        "/auth/email/verify",
+        "/units",
+      ].includes(path) && !/^\/invitations\/[^/]+$/.test(path)
     )
       expect(req.headers().authorization).toBe("Bearer test-session-token");
+    if (path === "/units") return fulfill({ data: units });
     if (path === "/push/public-key") {
       const key = createECDH("prime256v1").generateKeys().toString("base64url");
       return fulfill({ public_key: options.invalidPushKey ? "invalid" : key });
@@ -173,18 +346,101 @@ export async function mockApi(page, options = {}) {
       );
     if (path === "/auth/login" || path === "/auth/register")
       return fulfill(
-        { user, token: "test-session-token" },
+        { user: account, token: "test-session-token" },
         path === "/auth/register" ? 201 : 200,
       );
-    if (path === "/auth/forgot-password")
+    if (path === "/auth/forgot-password") {
+      forgotAttempts += 1;
+      if (
+        options.forgotThrottled ||
+        forgotAttempts > (options.forgotLimit ?? Infinity)
+      )
+        return fulfill(
+          { message: "private password-reset limiter detail" },
+          429,
+        );
       return fulfill(
         { message: "If that account exists, a reset link will be sent." },
         202,
       );
+    }
+    if (path === "/auth/reset-password") {
+      passwordResetAttempts += 1;
+      if (options.passwordResetNetworkError && passwordResetAttempts === 1)
+        return route.abort("failed");
+      const state = options.passwordResetState || "valid";
+      if (["invalid", "expired", "reused", "wrong_email"].includes(state))
+        return fulfill(
+          {
+            message: "private reset-token detail",
+            code: "password_reset_invalid",
+          },
+          422,
+        );
+      return fulfill({ message: "Your password has been reset." });
+    }
+    if (path === "/auth/email/resend") {
+      resendAttempts += 1;
+      if (options.resendUnavailable)
+        return fulfill(
+          {
+            message: "private mail transport detail",
+            code: "email_verification_unavailable",
+          },
+          503,
+        );
+      if (options.resendThrottled || resendAttempts > (options.resendLimit ?? Infinity))
+        return fulfill(
+          {
+            message: "private limiter detail",
+            code: "email_verification_throttled",
+          },
+          429,
+        );
+      return fulfill(
+        {
+          message:
+            "If email verification is still required, a verification link will be sent.",
+        },
+        202,
+      );
+    }
+    if (path === "/auth/email/verify") {
+      verificationAttempts += 1;
+      if (options.verificationNetworkError) return route.abort("failed");
+      const state = options.verificationState || "valid";
+      const failures = {
+        invalid: [422, "email_verification_invalid"],
+        expired: [410, "email_verification_expired"],
+        reused: [409, "email_verification_used"],
+      };
+      if (failures[state]) {
+        const [status, code] = failures[state];
+        return fulfill({ message: "private verification detail", code }, status);
+      }
+      account = {
+        ...account,
+        email_verified_at: new Date().toISOString(),
+        is_email_verified: true,
+        email_verification_required: false,
+      };
+      return fulfill({
+        message: "Email address verified.",
+        code: state === "already" ? "email_already_verified" : "email_verified",
+        ...(req.headers().authorization ? { user: account } : {}),
+        verification_attempt: verificationAttempts,
+      });
+    }
     if (path === "/auth/logout")
       return options.logoutOffline
         ? route.abort("failed")
         : route.fulfill({ status: 204 });
+    if (
+      path === "/auth/me" &&
+      options.authorizationRefreshAfterCreateError &&
+      workspaceCreated
+    )
+      return fulfill({ message: "Account service unavailable" }, 503);
     if (path === "/auth/me" && options.profileError)
       return fulfill({ message: "Account service unavailable" }, 503);
     if (path === "/auth/me" && method === "PATCH") {
@@ -199,9 +455,242 @@ export async function mockApi(page, options = {}) {
       return fulfill({ data: workspaces });
     if (path === "/workspaces" && method === "POST") {
       if (options.createWorkspaceError) return fulfill({ message: "Forbidden" }, 403);
-      const created = { ...workspace, id: `w-${workspaces.length + 1}`, name: body.name };
+      if (options.createWorkspaceConflict)
+        return fulfill({ message: "This unit already has a root workspace." }, 409);
+      const parent = workspaces.find((item) => item.id === body.parent_id);
+      const created = {
+        ...primaryWorkspace,
+        ...body,
+        id: `w-${workspaces.length + 1}`,
+        parent_id: body.parent_id || null,
+        unit_id: parent?.unit_id || body.unit_id,
+        state: parent?.state || unit.state,
+        role: "owner",
+        capabilities,
+      };
       workspaces = [...workspaces, created];
+      memberships[account.id] ||= {};
+      memberships[account.id][created.id] = {
+        role: "owner",
+        can_oversee: false,
+      };
+      workspaceCreated = true;
       return fulfill({ data: created }, 201);
+    }
+    const ownershipTransferMatch = path.match(
+      /^\/workspaces\/([^/]+)\/ownership-transfer$/,
+    );
+    if (ownershipTransferMatch && method === "POST") {
+      if (options.ownershipTransferError)
+        return fulfill(
+          {
+            message: "Internal ownership details that must not be displayed",
+            code: options.ownershipTransferErrorCode || "ownership_conflict",
+          },
+          options.ownershipTransferError,
+        );
+      const workspaceId = ownershipTransferMatch[1];
+      const current = workspaces.find((item) => item.id === workspaceId);
+      const previousOwnerId = current.owner_id;
+      const previousOwnerRole = body.previous_owner_role || "admin";
+      memberships[previousOwnerId][workspaceId] = {
+        ...memberships[previousOwnerId][workspaceId],
+        role: previousOwnerRole,
+      };
+      memberships[body.new_owner_id][workspaceId] = {
+        ...memberships[body.new_owner_id][workspaceId],
+        role: "owner",
+        can_oversee: false,
+      };
+      workspaces = workspaces.map((item) =>
+        item.id === workspaceId
+          ? {
+              ...item,
+              owner_id: body.new_owner_id,
+              role:
+                account.id === previousOwnerId
+                  ? previousOwnerRole
+                  : item.role,
+            }
+          : item,
+      );
+      return fulfill({
+        workspace: workspaces.find((item) => item.id === workspaceId),
+        previous_owner: {
+          user: people.find((person) => person.id === previousOwnerId),
+          ...memberships[previousOwnerId][workspaceId],
+        },
+        new_owner: {
+          user: people.find((person) => person.id === body.new_owner_id),
+          ...memberships[body.new_owner_id][workspaceId],
+        },
+      });
+    }
+    const unitMembersMatch = path.match(/^\/units\/([^/]+)\/members$/);
+    if (unitMembersMatch && method === "GET") {
+      const params = new URL(req.url()).searchParams;
+      const query = (params.get("q") || "").toLowerCase();
+      const perPage = Number(params.get("per_page") || 25);
+      const pageNumber = Number(params.get("page") || 1);
+      const manageable = new Set(
+        workspaces
+          .filter((item) => item.capabilities?.manage_members === true)
+          .map((item) => item.id),
+      );
+      const filtered = people.filter((person) =>
+        [person.name, person.email, person.staff_id, person.official_title]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(query)),
+      );
+      const lastPage = Math.max(1, Math.ceil(filtered.length / perPage));
+      const data = filtered
+        .slice((pageNumber - 1) * perPage, pageNumber * perPage)
+        .map((person) => ({
+          ...person,
+          memberships: Object.entries(memberships[person.id] || {})
+            .filter(([workspaceId]) => manageable.has(workspaceId))
+            .map(([workspaceId, membership]) => ({
+              workspace: {
+                id: workspaceId,
+                parent_id:
+                  workspaces.find((item) => item.id === workspaceId)?.parent_id ||
+                  null,
+                name:
+                  workspaces.find((item) => item.id === workspaceId)?.name ||
+                  "Unknown workspace",
+              },
+              ...membership,
+              joined_at: new Date().toISOString(),
+            })),
+        }));
+      return fulfill({
+        data,
+        meta: {
+          current_page: pageNumber,
+          last_page: lastPage,
+          per_page: perPage,
+          total: filtered.length,
+        },
+      });
+    }
+    const memberMoveMatch = path.match(
+      /^\/workspaces\/([^/]+)\/members\/([^/]+)\/move$/,
+    );
+    if (memberMoveMatch && method === "POST") {
+      const [, sourceId, userId] = memberMoveMatch;
+      const existing = memberships[userId]?.[sourceId];
+      const targetId = body.target_workspace_id;
+      if (!existing && !memberships[userId]?.[targetId])
+        return fulfill({ message: "Membership not found" }, 404);
+      const moved = existing || memberships[userId][targetId];
+      memberships[userId] ||= {};
+      delete memberships[userId][sourceId];
+      memberships[userId][targetId] = {
+        ...moved,
+        ...(body.role ? { role: body.role } : {}),
+        can_oversee: false,
+      };
+      const person = people.find((item) => item.id === userId);
+      return fulfill({
+        membership: {
+          user: person,
+          ...memberships[userId][targetId],
+        },
+        source_workspace: workspaces.find((item) => item.id === sourceId),
+        target_workspace: workspaces.find((item) => item.id === targetId),
+      });
+    }
+    const memberItemMatch = path.match(
+      /^\/workspaces\/([^/]+)\/members\/([^/]+)$/,
+    );
+    if (memberItemMatch) {
+      const [, workspaceId, userId] = memberItemMatch;
+      const membership = memberships[userId]?.[workspaceId];
+      if (!membership) return fulfill({ message: "Membership not found" }, 404);
+      if (method === "PATCH") {
+        if (userId === account.id)
+          return fulfill(
+            {
+              message: "Users cannot change their own role.",
+              errors: { role: ["Self role changes are not allowed."] },
+            },
+            422,
+          );
+        memberships[userId][workspaceId] = { ...membership, ...body };
+        return fulfill({
+          user: people.find((item) => item.id === userId),
+          ...memberships[userId][workspaceId],
+        });
+      }
+      if (method === "DELETE") {
+        delete memberships[userId][workspaceId];
+        return route.fulfill({ status: 204 });
+      }
+    }
+    const workspaceMembersMatch = path.match(
+      /^\/workspaces\/([^/]+)\/members$/,
+    );
+    if (workspaceMembersMatch) {
+      const workspaceId = workspaceMembersMatch[1];
+      if (method === "GET")
+        return fulfill({
+          data: people
+            .filter((person) => memberships[person.id]?.[workspaceId])
+            .map((person) => ({
+              user: person,
+              ...memberships[person.id][workspaceId],
+              joined_at: new Date().toISOString(),
+            })),
+        });
+      if (method === "POST") {
+        if (body.user_id === account.id)
+          return fulfill(
+            {
+              message: "Users cannot add themselves.",
+              errors: { user_id: ["Self assignment is not allowed."] },
+            },
+            422,
+          );
+        const existing = memberships[body.user_id]?.[workspaceId];
+        if (existing && existing.role !== body.role)
+          return fulfill({ message: "Membership conflict" }, 409);
+        memberships[body.user_id] ||= {};
+        memberships[body.user_id][workspaceId] ||= {
+          role: body.role,
+          can_oversee: false,
+        };
+        return fulfill(
+          {
+            user: people.find((item) => item.id === body.user_id),
+            ...memberships[body.user_id][workspaceId],
+            joined_at: new Date().toISOString(),
+          },
+          existing ? 200 : 201,
+        );
+      }
+    }
+    const invitationItemMatch = path.match(
+      /^\/workspaces\/([^/]+)\/invitations\/([^/]+)$/,
+    );
+    if (invitationItemMatch && method === "DELETE") {
+      invitations = invitations.filter(
+        (invitation) => invitation.id !== invitationItemMatch[2],
+      );
+      return route.fulfill({ status: 204 });
+    }
+    if (/^\/workspaces\/[^/]+\/invitations$/.test(path)) {
+      if (method === "GET") return fulfill({ data: invitations });
+      if (method === "POST") {
+        const invitation = {
+          id: `invite-${invitations.length + 1}`,
+          email: body.email,
+          role: body.role,
+          expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+          token: "one-time-invitation-token",
+        };
+        invitations = [invitation, ...invitations];
+        return fulfill({ invitation }, 202);
+      }
     }
     if (path.endsWith("/preferences")) {
       preferenceAttempts++;

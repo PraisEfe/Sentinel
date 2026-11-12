@@ -11,7 +11,7 @@ export default function MonitorsView({
   error,
   onRetry,
   onCreate,
-  canManageMonitors = true,
+  canManageMonitors = false,
   onDelete,
   onSelect,
   page,
@@ -141,9 +141,11 @@ export default function MonitorsView({
                     >
                       <ArrowRight size={15} />
                     </button>
-                    <button className="monitor-delete-button" aria-label={`Delete ${item.name}`} disabled={loading} onClick={() => setDeleting(item)}>
-                      <Trash2 size={15} />
-                    </button>
+                    {canManageMonitors && (
+                      <button className="monitor-delete-button" aria-label={`Delete ${item.name}`} disabled={loading} onClick={() => setDeleting(item)}>
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -162,7 +164,7 @@ export default function MonitorsView({
           </p>
         )}
       </section>
-      {deleting && <DeleteMonitorDialog monitor={deleting} onClose={() => setDeleting(null)} onDelete={onDelete} />}
+      {deleting && canManageMonitors && <DeleteMonitorDialog monitor={deleting} onClose={() => setDeleting(null)} onDelete={onDelete} />}
       <Pagination
         page={page}
         lastPage={lastPage}

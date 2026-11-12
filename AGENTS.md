@@ -15,8 +15,10 @@ Component rules. The umbrella `../AGENTS.md` also applies.
 - React 19 + Vite 8 + React Router 7; Zustand for shared session/workspace state.
 - Browser API calls are same-origin `/api/v1` in every mode. Do not point the browser at the backend domain directly.
 - Production is static `dist/` served by nginx with `/api/v1` proxied to `https://sentinel-api.absg-ohos.cloud`. The Express server in `server/` is a fallback host mode.
-- Public routes: `/`, `/privacy`, `/terms`, `/signin`, `/signup`, `/forgot-password`, `/auth/callback`. `/` shows the landing page when signed out and the dashboard when signed in.
-- Google/Microsoft sign-in uses same-origin social redirect endpoints and the public `/auth/callback` route. It exchanges a single-use code once, removes callback query parameters, and accepts sessions through Zustand. Follow `docs/social-auth.md`; provider secrets stay on the backend.
+- Public routes: `/`, `/privacy`, `/terms`, `/signin`, `/signup`, `/forgot-password`, `/verify-email`, `/reset-password`, `/auth/callback`, `/invitations/:token`. `/` shows the landing page when signed out and the dashboard when signed in.
+- Treat backend `workspace.capabilities` as canonical. State is jurisdiction, Unit is the organisation/roster boundary, Workspace is an office tenant, and membership is explicit; do not infer write access or workspace creation from role names, workspace level, or `can_oversee`.
+- Gate authenticated users in this order before tenant requests: email verification, active roster, registration approval, then workspace assignment. Verification and roster gates preserve the session and refresh `/auth/me` without loading workspaces until eligible.
+- Google/Microsoft sign-in uses same-origin social redirect endpoints and the public `/auth/callback` route. It exchanges a single-use code once, removes callback query parameters, and accepts sessions through Zustand. Only an explicit provider-verified email claim marks the local email verified; missing/false claims do not bypass Sentinel verification for an unverified account. Follow `docs/social-auth.md`; provider secrets stay on the backend.
 
 ## Commands
 

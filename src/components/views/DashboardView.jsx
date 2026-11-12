@@ -15,7 +15,7 @@ export default function DashboardView({
   onSearch,
   onSelectTopic,
   onOpenAddMonitor,
-  canManageMonitors = true,
+  canManageMonitors = false,
   monitors = [],
   history = [],
   loading,

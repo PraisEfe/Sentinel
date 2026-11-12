@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useEffectEvent, useState } from "react";
 import {
   Link,
   Navigate,
@@ -15,7 +15,11 @@ const MonitorsView = lazy(() => import("../components/views/MonitorsView"));
 const MonitorDetailView = lazy(() => import("../components/views/MonitorDetailView"));
 import LiveSearchView from "../components/views/LiveSearchView";
 import { useAppStore } from "../stores/appStore";
-import { useWorkspace } from "../lib/workspace";
+import {
+  canCreateAnyWorkspace,
+  useWorkspace,
+  workspaceCapabilities,
+} from "../lib/workspace";
 import { safeReturnTo, workspacePathFor } from "./paths";
 
 export function AuthPage({ mode }) {
@@ -43,10 +47,19 @@ export function AuthPage({ mode }) {
   );
 }
 export function NewWorkspacePage() {
-  const { workspaceId, createWorkspace, user, logout } = useAppStore(
+  const {
+    workspaceId,
+    workspaces,
+    createWorkspace,
+    authenticatedApi,
+    user,
+    logout,
+  } = useAppStore(
     useShallow((state) => ({
       workspaceId: state.workspaceId,
+      workspaces: state.workspaces,
       createWorkspace: state.createWorkspace,
+      authenticatedApi: state.authenticatedApi,
       user: state.user,
       logout: state.logout,
     })),
@@ -55,15 +68,84 @@ export function NewWorkspacePage() {
   const navigate = useNavigate();
   const [additional] = useState(Boolean(workspaceId));
   const [name, setName] = useState("");
+  const [units, setUnits] = useState([]);
+  const [unitsLoading, setUnitsLoading] = useState(true);
+  const [unitsError, setUnitsError] = useState("");
+  const [unitsVersion, setUnitsVersion] = useState(0);
+  const [unitId, setUnitId] = useState("");
+  const [parentId, setParentId] = useState("");
+  const [level, setLevel] = useState("office");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const canCreate = canCreateAnyWorkspace(user, workspaces);
+  const scopes = (user?.oversight_scopes || []).filter(
+    (scope) => scope.can_manage_members === true,
+  );
+  const eligibleUnits = units.filter(
+    (unit) =>
+      (!unit.status || unit.status === "active") &&
+      scopes.some(
+        (scope) =>
+          scope.state === unit.state &&
+          (!scope.unit_id || scope.unit_id === unit.id),
+      ) &&
+      !workspaces.some(
+        (workspace) => workspace.unit_id === unit.id && !workspace.parent_id,
+      ),
+  );
+  const parents = workspaces.filter(
+    (workspace) =>
+      workspace.unit_id &&
+      workspaceCapabilities(workspace).canCreateWorkspace,
+  );
+  const selectedParent = parents.find((workspace) => workspace.id === parentId);
+  const selectedUnitId =
+    unitId ||
+    scopes.find(
+      (scope) =>
+        scope.unit_id && eligibleUnits.some((unit) => unit.id === scope.unit_id),
+    )?.unit_id ||
+    "";
+
+  useEffect(() => {
+    if (!canCreate) return;
+    let active = true;
+    const controller = new AbortController();
+    async function loadUnits() {
+      setUnitsLoading(true);
+      setUnitsError("");
+      try {
+        const result = await authenticatedApi("/units", {
+          signal: controller.signal,
+        });
+        if (active) setUnits(Array.isArray(result?.data) ? result.data : []);
+      } catch (failure) {
+        if (active && failure.name !== "AbortError")
+          setUnitsError(failure.message);
+      } finally {
+        if (active) setUnitsLoading(false);
+      }
+    }
+    void loadUnits();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [authenticatedApi, canCreate, unitsVersion]);
+
   async function submit(event) {
     event.preventDefault();
     if (busy) return;
     setBusy(true);
     setError("");
     try {
-      const workspace = await createWorkspace(name);
+      const workspace = await createWorkspace({
+        name,
+        level,
+        ...(parentId
+          ? { parent_id: parentId }
+          : { unit_id: selectedUnitId }),
+      });
       if (workspace?.id) navigate(safeReturnTo(location.state?.from), { replace: true });
     } catch (failure) {
       setError(failure.message);
@@ -71,13 +153,13 @@ export function NewWorkspacePage() {
       setBusy(false);
     }
   }
-  if (!user?.can_create_workspace) {
+  if (!canCreate) {
     return (
       <main className="workspace-gate">
-        <h1>Workspace creation is managed by your unit head</h1>
+        <h1>Office workspace creation is managed by authorised officials</h1>
         <p>
-          Ask your Head of Service or Commissioner to create the unit workspace
-          and add you to it.
+          Members cannot create office workspaces. Ask an office administrator,
+          Head of Service or Commissioner to assign you to the right office.
         </p>
         <button className="text-link" onClick={logout}>
           Sign out
@@ -88,11 +170,14 @@ export function NewWorkspacePage() {
 
   return (
     <main className="workspace-gate">
-      <h1>{additional ? "Create another workspace" : "Create your research workspace"}</h1>
-      <p>{additional ? "Keep research and monitoring organized in separate workspaces. You can switch between them from the sidebar." : "You’re signed in. Give your first workspace a name to get started."}</p>
+      <h1>{additional ? "Create another office workspace" : "Create your office workspace"}</h1>
+      <p>
+        A Workspace is an office tenant. Its Unit is the organisation and staff
+        roster boundary; its State is the jurisdiction.
+      </p>
       <form className="auth-form" onSubmit={submit}>
         <label className="field-label" htmlFor="workspace-name">
-          Workspace name
+          Office workspace name
           <input
             id="workspace-name"
             required
@@ -101,12 +186,93 @@ export function NewWorkspacePage() {
             onChange={(event) => setName(event.target.value)}
           />
         </label>
+        <label className="field-label" htmlFor="workspace-parent">
+          Parent office (optional)
+          <select
+            id="workspace-parent"
+            value={parentId}
+            onChange={(event) => {
+              setParentId(event.target.value);
+              setError("");
+            }}
+          >
+            <option value="">No parent (create a Unit root office)</option>
+            {parents.map((workspace) => (
+              <option key={workspace.id} value={workspace.id}>
+                {workspace.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {!parentId && (
+          <label className="field-label" htmlFor="workspace-unit">
+            Unit
+            <select
+              id="workspace-unit"
+              required
+              disabled={unitsLoading}
+              value={selectedUnitId}
+              onChange={(event) => setUnitId(event.target.value)}
+            >
+              <option value="">Select an eligible active Unit</option>
+              {eligibleUnits.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name} · {unit.state} jurisdiction
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {selectedParent && (
+          <p className="field-hint">
+            Unit is inherited from {selectedParent.name}.
+          </p>
+        )}
+        <label className="field-label" htmlFor="workspace-level">
+          Office type
+          <select
+            id="workspace-level"
+            value={level}
+            onChange={(event) => setLevel(event.target.value)}
+          >
+            <option value="office">Office</option>
+            <option value="directorate">Directorate</option>
+            <option value="oversight">Oversight office</option>
+          </select>
+        </label>
+        {unitsLoading && <p className="field-hint">Loading active Units…</p>}
+        {unitsError && (
+          <div className="load-error" role="alert">
+            <span>{unitsError}</span>
+            <button
+              className="text-link"
+              type="button"
+              onClick={() => setUnitsVersion((version) => version + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+        {!unitsLoading && !parentId && eligibleUnits.length === 0 && !unitsError && (
+          <p className="field-hint">
+            No Unit is eligible for another root office. Choose a manageable
+            parent office to create a child workspace.
+          </p>
+        )}
         {error && (
           <p className="form-error" role="alert">
             {error}
           </p>
         )}
-        <button className="primary-button" disabled={busy || !name.trim()}>
+        <button
+          className="primary-button"
+          disabled={
+            busy ||
+            unitsLoading ||
+            !name.trim() ||
+            (!parentId && !selectedUnitId)
+          }
+        >
           {busy ? "Creating…" : "Create workspace"}
         </button>
       </form>
@@ -239,17 +405,46 @@ export function SearchPage() {
   );
 }
 export function WorkspaceGate({ children }) {
-  const { workspaceId, user, logout } = useAppStore(
+  const { workspaceId, workspaces, user, refreshAuthorization, logout } = useAppStore(
     useShallow((state) => ({
       workspaceId: state.workspaceId,
+      workspaces: state.workspaces,
       user: state.user,
+      refreshAuthorization: state.refreshAuthorization,
       logout: state.logout,
     })),
   );
   const location = useLocation();
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState("");
+  const canCreate = canCreateAnyWorkspace(user, workspaces);
+
+  async function refreshStatus({ quiet = false } = {}) {
+    if (refreshing) return;
+    setRefreshing(true);
+    if (!quiet) setRefreshError("");
+    try {
+      await refreshAuthorization();
+    } catch (failure) {
+      if (!quiet) setRefreshError(failure.message);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  const refreshOnFocus = useEffectEvent(() => {
+    void refreshStatus({ quiet: true });
+  });
+
+  useEffect(() => {
+    if (workspaceId) return undefined;
+    const onFocus = () => refreshOnFocus();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [workspaceId]);
 
   if (!workspaceId) {
-    if (user?.can_create_workspace)
+    if (canCreate)
       return (
         <Navigate
           to="/workspaces/new"
@@ -260,11 +455,15 @@ export function WorkspaceGate({ children }) {
 
     return (
       <main className="workspace-gate">
-        <h1>Your workspace is not ready yet</h1>
+        <h1>No office workspace is assigned yet</h1>
         <p>
-          Your unit head has not created the unit workspace or has not added you
-          yet. Ask your Head of Service or Commissioner to add you.
+          Your account is approved, but you have not been assigned to an office
+          Workspace in your Unit. Ask an authorised office manager to add you.
         </p>
+        {refreshError && <p className="form-error" role="alert">{refreshError}</p>}
+        <button className="primary-button" onClick={refreshStatus} disabled={refreshing}>
+          {refreshing ? "Checking…" : "Refresh assignment status"}
+        </button>
         <button className="text-link" onClick={logout}>
           Sign out
         </button>

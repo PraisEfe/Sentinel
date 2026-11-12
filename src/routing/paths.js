@@ -15,7 +15,7 @@ export function safeReturnTo(value) {
     value.startsWith("/") &&
     !value.startsWith("//") &&
     !/[\\\p{Cc}]/u.test(value) &&
-    !/^\/(signin|signup|forgot-password|auth\/callback)(\/|\?|#|$)/.test(value)
+    !/^\/(signin|signup|forgot-password|reset-password|auth\/callback|verify-email)(\/|\?|#|$)/.test(value)
     ? value
     : "/";
 }

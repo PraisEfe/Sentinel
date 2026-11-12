@@ -261,7 +261,7 @@ test("new workspace onboarding preserves the requested destination", async ({
   await page.getByLabel("Password", { exact: true }).fill("correct-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/workspaces\/new$/);
-  await page.getByLabel("Workspace name").fill("New research team");
+  await page.getByLabel("Office workspace name").fill("New research team");
   await page
     .getByRole("button", { name: "Create workspace", exact: true })
     .click();
@@ -342,10 +342,11 @@ test("signed-in users create another workspace, switch back and retain both afte
   const calls = await mockApi(page);
   await login(page);
   await expect(page.getByRole('combobox',{name:'Workspace',exact:true})).toHaveAttribute('data-value','w-1');
-  await page.getByRole('link',{name:'New workspace',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Create another workspace'})).toBeVisible();
+  await page.getByRole('link',{name:'New office workspace',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Create another office workspace'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Create workspace',exact:true})).toBeDisabled();
-  await page.getByLabel('Workspace name').fill('Second research team');
+  await page.getByLabel('Office workspace name').fill('Second research team');
+  await page.getByLabel('Parent office (optional)').selectOption('w-1');
   await page.getByRole('button',{name:'Create workspace',exact:true}).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('combobox',{name:'Workspace',exact:true})).toHaveAttribute('data-value','w-2');
@@ -355,6 +356,8 @@ test("signed-in users create another workspace, switch back and retain both afte
   await expect(page.getByRole('button',{name:/Workspace two monitor/})).toBeVisible();
   const created = calls.find((call) => call.path === '/workspaces' && call.method === 'POST');
   expect(created.body.name).toBe('Second research team');
+  expect(created.body.parent_id).toBe('w-1');
+  expect(created.body).not.toHaveProperty('unit_id');
   expect(created.headers.authorization).toBe('Bearer test-session-token');
   await page.reload();
   await expect(page.getByRole('combobox',{name:'Workspace',exact:true})).toHaveAttribute('data-value','w-2');
@@ -367,15 +370,16 @@ test("signed-in users create another workspace, switch back and retain both afte
 test("workspace creation can be cancelled and permission failures preserve the current workspace", async ({ page }) => {
   const calls = await mockApi(page,{createWorkspaceError:true});
   await login(page);
-  await page.getByRole('link',{name:'New workspace',exact:true}).click();
+  await page.getByRole('link',{name:'New office workspace',exact:true}).click();
   await page.getByRole('link',{name:'Cancel and return to workspace'}).click();
   await expect(page.getByRole('combobox',{name:'Workspace',exact:true})).toHaveAttribute('data-value','w-1');
   expect(calls.some((call) => call.path === '/workspaces' && call.method === 'POST')).toBe(false);
-  await page.getByRole('link',{name:'New workspace',exact:true}).click();
-  await page.getByLabel('Workspace name').fill('Private research');
+  await page.getByRole('link',{name:'New office workspace',exact:true}).click();
+  await page.getByLabel('Office workspace name').fill('Private research');
+  await page.getByLabel('Parent office (optional)').selectOption('w-1');
   await page.getByRole('button',{name:'Create workspace',exact:true}).click();
   await expect(page.getByRole('alert')).toHaveText('You don’t have access to this action.');
-  await expect(page.getByLabel('Workspace name')).toHaveValue('Private research');
+  await expect(page.getByLabel('Office workspace name')).toHaveValue('Private research');
   await page.getByRole('link',{name:'Cancel and return to workspace'}).click();
   await expect(page.getByRole('combobox',{name:'Workspace',exact:true})).toHaveAttribute('data-value','w-1');
   await page.getByRole('combobox',{name:'Workspace',exact:true}).click();

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import {
   BrowserRouter,
   Outlet,
@@ -28,6 +28,8 @@ import LandingView from "./components/views/LandingView";
 import LegalView from "./components/views/LegalView";
 import "./landing.css";
 const SocialCallbackPage = lazy(() => import("./components/views/SocialCallbackPage"));
+const VerifyEmailPage = lazy(() => import("./components/views/VerifyEmailPage"));
+const ResetPasswordPage = lazy(() => import("./components/views/ResetPasswordPage"));
 const InvitationAcceptPage = lazy(() => import("./components/views/InvitationAcceptPage"));
 const AnalyticsView = lazy(() => import("./components/views/AnalyticsView"));
 import AlertsView from "./components/views/AlertsView";
@@ -66,9 +68,14 @@ function AlertsPage() {
 }
 function SessionInitializer() {
   const initialize = useAppStore((state) => state.initializeSession);
+  const location = useLocation();
+  const started = useRef(false);
   useEffect(() => {
+    if (location.pathname === "/reset-password") return;
+    if (started.current) return;
+    started.current = true;
     void initialize();
-  }, [initialize]);
+  }, [initialize, location.pathname]);
   return null;
 }
 function RootPage() {
@@ -101,6 +108,8 @@ export default function App() {
         <SessionInitializer />
         <Routes>
           <Route path="auth/callback" element={<RouteBoundary><Suspense fallback={<LoadingState label="Completing sign-in…" />}><SocialCallbackPage /></Suspense></RouteBoundary>} />
+          <Route path="verify-email" element={<RouteBoundary><Suspense fallback={<LoadingState label="Checking verification link…" />}><VerifyEmailPage /></Suspense></RouteBoundary>} />
+          <Route path="reset-password" element={<RouteBoundary><Suspense fallback={<LoadingState label="Opening password reset…" />}><ResetPasswordPage /></Suspense></RouteBoundary>} />
           <Route path="invitations/:token" element={<RouteBoundary><Suspense fallback={<LoadingState label="Opening invitation…" />}><InvitationAcceptPage /></Suspense></RouteBoundary>} />
           <Route path="signin" element={<AuthPage mode="signin" />} />
           <Route path="signup" element={<AuthPage mode="signup" />} />

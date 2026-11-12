@@ -4,7 +4,13 @@ import { ArrowUpRight, Bookmark, Globe, Sparkles, X } from "lucide-react";
 import { useResource, useWorkspace, number } from "../../lib/workspace";
 import { relativeTime, safeExternalUrl } from "../../lib/format";
 import { ResourceState } from "./WorkspaceUI";
-function Drawer({ selection, onClose, onMonitor, onRelated }) {
+function Drawer({
+  selection,
+  onClose,
+  onMonitor,
+  onRelated,
+  canManageMonitors = false,
+}) {
   const dialog = useRef(null);
   const reduced = useReducedMotion();
   const { preferences } = useWorkspace();
@@ -192,13 +198,15 @@ function Drawer({ selection, onClose, onMonitor, onRelated }) {
               )}
             </section>
             <div className="drawer-actions">
-              <button
-                className="outline-button"
-                onClick={() => onMonitor(item.title || "")}
-              >
-                <Bookmark size={13} />
-                Monitor topic
-              </button>
+              {canManageMonitors && (
+                <button
+                  className="outline-button"
+                  onClick={() => onMonitor(item.title || "")}
+                >
+                  <Bookmark size={13} />
+                  Monitor topic
+                </button>
+              )}
               <button
                 className="primary-button"
                 onClick={() =>

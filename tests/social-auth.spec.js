@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { mockApi } from './helpers/apiFixtures.js';
-const session = { token: 'test-session-token', user: { id: 'u-1', name: 'Ada Okafor', email: 'ada@example.com' } };
+const session = { token: 'test-session-token', user: { id: 'u-1', name: 'Ada Okafor', email: 'ada@example.com', is_email_verified: true, email_verification_required: false } };
 async function exchange(page, response = session, status = 200) {
   const calls = [];
   await page.route('**/api/v1/auth/social/exchange', async route => {
@@ -64,7 +64,7 @@ test('social callback sends new accounts to existing workspace onboarding', asyn
   await exchange(page);
   await page.goto('/auth/callback?code=valid&provider=microsoft');
   await expect(page).toHaveURL(/\/workspaces\/new$/);
-  await expect(page.getByRole('heading', { name: /Create your research workspace/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Create your office workspace/ })).toBeVisible();
 });
 
 for (const [reason, message] of [['access_denied', 'Sign-in was cancelled.'], ['invalid_state', 'This sign-in link expired. Please try again.'], ['email_unverified', 'Your provider email is not verified.'], ['email_missing', 'Your provider did not share an email address.'], ['account_disabled', 'This account is disabled.'], ['account_unavailable', 'This account is not available.'], ['social_login_failed', 'Sign-in could not be completed. Please try again.'], ['constructor', 'Sign-in could not be completed. Please try again.'], ['<script>internal detail</script>', 'Sign-in could not be completed. Please try again.']]) {

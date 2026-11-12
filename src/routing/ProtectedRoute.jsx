@@ -1,5 +1,7 @@
 import LoadingState from "../components/common/LoadingState";
 import PendingApprovalView from "../components/views/PendingApprovalView";
+import RosterInactiveView from "../components/views/RosterInactiveView";
+import VerifyEmailView from "../components/views/VerifyEmailView";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../stores/appStore";
@@ -47,6 +49,9 @@ export default function ProtectedRoute() {
         {notice && <p role="alert">{notice}</p>}
       </main>
     );
+  if (user?.email_verification_required || user?.is_email_verified === false)
+    return <VerifyEmailView />;
+  if (user?.is_roster_active === false) return <RosterInactiveView />;
   if (user && !user.is_approved) return <PendingApprovalView />;
   return <Outlet />;
 }

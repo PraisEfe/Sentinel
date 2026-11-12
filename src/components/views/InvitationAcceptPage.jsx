@@ -8,19 +8,23 @@ import { useAppStore } from "../../stores/appStore";
 export default function InvitationAcceptPage() {
   const { token } = useParams();
   const navigate = useNavigate();
-  const { session, user, initializeSession, logout } = useAppStore(
+  const { session, user, refreshAuthorization, logout } = useAppStore(
     useShallow((state) => ({
       session: state.session,
       user: state.user,
-      initializeSession: state.initializeSession,
+      refreshAuthorization: state.refreshAuthorization,
       logout: state.logout,
     })),
   );
 
   const [invite, setInvite] = useState(null);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadVersion, setLoadVersion] = useState(0);
+  const [inspectError, setInspectError] = useState(null);
+  const [actionError, setActionError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [acceptedWorkspaceId, setAcceptedWorkspaceId] = useState("");
 
   const returnTo = `/invitations/${token}`;
   const emailMatches =
@@ -30,58 +34,132 @@ export default function InvitationAcceptPage() {
 
   useEffect(() => {
     let active = true;
-    request(`/invitations/${encodeURIComponent(token)}`)
-      .then((result) => {
+    const controller = new AbortController();
+    async function inspect() {
+      setLoading(true);
+      setInvite(null);
+      setInspectError(null);
+      try {
+        const result = await request(
+          `/invitations/${encodeURIComponent(token)}`,
+          { signal: controller.signal },
+        );
         if (active) setInvite(result);
-      })
-      .catch((failure) => {
-        if (active) setError(failure.message);
-      });
+      } catch (failure) {
+        if (active && failure.name !== "AbortError") setInspectError(failure);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void inspect();
     return () => {
       active = false;
+      controller.abort();
     };
-  }, [token]);
+  }, [token, loadVersion]);
+
+  async function openAcceptedWorkspace(workspaceId) {
+    if (!workspaceId) {
+      setActionError({
+        message:
+          "The invitation was accepted, but the server did not identify the office workspace.",
+      });
+      return;
+    }
+    try {
+      const authorization = await refreshAuthorization(workspaceId);
+      if (authorization?.workspaceId !== workspaceId) {
+        setActionError({
+          message:
+            "The invitation was accepted, but office access is not available yet. Refresh access to try again.",
+        });
+        return;
+      }
+      navigate("/", { replace: true });
+    } catch (failure) {
+      setActionError({
+        ...failure,
+        message:
+          "The invitation was accepted, but access could not be refreshed. Check your connection and try again.",
+      });
+    }
+  }
 
   async function accept() {
     if (busy) return;
     setBusy(true);
-    setError("");
+    setActionError(null);
     try {
-      await request(`/invitations/${encodeURIComponent(token)}/accept`, {
+      const result = await request(`/invitations/${encodeURIComponent(token)}/accept`, {
         method: "POST",
         token: session?.token,
       });
+      const workspaceId = result?.workspace?.id || "";
       setAccepted(true);
-      await initializeSession();
-      if (useAppStore.getState().user?.is_approved) {
-        navigate("/", { replace: true });
-      }
+      setAcceptedWorkspaceId(workspaceId);
+      await openAcceptedWorkspace(workspaceId);
     } catch (failure) {
-      setError(failure.message);
+      setActionError(failure);
     } finally {
       setBusy(false);
     }
   }
 
-  if (!invite && !error) {
+  async function retryAccess() {
+    if (busy) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      await openAcceptedWorkspace(acceptedWorkspaceId);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function reinspectInvitation() {
+    setActionError(null);
+    setLoadVersion((version) => version + 1);
+  }
+
+  if (loading && !invite) {
     return <LoadingState label="Opening invitation…" fullPage />;
   }
+
+  const unavailableTitle =
+    inspectError?.code === "invitation_expired"
+      ? "This invitation has expired"
+      : ["invitation_used", "invitation_already_used"].includes(inspectError?.code)
+        ? "This invitation has already been used"
+        : inspectError?.status === 410
+          ? "This invitation has expired or was already used"
+        : "We couldn’t open this invitation";
+  const awaitingApproval =
+    actionError?.code === "account_pending" ||
+    actionError?.code === "pending_approval" ||
+    (actionError?.status === 422 && actionError?.errors?.account);
+  const actionUnavailable = !accepted && actionError?.status === 410;
 
   return (
     <main className="workspace-gate">
       <span className="eyebrow">SENTINEL INVITATION</span>
 
-      {error && (
+      {!invite && inspectError && (
         <>
-          <h1>We couldn’t open this invitation</h1>
-          <p role="alert">{error}</p>
+          <h1>{unavailableTitle}</h1>
+          <p role="alert">{inspectError.message}</p>
+          <button
+            className="primary-button"
+            onClick={() => setLoadVersion((version) => version + 1)}
+          >
+            Try again
+          </button>
           <Link className="text-link" to="/">
             Return home
           </Link>
         </>
       )}
 
-      {invite && !error && (
+      {invite && (
         <>
           <h1>Join {invite.workspace?.name || "this workspace"}</h1>
           <p>
@@ -107,6 +185,25 @@ export default function InvitationAcceptPage() {
               <dd>{invite.expires_at || "—"}</dd>
             </div>
           </dl>
+
+          {actionUnavailable && (
+            <>
+              <h2>This invitation is no longer available</h2>
+              <p role="alert">{actionError.message}</p>
+              <div className="auth-switch">
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={reinspectInvitation}
+                >
+                  Check invitation again
+                </button>
+                <Link className="text-link" to="/">
+                  Return home
+                </Link>
+              </div>
+            </>
+          )}
 
           {session && !user && <p>Loading your account…</p>}
 
@@ -136,27 +233,48 @@ export default function InvitationAcceptPage() {
             </>
           )}
 
-          {session && user && emailMatches && !accepted && (
-            <button className="primary-button" onClick={accept} disabled={busy}>
-              {busy ? "Accepting…" : "Accept invitation"}
-            </button>
+          {session &&
+            user &&
+            emailMatches &&
+            !accepted &&
+            actionError?.status !== 410 && (
+            <>
+              {awaitingApproval && (
+                <p>
+                  Your account must be approved before this invitation can be
+                  accepted. The invitation remains available so you can retry
+                  after approval.
+                </p>
+              )}
+              <button className="primary-button" onClick={accept} disabled={busy}>
+                {busy
+                  ? "Accepting…"
+                  : awaitingApproval
+                    ? "Retry after approval"
+                    : "Accept invitation"}
+              </button>
+            </>
           )}
 
           {accepted && (
             <>
               <p role="status">
                 Invitation accepted.{" "}
-                {user?.is_approved
-                  ? "You now have access to the workspace."
-                  : "Your account still needs administrator verification before you can use the workspace."}
+                Your office access is being refreshed.
               </p>
-              <Link className="primary-button" to="/">
-                Continue
-              </Link>
+              <button
+                className="primary-button"
+                disabled={busy}
+                onClick={retryAccess}
+              >
+                Refresh access
+              </button>
             </>
           )}
 
-          {error && <p role="alert">{error}</p>}
+          {actionError && !actionUnavailable && (
+            <p role="alert">{actionError.message}</p>
+          )}
         </>
       )}
     </main>

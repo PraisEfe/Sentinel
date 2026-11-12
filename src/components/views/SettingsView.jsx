@@ -354,7 +354,10 @@ export default function SettingsView({ initialTab = "Search & discovery" }) {
   };
   const visibleTabs = tabs.filter(([name]) => {
     if (name === "Team") return canManageMembers;
-    if (name === "Monitoring defaults" || name === "Sources & languages")
+    if (
+      name === "Monitoring defaults" ||
+      name === "Sources & languages"
+    )
       return canManageSettings;
     return true;
   });

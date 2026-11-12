@@ -7,8 +7,27 @@ const user = {
   id: "production-user",
   name: "Ada Okafor",
   email: "ada@example.com",
+  is_approved: true,
+  verification_status: "approved",
+  email_verified_at: new Date().toISOString(),
+  is_email_verified: true,
+  email_verification_required: false,
+  can_create_workspace: false,
+  oversight_scopes: [],
 };
-const workspace = { id: "production-workspace", name: "Research workspace" };
+const workspace = {
+  id: "production-workspace",
+  name: "Research workspace",
+  unit_id: "production-unit",
+  capabilities: {
+    view: true,
+    oversee_read: false,
+    manage_members: false,
+    manage_monitors: true,
+    manage_settings: false,
+    create_workspace: false,
+  },
+};
 test.beforeAll(async () => {
   upstream = createServer(async (req, res) => {
     let text = "";
@@ -39,6 +58,7 @@ test.beforeAll(async () => {
         return json(422, { message: "Email and password are required." });
       return json(200, { user, token: "production-fixture-token" });
     }
+    if (path === "/api/v1/units") return json(200, { data: [] });
     if (req.headers.authorization !== "Bearer production-fixture-token")
       return json(401, { message: "Unauthenticated." });
     if (path === "/api/v1/auth/me") return json(200, { user, memberships: [] });
