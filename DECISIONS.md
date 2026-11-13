@@ -79,3 +79,5 @@ Decision: make Home monitor-first, led by glanceable monitor cards and a compact
 Reason: scheduled monitors are Sentinel's durable collection mechanism. A search-first home and live/saved-search surfaces frame an autonomous monitoring product as a pull-based search tool, duplicate monitors and distract from daily triage.
 
 Alternatives: deleting Search was rejected because verification and drill-down flows need it; keeping Search primary or retaining a Live web tab was rejected because both contradict the monitor-driven product model.
+
+Rollout: deployed in frontend commit `643f02e`; CI run `43454548867` and deployment/health run `43454548974` passed.

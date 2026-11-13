@@ -24,4 +24,4 @@
 ## Status
 
 - P0, ownership-transfer, verification and password-recovery behavior is deployed, including backend migrations `2026_11_11_000005` through `000007`.
-- Backend final-contract code and migration `2026_11_13_000001` are deployed; the migration is Ran in production batch 9 and service checks passed. Matching admin/frontend final-contract releases are deployed. The monitor-first home/search-utility release is the next frontend deployment; authorization, real-mail and product UAT remain.
+- Backend final-contract code and migration `2026_11_13_000001` are deployed; the migration is Ran in production batch 9 and service checks passed. Frontend monitor-first home/search-utility release `643f02e` is deployed; CI run `43454548867` and deploy/health run `43454548974` passed. Authorization, real-mail and product UAT remain.

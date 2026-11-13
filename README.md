@@ -2,7 +2,7 @@
 
 React 19 / Vite 8 frontend for public-web intelligence. The supplied Sentinel designs are implemented across account access, a monitor-first home (glanceable monitor cards plus a collection summary), search as a contextual utility, monitors, intelligence, analytics, alerts, and settings. Layouts are responsive; Tailwind CSS and fonts are bundled locally. Framer Motion provides page transitions, monitor-wizard step transitions, drawer entrances/exits, and animated charts. Animations respect the system’s reduced-motion preference.
 
-**Status:** P0 Unit/onboarding/access, ownership transfer, email verification, password recovery and the final State-free Unit/workspace contract are deployed; backend migration `2026_11_13_000001` is Ran in production batch 9 and service checks passed. The monitor-first home/search-utility release is the next frontend deployment. Authorization, real-mail and product UAT remain.
+**Status:** P0 Unit/onboarding/access, ownership transfer, email verification, password recovery and the final State-free Unit/workspace contract are deployed; backend migration `2026_11_13_000001` is Ran in production batch 9 and service checks passed. The monitor-first home/search-utility release `643f02e` is deployed with passing CI and deployment health checks. Authorization, real-mail and product UAT remain.
 
 ## Develop
 
