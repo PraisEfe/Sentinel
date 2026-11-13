@@ -47,9 +47,6 @@ const workspace = {
   owner_id: user.id,
   role: "owner",
   capabilities,
-  can_manage_members: true,
-  can_manage_monitors: true,
-  can_manage_settings: true,
 };
 const monitor = {
   id: "m-1",
@@ -161,17 +158,12 @@ export async function mockApi(page, options = {}) {
   const memberships = {
     "u-1": Object.hasOwn(options, "actorMembership")
       ? options.actorMembership
-        ? {
-            "w-1": {
-              can_oversee: false,
-              ...options.actorMembership,
-            },
-          }
+        ? { "w-1": { ...options.actorMembership } }
         : {}
-      : { "w-1": { role: "owner", can_oversee: false } },
-    "u-2": { "w-1": { role: "member", can_oversee: false } },
+      : { "w-1": { role: "owner" } },
+    "u-2": { "w-1": { role: "member" } },
     "u-3": {},
-    "u-4": { "w-2": { role: "admin", can_oversee: false } },
+    "u-4": { "w-2": { role: "admin" } },
   };
   let invitations = [
     {
@@ -472,7 +464,6 @@ export async function mockApi(page, options = {}) {
       memberships[account.id] ||= {};
       memberships[account.id][created.id] = {
         role: "owner",
-        can_oversee: false,
       };
       workspaceCreated = true;
       return fulfill({ data: created }, 201);
@@ -500,7 +491,6 @@ export async function mockApi(page, options = {}) {
       memberships[body.new_owner_id][workspaceId] = {
         ...memberships[body.new_owner_id][workspaceId],
         role: "owner",
-        can_oversee: false,
       };
       workspaces = workspaces.map((item) =>
         item.id === workspaceId
@@ -588,7 +578,6 @@ export async function mockApi(page, options = {}) {
       memberships[userId][targetId] = {
         ...moved,
         ...(body.role ? { role: body.role } : {}),
-        can_oversee: false,
       };
       const person = people.find((item) => item.id === userId);
       return fulfill({
@@ -657,7 +646,6 @@ export async function mockApi(page, options = {}) {
         memberships[body.user_id] ||= {};
         memberships[body.user_id][workspaceId] ||= {
           role: body.role,
-          can_oversee: false,
         };
         return fulfill(
           {

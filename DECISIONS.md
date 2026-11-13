@@ -1,5 +1,13 @@
 # Decisions — Sentinel Frontend
 
+## 2026-11-13 — Production API proxy uses the local nginx API vhost
+
+Decision: proxy same-origin `/api/v1` requests to `https://127.0.0.1`, while sending `sentinel-api.absg-ohos.cloud` as TLS SNI and HTTP Host. Keep the shared nginx 1.24 listener options aligned with the other Certbot-managed vhosts.
+
+Reason: an unattended upgrade restarted nginx and `systemd-resolved` together. The previous hostname-based `proxy_pass` required public DNS during nginx configuration loading, so nginx failed to restart and every site on the shared VPS remained unavailable. The loopback route removes that startup dependency without changing the browser contract or API virtual host.
+
+Alternatives: rely on restart timing, add a static `/etc/hosts` entry, or proxy through the public address (rejected as fragile, globally stateful, or unnecessarily dependent on external routing).
+
 ## 2026-11-11 — Canonical capabilities and Unit-scoped assignment
 
 Decision: consume the backend's six workspace capabilities as the UI authorization contract. Model State as jurisdiction, Unit as the organisation/roster boundary, Workspace as an office tenant, and membership as explicit assignment.
@@ -53,3 +61,13 @@ Decision: show ownership transfer in Team only to the canonical current owner an
 Reason: direct role editing cannot safely preserve exactly one owner or update both memberships and capabilities together.
 
 Alternatives: make `owner` available in ordinary role selectors or patch local rows optimistically (rejected as unsafe).
+
+## 2026-11-13 — Canonical capabilities fail closed without compatibility aliases
+
+Decision: read workspace authorization only from the nested `workspace.capabilities` object. If it is missing or malformed, all workspace controls fail closed. Do not read top-level `can_manage_*`, role-based, workspace-level, or membership-oversight fallbacks. Team displays roles and assignment operations only; descendant visibility is represented by server-resolved scope capabilities, not a member flag.
+
+Reason: the owner-approved test-phase reset created the pre-UAT window to remove compatibility behavior. One payload shape prevents the browser from accidentally granting controls from stale fields and keeps it aligned with backend policy.
+
+Alternatives: retain fallbacks through UAT (rejected because UAT would validate a contract scheduled for removal); infer access from owner/admin labels (rejected because scopes and direct membership grant different capabilities).
+
+Rollout: backend code `fb3b221` is deployed with migration skipped. Matching admin/frontend releases are owner-approved; backend migration `2026_11_13_000001` remains a separate approval gate after client deployment confirmation, backup confirmation, and the redacted audit.

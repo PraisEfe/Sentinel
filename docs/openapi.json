@@ -107,17 +107,13 @@
                                                             },
                                                             "role": {
                                                                 "type": "string"
-                                                            },
-                                                            "can_oversee": {
-                                                                "type": "boolean"
                                                             }
                                                         },
                                                         "required": [
                                                             "workspace_id",
                                                             "name",
                                                             "slug",
-                                                            "role",
-                                                            "can_oversee"
+                                                            "role"
                                                         ]
                                                     }
                                                 },
@@ -12240,9 +12236,6 @@
                                                     "role": {
                                                         "type": "string"
                                                     },
-                                                    "can_oversee": {
-                                                        "type": "boolean"
-                                                    },
                                                     "joined_at": {
                                                         "type": "string"
                                                     }
@@ -12250,7 +12243,6 @@
                                                 "required": [
                                                     "user",
                                                     "role",
-                                                    "can_oversee",
                                                     "joined_at"
                                                 ]
                                             }
@@ -12382,9 +12374,6 @@
                                                 "role": {
                                                     "type": "string"
                                                 },
-                                                "can_oversee": {
-                                                    "type": "string"
-                                                },
                                                 "joined_at": {
                                                     "type": "string"
                                                 }
@@ -12392,7 +12381,6 @@
                                             "required": [
                                                 "user",
                                                 "role",
-                                                "can_oversee",
                                                 "joined_at"
                                             ]
                                         },
@@ -12516,9 +12504,6 @@
                                         "role": {
                                             "type": "string"
                                         },
-                                        "can_oversee": {
-                                            "type": "boolean"
-                                        },
                                         "joined_at": {
                                             "type": "string"
                                         }
@@ -12526,7 +12511,6 @@
                                     "required": [
                                         "user",
                                         "role",
-                                        "can_oversee",
                                         "joined_at"
                                     ]
                                 }
@@ -15678,9 +15662,6 @@
                             }
                         }
                     },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    },
                     "403": {
                         "$ref": "#/components/responses/AuthorizationException"
                     },
@@ -15689,6 +15670,9 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -15930,9 +15914,6 @@
                                                 "role": {
                                                     "type": "string"
                                                 },
-                                                "can_oversee": {
-                                                    "type": "boolean"
-                                                },
                                                 "joined_at": {
                                                     "type": "string"
                                                 }
@@ -15940,7 +15921,6 @@
                                             "required": [
                                                 "user",
                                                 "role",
-                                                "can_oversee",
                                                 "joined_at"
                                             ]
                                         },
@@ -15953,9 +15933,6 @@
                                                 "role": {
                                                     "type": "string"
                                                 },
-                                                "can_oversee": {
-                                                    "type": "boolean"
-                                                },
                                                 "joined_at": {
                                                     "type": "string"
                                                 }
@@ -15963,7 +15940,6 @@
                                             "required": [
                                                 "user",
                                                 "role",
-                                                "can_oversee",
                                                 "joined_at"
                                             ]
                                         }
@@ -16801,12 +16777,6 @@
                             "admin",
                             "member"
                         ]
-                    },
-                    "can_oversee": {
-                        "type": [
-                            "boolean",
-                            "null"
-                        ]
                     }
                 },
                 "required": [
@@ -16823,14 +16793,10 @@
                             "admin",
                             "member"
                         ]
-                    },
-                    "can_oversee": {
-                        "type": "boolean"
                     }
                 },
                 "required": [
-                    "role",
-                    "can_oversee"
+                    "role"
                 ],
                 "title": "AdminMembershipUpdateRequest"
             },
@@ -18547,9 +18513,6 @@
                                                 "null"
                                             ]
                                         },
-                                        "can_oversee": {
-                                            "type": "string"
-                                        },
                                         "joined_at": {
                                             "type": [
                                                 "string",
@@ -18561,7 +18524,6 @@
                                         "workspace_id",
                                         "name",
                                         "role",
-                                        "can_oversee",
                                         "joined_at"
                                     ]
                                 },
@@ -18777,9 +18739,6 @@
                             "null"
                         ]
                     },
-                    "can_oversee": {
-                        "type": "string"
-                    },
                     "joined_at": {
                         "type": [
                             "string",
@@ -18793,7 +18752,6 @@
                     "email",
                     "email_redacted",
                     "role",
-                    "can_oversee",
                     "joined_at"
                 ],
                 "title": "AdminWorkspaceMemberResource"
@@ -20839,9 +20797,6 @@
                                 "role": {
                                     "type": "string"
                                 },
-                                "can_oversee": {
-                                    "type": "boolean"
-                                },
                                 "joined_at": {
                                     "type": "string"
                                 }
@@ -20849,7 +20804,6 @@
                             "required": [
                                 "workspace",
                                 "role",
-                                "can_oversee",
                                 "joined_at"
                             ]
                         }
@@ -20940,9 +20894,6 @@
                             "admin",
                             "member"
                         ]
-                    },
-                    "can_oversee": {
-                        "type": "boolean"
                     },
                     "reason": {
                         "type": [
@@ -21439,7 +21390,6 @@
             "WorkspaceLevel": {
                 "type": "string",
                 "enum": [
-                    "state",
                     "oversight",
                     "office",
                     "directorate"
@@ -21602,34 +21552,10 @@
                             }
                         ]
                     },
-                    "can_oversee": {
-                        "type": [
-                            "string",
-                            "boolean"
-                        ]
-                    },
                     "role": {
                         "type": [
                             "string",
                             "null"
-                        ]
-                    },
-                    "can_manage_members": {
-                        "type": [
-                            "string",
-                            "boolean"
-                        ]
-                    },
-                    "can_manage_monitors": {
-                        "type": [
-                            "string",
-                            "boolean"
-                        ]
-                    },
-                    "can_manage_settings": {
-                        "type": [
-                            "string",
-                            "boolean"
                         ]
                     },
                     "created_at": {
@@ -21662,11 +21588,7 @@
                     "settings",
                     "owner_id",
                     "capabilities",
-                    "can_oversee",
                     "role",
-                    "can_manage_members",
-                    "can_manage_monitors",
-                    "can_manage_settings",
                     "created_at",
                     "updated_at"
                 ],

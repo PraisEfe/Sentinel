@@ -497,7 +497,6 @@ export default function TeamSettings() {
                 <tr>
                   <th>Person</th>
                   <th>Role</th>
-                  <th>Oversight</th>
                   <th>Move to</th>
                   <th>Actions</th>
                 </tr>
@@ -546,7 +545,6 @@ export default function TeamSettings() {
                           <option value="member">Member</option>
                         </select>
                       </td>
-                      <td>{member.can_oversee ? "Yes" : "No"}</td>
                       <td>
                         {owner ? (
                           <span className="team-protected">Owner protected</span>

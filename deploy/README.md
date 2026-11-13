@@ -9,7 +9,7 @@ Target:
 - Entrypoint: `/opt/sentinel-frontend-deploy.sh`
 - Repository: `ghum-abia/sentinel-frontend`, branch `main`
 - Runtime: **static `dist/` served by nginx**; Node is required only to build
-- API: same-origin `/api/v1` proxied to `https://sentinel-api.absg-ohos.cloud`
+- API: same-origin `/api/v1` proxied over loopback to the local Sentinel API nginx vhost, with `sentinel-api.absg-ohos.cloud` retained as the TLS SNI and HTTP Host
 
 This app is separate from `sentinel-backend` and `sentinel-admin`: separate repository, domain, deploy key, and CI. It never receives the backend or admin `.env` files.
 
@@ -99,6 +99,17 @@ Push to `main`; `.github/workflows/deploy.yml` calls `/opt/sentinel-frontend-dep
 
 The health check requests `/`, `/privacy`, and `/terms`.
 
+The nginx proxy deliberately connects to `https://127.0.0.1` while sending the
+API domain as SNI and Host. This avoids making nginx startup depend on public
+DNS when unattended upgrades restart nginx and the local resolver together.
+
+Routine deployments build assets only; they do **not** install or reload
+`deploy/nginx.conf.example`. The active vhost is owner-managed. When releasing
+a template change, the owner must compare it with the active configuration,
+preserve host-specific/Certbot settings, and validate with `nginx -t` before
+any approved reload. A successful frontend workflow alone does not verify
+the active proxy configuration.
+
 ## Rollback
 
 ```bash
@@ -135,6 +146,7 @@ sudo systemctl reload nginx
 curl -fsS https://sentinel-org.absg-ohos.cloud/ >/dev/null && echo ok
 curl -fsS https://sentinel-org.absg-ohos.cloud/privacy >/dev/null && echo ok
 curl -fsS https://sentinel-org.absg-ohos.cloud/terms >/dev/null && echo ok
+curl -fsS https://sentinel-org.absg-ohos.cloud/api/v1/units >/dev/null && echo ok
 tail -f /var/log/nginx/error.log
 ```
 

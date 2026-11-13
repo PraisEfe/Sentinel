@@ -11,20 +11,12 @@ export function workspaceCapabilities(workspace) {
       : null;
 
   return {
-    canView: canonical ? canonical.view === true : false,
-    canOversee: canonical ? canonical.oversee_read === true : false,
-    canManageMembers: canonical
-      ? canonical.manage_members === true
-      : workspace?.can_manage_members === true,
-    canManageMonitors: canonical
-      ? canonical.manage_monitors === true
-      : workspace?.can_manage_monitors === true,
-    canManageSettings: canonical
-      ? canonical.manage_settings === true
-      : workspace?.can_manage_settings === true,
-    canCreateWorkspace: canonical
-      ? canonical.create_workspace === true
-      : false,
+    canView: canonical?.view === true,
+    canOversee: canonical?.oversee_read === true,
+    canManageMembers: canonical?.manage_members === true,
+    canManageMonitors: canonical?.manage_monitors === true,
+    canManageSettings: canonical?.manage_settings === true,
+    canCreateWorkspace: canonical?.create_workspace === true,
   };
 }
 

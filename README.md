@@ -2,7 +2,7 @@
 
 React 19 / Vite 8 frontend for public-web intelligence. The supplied Sentinel designs are implemented across account access, home, search, monitors, intelligence, analytics, alerts, and settings. Layouts are responsive; Tailwind CSS and fonts are bundled locally. Framer Motion provides page transitions, monitor-wizard step transitions, drawer entrances/exits, and animated charts. Animations respect the system’s reduced-motion preference.
 
-**Status:** the final P0 Unit/onboarding/access, ownership-transfer, email-verification, and password-recovery implementation exists only in local, uncommitted and undeployed worktrees. Backend migrations `2026_11_11_000005` through `000007` have not run in production. Production rollout, mail-provider configuration and staging verification remain.
+**Status:** P0 Unit/onboarding/access, ownership transfer, email verification, and password recovery are deployed, including backend migrations `2026_11_11_000005` through `000007`. Backend final-contract code `fb3b221` is deployed with migration skipped. This owner-approved frontend release removes compatibility permission fallbacks and membership-oversight presentation and includes the DNS-independent Nginx template. Client deployment/active-vhost confirmation, separately approved backend migration `2026_11_13_000001`, and UAT remain.
 
 ## Develop
 
@@ -42,7 +42,7 @@ React Router handles navigation, deep links, refreshes, query parameters, and br
 
 Zustand owns the session lifecycle, user, authorized workspaces, selected workspace, monitoring summaries, per-workspace discovery preferences, and shared navigation/drawer/wizard state. Persistence explicitly whitelists only non-secret preferences and workspace selections. Bearer tokens retain the existing remember-me behavior in `sentinel_session` (local storage when checked, session storage otherwise); passwords are never stored. Form drafts and per-page request loading/error states remain local. Aborted/stale session and workspace responses cannot overwrite a newer session or workspace.
 
-Each workspace response's canonical `capabilities` object controls UI access: `view`, `oversee_read`, `manage_members`, `manage_monitors`, `manage_settings`, and `create_workspace`; account-level `user.can_create_workspace` covers an eligible Unit with no root yet. Canonical values override legacy role/flag hints. If an older response omits `capabilities`, only explicit `can_manage_*` flags are used as a temporary compatibility fallback; role names and `can_oversee` are not promoted into write access. Backend policies remain the security boundary.
+Each workspace response's canonical `capabilities` object exclusively controls UI access: `view`, `oversee_read`, `manage_members`, `manage_monitors`, `manage_settings`, and `create_workspace`; account-level `user.can_create_workspace` covers an eligible Unit with no root yet. Missing or malformed capabilities fail closed. The client does not infer access from roles, levels, or top-level compatibility flags; backend policies remain the security boundary.
 
 Search queries and filters are URL parameters (`/search?q=MTN&sentiment=positive`), monitor pagination uses `page`, and settings sections use `section` (e.g. `/settings?section=notifications`).
 
@@ -134,7 +134,7 @@ See [the endpoint testing guide](docs/api-testing.md) for Postman and PowerShell
 
 Email format is validated in the frontend using a regex. Passwords are sent unchanged in JSON over HTTPS; special characters are valid and are not stripped. Client validation is bypassable and does **not** prevent SQL injection. The production authentication backend must use parameterized queries or safe ORM bindings, validate input on the server, hash passwords, rate-limit login attempts, and authorize every workspace request. This repository contains the frontend and reverse proxy, not that backend, so these backend guarantees cannot be verified here.
 
-Before deployment, resolve the reported authenticated `GET /api/v1/workspaces/{workspace}/explore?page=1` HTTP 500 using backend exception logs. It affects both Latest and Most Mentioned. Successful unauthenticated live checks do not establish that this endpoint or every authenticated operation works. The UI now retries failed shared requests when switching these tabs and shows a concise retry message.
+During UAT, verify authenticated `GET /api/v1/workspaces/{workspace}/explore?page=1` through both Latest and Most Mentioned after the retained Unit's root is created. Successful unauthenticated live checks do not establish that this endpoint or every authenticated operation works. The UI retries failed shared requests when switching these tabs and shows a concise retry message.
 
 ## Application boundaries
 

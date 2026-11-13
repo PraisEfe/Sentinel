@@ -219,7 +219,7 @@ test("ownership transfer is hidden from nonowners with member management access"
 }) => {
   await mockApi(page, {
     workspace: { owner_id: "u-owner", role: "admin" },
-    actorMembership: { role: "admin", can_oversee: false },
+    actorMembership: { role: "admin" },
   });
   await login(page);
   await page.goto("/settings?section=team");
@@ -260,7 +260,7 @@ test("Team disables self role changes without blocking supported self removal", 
 }) => {
   const calls = await mockApi(page, {
     workspace: { role: "admin" },
-    actorMembership: { role: "admin", can_oversee: false },
+    actorMembership: { role: "admin" },
     account: { can_create_workspace: false },
   });
   await login(page);
@@ -310,16 +310,13 @@ test("Unit member pool does not offer self assignment", async ({ page }) => {
   ).toBe(false);
 });
 
-test("canonical capabilities override legacy flags, roles and global creation hints", async ({
+test("canonical capabilities govern controls regardless of roles and global creation hints", async ({
   page,
 }) => {
   const calls = await mockApi(page, {
     capabilities: deniedCapabilities,
     workspace: {
       role: "owner",
-      can_manage_members: true,
-      can_manage_monitors: true,
-      can_manage_settings: true,
     },
     account: { can_create_workspace: false },
   });
@@ -351,26 +348,22 @@ test("canonical capabilities override legacy flags, roles and global creation hi
   ).toBeVisible();
 });
 
-test("legacy compatibility uses only explicit can_manage flags and defaults everything else false", async ({
+test("missing canonical capabilities fail closed", async ({
   page,
 }) => {
   await mockApi(page, {
     capabilities: null,
     workspace: {
       role: "owner",
-      can_oversee: true,
-      can_manage_members: true,
-      can_manage_monitors: true,
-      can_manage_settings: true,
     },
     account: { can_create_workspace: false },
   });
   await login(page);
-  await expect(page.getByRole("button", { name: "Add monitor" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add monitor" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "New office workspace" })).toHaveCount(0);
   await page.goto("/settings");
-  await expect(page.getByRole("button", { name: /Monitoring defaults/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Team/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Monitoring defaults/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Team/ })).toHaveCount(0);
   await page.goto("/search?q=MTN");
   await expect(page.getByLabel("Search scope")).toHaveCount(0);
 });
@@ -382,11 +375,8 @@ test("ordinary direct members keep personal notifications while global settings 
     capabilities: deniedCapabilities,
     workspace: {
       role: "member",
-      can_manage_members: false,
-      can_manage_monitors: false,
-      can_manage_settings: false,
     },
-    actorMembership: { role: "member", can_oversee: false },
+    actorMembership: { role: "member" },
     account: { can_create_workspace: false },
   });
   await login(page);

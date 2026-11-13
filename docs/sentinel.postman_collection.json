@@ -1503,10 +1503,10 @@
                 "{{user}}"
               ]
             },
-            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"role\": {\n      \"$ref\": \"#/components/schemas/WorkspaceRole\"\n    },\n    \"can_oversee\": {\n      \"type\": \"boolean\"\n    }\n  },\n  \"title\": \"UpdateMemberRequest\"\n}",
+            "description": "Requires a valid bearer token. Replace path IDs using real response values. Documented success statuses: 200. Body schema (all allowed fields, constraints, required):\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"role\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"admin\",\n        \"member\"\n      ]\n    },\n    \"reason\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"maxLength\": 500\n    }\n  },\n  \"title\": \"UpdateMemberRequest\"\n}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"role\": \"owner\"\n}",
+              "raw": "{\n  \"role\": \"admin\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

@@ -1,10 +1,10 @@
 # Social sign-in — frontend implementation guide
 
-The social-auth flow and final local-verification behavior are implemented in the local backend/frontend worktrees. The current changes are uncommitted and undeployed; this guide describes the local contract for Google and Microsoft sign-in.
+The social-auth and local-verification behavior is deployed. This guide describes the current Google and Microsoft sign-in contract; real-provider sign-in remains a UAT check.
 
 **Do not put OAuth client IDs or secrets in the frontend.** The client secrets live only in the backend `.env`. The browser never calls Google or Microsoft directly for this flow; it only talks to the same-origin `/api/v1` proxy.
 
-## Backend contract (current local code)
+## Backend contract
 
 | Step | Endpoint |
 |---|---|
