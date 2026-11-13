@@ -111,6 +111,11 @@ export default function WorkspaceLayout() {
           sourcesCount={state.data.sourcesCount}
           lastScan={lastScan}
           onAlerts={() => navigate(workspacePathFor("alerts"))}
+          onSearch={(text) =>
+            navigate(
+              `${workspacePathFor("search")}?${new URLSearchParams({ q: text })}`,
+            )
+          }
         />
         {state.notice && (
           <div className="load-error" role="alert">

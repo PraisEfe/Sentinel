@@ -893,7 +893,7 @@ export async function login(page, remember = true) {
   if (!remember) await page.getByLabel("Keep me signed in").uncheck();
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Discover what’s happening online." }),
+    page.getByRole("heading", { name: "What Sentinel found for you." }),
   ).toBeVisible();
   await expect(page.getByText("Loading your workspace…")).toHaveCount(0);
 }

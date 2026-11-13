@@ -17,7 +17,6 @@ import Brand from "./Brand";
 import ModernSelect from "./ModernSelect";
 const navigation = [
   ["dashboard", "Home", Home],
-  ["search", "Search", Search],
   ["monitors", "Monitors", Radio],
   ["intelligence", "Intelligence", Activity],
   ["analytics", "Analytics", ChartNoAxesColumn],
@@ -98,6 +97,13 @@ export default function Sidebar({
           ))}
         </nav>
         <div className="sidebar-bottom">
+          <Link
+            className="nav-item"
+            to={workspacePathFor("search")}
+            onClick={onClose}
+          >
+            <Search size={17} /> Search collected mentions
+          </Link>
           <Link
             className="nav-item"
             to={workspacePathFor("settings")}

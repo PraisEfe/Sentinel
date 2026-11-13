@@ -290,9 +290,6 @@ function SettingsPanel({ tab }) {
         {tab === "Account" && (
           <>
             <Toggle label="Weekly research summary" description="Weekly summary delivery is not available for this account yet." checked={false} disabled />
-            <Toggle label="Personal search history" description="Show recent searches on this device’s home screen. This does not disable backend history storage."
-              checked={localChanges.showHistory ?? preferences.showHistory ?? true}
-              onChange={(value) => { setLocalChanges((previous) => ({ ...previous, showHistory: value })); setMessage(""); }} />
             <Toggle label="Compact result density" description="Show more search results on screen with reduced vertical spacing on this device."
               checked={localChanges.compactResults ?? preferences.compactResults ?? false}
               onChange={(value) => { setLocalChanges((previous) => ({ ...previous, compactResults: value })); setMessage(""); }} />

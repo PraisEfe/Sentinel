@@ -11,6 +11,8 @@
 - Public `/verify-email` and `/reset-password` routes snapshot sensitive query values in memory and scrub the URL immediately. Verification retains a single request promise and reset uses a submission lock so React StrictMode/double submission cannot consume one-time credentials twice. Forgot/reset failure states are privacy-neutral; successful reset clears local session/private state.
 - Google/Microsoft social callbacks mark a local email verified only from an explicit true provider claim. Missing/false claims still complete social sign-in without changing local verification state, so an unverified account continues through Sentinel's verification gate.
 - Workspace `capabilities` are the sole workspace authorization contract: `view`, `oversee_read`, `manage_members`, `manage_monitors`, `manage_settings`, and `create_workspace`; account-level `can_create_workspace` covers an eligible Unit without a root. Missing/malformed capabilities fail closed; the client has no role or top-level flag fallback.
+- Home is monitor-first: monitored-topic cards show status, matched mentions, sources, new items from the latest scan and freshness; a compact `/intelligence/pulse` summary follows. Emerging stories remain on Intelligence.
+- Search is a contextual utility over already-collected mentions. It is absent from primary navigation and available through the header, a sidebar utility link and contextual drill-downs. The client no longer calls live-web search or exposes source/monitor result tabs, saved-search UI, home history or the personal-history preference; empty corpus results can open monitor creation.
 
 ## P0 organisation model
 
@@ -22,4 +24,4 @@
 ## Status
 
 - P0, ownership-transfer, verification and password-recovery behavior is deployed, including backend migrations `2026_11_11_000005` through `000007`.
-- Backend final-contract code `fb3b221` is deployed with migration `2026_11_13_000001` still pending. This owner-approved frontend release removes top-level capability fallbacks and membership-oversight presentation and includes the DNS-independent Nginx template. Verify matching admin/frontend deployments and the active owner-managed vhost, then run authorization and real-mail UAT after the separately approved backend migration.
+- Backend final-contract code and migration `2026_11_13_000001` are deployed; the migration is Ran in production batch 9 and service checks passed. Matching admin/frontend final-contract releases are deployed. The monitor-first home/search-utility release is the next frontend deployment; authorization, real-mail and product UAT remain.

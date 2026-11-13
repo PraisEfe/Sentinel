@@ -53,7 +53,7 @@ test('callback is public, scrubs code while pending and exchanges once under Str
   await expect(page).toHaveURL(/\/auth\/callback$/);
   await expect.poll(() => attempts).toBe(1);
   release();
-  await expect(page.getByRole('heading', { name: 'Discover what’s happening online.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'What Sentinel found for you.' })).toBeVisible();
   expect(attempts).toBe(1);
   await page.goBack();
   expect(page.url()).not.toContain('sensitive-once');
@@ -106,7 +106,7 @@ for (const destination of ['https://evil.example', '//evil.example', '/\\evil.ex
     await exchange(page);
     await page.addInitScript(value => sessionStorage.setItem('sentinel_social_return_to', value), destination);
     await page.goto('/auth/callback?code=valid&provider=google');
-    await expect(page.getByRole('heading', { name: 'Discover what’s happening online.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'What Sentinel found for you.' })).toBeVisible();
     await expect(page).toHaveURL(/:\d+\/$/);
   });
 }

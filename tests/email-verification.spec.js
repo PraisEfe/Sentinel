@@ -201,7 +201,7 @@ test("manual status refresh unlocks workspaces only after verification", async (
 
   await page.getByRole("button", { name: "I verified my email" }).click();
   await expect(
-    page.getByRole("heading", { name: "Discover what’s happening online." }),
+    page.getByRole("heading", { name: "What Sentinel found for you." }),
   ).toBeVisible();
   expect(calls.some((call) => call.path === "/workspaces")).toBe(true);
 });
@@ -225,7 +225,7 @@ test("focus refresh unlocks an externally verified session", async ({ page }) =>
 
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(
-    page.getByRole("heading", { name: "Discover what’s happening online." }),
+    page.getByRole("heading", { name: "What Sentinel found for you." }),
   ).toBeVisible();
 });
 

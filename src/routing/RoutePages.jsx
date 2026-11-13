@@ -291,33 +291,29 @@ function useSummary() {
       error: state.dataStatus.error,
       page: state.monitorPage,
       refresh: state.refreshWorkspace,
-      clearHistory: state.clearHistory,
       deleteMonitor: state.deleteMonitor,
       openMonitor: state.openMonitor,
     })),
   );
 }
 export function HomePage() {
-  const { preferences, canManageMonitors } = useWorkspace();
   const summary = useSummary();
   const navigate = useNavigate();
   const [, setParams] = useSearchParams();
-  const search = (text) =>
-    navigate(
-      `${workspacePathFor("search")}?${new URLSearchParams({ q: text })}`,
-    );
+  const { canManageMonitors } = useWorkspace();
   return (
     <DashboardView
-      onSearch={search}
-      onSelectTopic={search}
       onOpenAddMonitor={() => summary.openMonitor()}
+      onOpenMonitor={(monitor) =>
+        navigate(`${workspacePathFor("monitors")}/${monitor.id}`)
+      }
+      onOpenMonitors={() => navigate(workspacePathFor("monitors"))}
+      onOpenIntelligence={() => navigate(workspacePathFor("intelligence"))}
       canManageMonitors={canManageMonitors}
       monitors={summary.data.monitors}
-      history={preferences.showHistory === false ? [] : summary.data.history}
       loading={summary.loading}
       error={summary.error}
       onRetry={summary.refresh}
-      onClearHistory={() => summary.clearHistory()}
       monitorTotal={summary.data.monitorTotal}
       monitorPage={summary.page}
       lastPage={summary.data.lastPage || 1}

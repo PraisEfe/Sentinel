@@ -17,12 +17,10 @@ export const defaultPreferences = Object.freeze({
   includeSocial: true,
   aiSummaries: true,
   detectTone: true,
-  showHistory: true,
   compactResults: false,
 });
 const emptyData = () => ({
   monitors: [],
-  history: [],
   sourcesCount: undefined,
   unread: 0,
   monitorTotal: 0,
@@ -384,13 +382,12 @@ export const useAppStore = create(
           const options = { token: session.token, signal: controller.signal };
           const paths = [
             `/monitors?page=${page}`,
-            "/history/searches",
             "/sources",
             "/alerts/counts",
           ];
           const results = await Promise.allSettled(
             paths.map((path, index) =>
-              (index < 3 ? requestList : request)(
+              (index < 2 ? requestList : request)(
                 workspacePath(workspaceId, path),
                 options,
               ),
@@ -435,10 +432,9 @@ export const useAppStore = create(
                   ? stats[index].value.data
                   : {}),
               })),
-              history: value(1)?.data || [],
-              sourcesCount: value(2)?.data?.filter((source) => source.available)
+              sourcesCount: value(1)?.data?.filter((source) => source.available)
                 .length,
-              unread: value(3)?.unread || 0,
+              unread: value(2)?.unread || 0,
               monitorTotal: value(0)?.meta?.total ?? monitors.length,
               lastPage: value(0)?.meta?.last_page || 1,
             },
@@ -563,15 +559,6 @@ export const useAppStore = create(
         set({ dataKey: "", data: { ...data, monitors: data.monitors.filter((item) => item.id !== monitorId), monitorTotal: Math.max(0, data.monitorTotal - 1) } });
         await get().loadWorkspace({ page, force: true });
         return get().workspaceId === workspaceId && get().authVersion === authVersion ? page : null;
-      },
-      clearHistory: async () => {
-        const { workspaceId, authVersion } = get();
-        await get().api("/history/searches", { method: "DELETE" });
-        if (
-          get().workspaceId === workspaceId &&
-          get().authVersion === authVersion
-        )
-          set((state) => ({ data: { ...state.data, history: [] } }));
       },
       updateUser: (user) =>
         set((state) => ({ user: { ...state.user, ...user } })),

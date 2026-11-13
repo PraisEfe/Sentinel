@@ -51,7 +51,7 @@ test("login sends documented credentials, displays live dashboard, and restores 
   ).toBe(true);
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Discover what’s happening online." }),
+    page.getByRole("heading", { name: "What Sentinel found for you." }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(
@@ -109,7 +109,7 @@ test("signup validates confirmation and terms, then sends documented register pa
     .getByRole("button", { name: "Create account", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Discover what’s happening online." }),
+    page.getByRole("heading", { name: "What Sentinel found for you." }),
   ).toBeVisible();
   const body = calls.find((call) => call.path === "/auth/register").body;
   expect(body).toMatchObject({
@@ -189,24 +189,32 @@ test("expired session is cleared and returns to sign-in", async ({ page }) => {
   ).toBeNull();
 });
 
-test("history clears only after success, and failed clearing can be retried", async ({
+test("home puts monitor cards first and summarises collection at a glance", async ({
   page,
 }) => {
-  const calls = await mockApi(page, { clearError: true });
+  await mockApi(page);
   await login(page);
-  await page.getByRole("button", { name: "Clear history" }).click();
-  await expect(page.getByRole("alert")).toHaveText("We couldn’t complete that request. Please try again.");
-  await expect(page.getByText("Nigerian banking sector")).toBeVisible();
-  await page.getByRole("button", { name: "Clear history" }).click();
   await expect(
-    page.getByText(
-      "Your recent searches will appear here. Start with a topic above.",
-    ),
+    page.getByRole("heading", { name: "What Sentinel found for you." }),
   ).toBeVisible();
-  expect(calls.filter((call) => call.method === "DELETE")).toHaveLength(2);
+  const monitorCard = page
+    .locator(".monitor-card")
+    .filter({ hasText: "MTN Nigeria" });
+  await expect(monitorCard).toBeVisible();
+  await expect(monitorCard).toContainText("4,821");
+  await expect(monitorCard).toContainText("46");
+  await expect(monitorCard).toContainText("ACTIVE");
+  await expect(monitorCard).toContainText("Open");
+  const cards = page.locator(".pulse-card");
+  await expect(cards.filter({ hasText: "New mentions" })).toContainText("12");
+  await expect(cards.filter({ hasText: "New story clusters" })).toContainText("3");
+  await expect(cards.filter({ hasText: "Sources scanned" })).toContainText("8");
+  await expect(page.getByText("At a glance")).toBeVisible();
+  await expect(page.getByText("Recent searches")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Clear history" })).toHaveCount(0);
 });
 
-test("home search and monitor creation use workspace-scoped API routes", async ({
+test("home monitor creation and header search use workspace-scoped API routes", async ({
   page,
 }) => {
   const errors = [];
@@ -243,11 +251,9 @@ test("home search and monitor creation use workspace-scoped API routes", async (
     include_keywords: ["security", "data breach"],
     exclude_keywords: [],
   });
-  await page.getByLabel("Search the public web").fill("MTN & 5G");
-  await page
-    .getByRole("button", { name: "Search", exact: true })
-    .last()
-    .click();
+  await page.getByLabel("Search collected mentions").fill("MTN & 5G");
+  await page.getByLabel("Search collected mentions").press("Enter");
+  await expect(page).toHaveURL(/\/search\?q=MTN/);
   await page.getByRole("button", { name: /Verified backend result/ }).click();
   await expect(
     page.getByRole("heading", { name: "Verified backend result" }),
@@ -296,7 +302,6 @@ test("partial API failure is visible and does not substitute demo monitors", asy
   await expect(
     page.getByRole("button", { name: /MTN Nigeria organisation/ }),
   ).toHaveCount(0);
-  await expect(page.getByText("Nigerian banking sector")).toBeVisible();
 });
 
 test("authenticated workspace navigation remains usable on mobile", async ({
@@ -401,16 +406,15 @@ test("monitor wizard preserves steps, retries preferences without duplicate crea
   ).toHaveLength(2);
 });
 
-test("search filters, sorting and saved views send documented fields", async ({
+test("search filters and sorting send documented fields", async ({
   page,
 }) => {
   const calls = await mockApi(page);
   await login(page);
-  await page.getByLabel("Search the public web").fill("MTN Nigeria");
-  await page
-    .getByRole("button", { name: "Search", exact: true })
-    .last()
-    .click();
+  await page.goto("/search?q=MTN Nigeria");
+  await expect(
+    page.getByRole("heading", { name: "Search collected mentions" }),
+  ).toBeVisible();
   async function applyFilter(label, value, marker) {
     const responded = page.waitForResponse((response) =>
       response.url().includes(marker),
@@ -425,29 +429,17 @@ test("search filters, sorting and saved views send documented fields", async ({
   await applyFilter("Sort results", "latest", "sort=latest");
   await applyFilter("Source", "source-1", "source_id=source-1");
   await applyFilter("Date", "7", "from=");
-  await page.getByRole("button", { name: "Save this view" }).click();
-  await page.getByLabel("View name").fill("Positive MTN news");
-  await page.getByRole("button", { name: "Save view", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText("Search view saved.");
-  const saved = calls.find((call) => call.path.endsWith("/saved-searches"));
-  expect(saved.body).toMatchObject({
-    name: "Positive MTN news",
-    query: "MTN Nigeria",
-  });
-  expect(saved.body.filters).toEqual(
-    expect.arrayContaining([
-      "sentiment=positive",
-      "language=en",
-      "source_id=source-1",
-      "sort=latest",
-    ]),
-  );
+  expect(calls.some((call) => call.path.endsWith("/saved-searches"))).toBe(false);
+  expect(
+    page.getByRole("tab", { name: /Live web|Sources|Monitors/ }),
+  ).toHaveCount(0);
   await page.getByRole("tab", { name: "Social", exact: true }).click();
   await expect(
     page.getByText(
       "No results match this search. Try another topic or adjust your filters.",
     ),
   ).toBeVisible();
+  expect(calls.some((call) => call.path.endsWith("/search/live"))).toBe(false);
 });
 
 test("result and cluster drawers fetch details, close with Escape, and open related results", async ({
@@ -584,12 +576,7 @@ test("discovery preferences persist locally and affect search presentation", asy
   await expect(page.getByRole("status")).toHaveText(
     "Preferences saved on this device.",
   );
-  await goTo(page, "Home");
-  await page.getByLabel("Search the public web").fill("MTN");
-  await page
-    .getByRole("button", { name: "Search", exact: true })
-    .last()
-    .click();
+  await page.goto("/search?q=MTN");
   await expect(page.locator(".result-content")).toBeVisible();
   await expect(page.locator(".result-content .sentiment")).toHaveCount(0);
   await page.reload();
@@ -624,7 +611,6 @@ test("all updated screens work on mobile with reduced motion and without runtime
   await mockApi(page);
   await login(page);
   for (const name of [
-    "Search",
     "Monitors",
     "Intelligence",
     "Analytics",
@@ -637,7 +623,7 @@ test("all updated screens work on mobile with reduced motion and without runtime
     await goTo(page, name);
     await expect(
       page.getByRole("heading", {
-        name: name === "Search" ? "Search your monitored public sources" : name,
+        name,
         exact: true,
       }),
     ).toBeVisible();
@@ -651,6 +637,17 @@ test("all updated screens work on mobile with reduced motion and without runtime
       )
       .toBe(true);
   }
+  await page.goto("/search?q=MTN");
+  await expect(
+    page.getByRole("heading", { name: "Search collected mentions" }),
+  ).toBeVisible();
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      { message: "Search has horizontal overflow", timeout: 3000 },
+    )
+    .toBe(true);
   expect(errors).toEqual([]);
 });
 
@@ -805,7 +802,7 @@ test("sign-in preserves password punctuation and supports plus-address emails", 
   await page.getByLabel('Work email').fill('ada+research@example.com');
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Discover what’s happening online.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'What Sentinel found for you.' })).toBeVisible();
   const loginCall = calls.find((call) => call.path === '/auth/login');
   expect(loginCall.body.email).toBe('ada+research@example.com');
   expect(loginCall.body.password).toBe(password);
@@ -838,22 +835,18 @@ test("screenshot settings controls send supported monitoring, digest and source 
   expect(calls.find((c) => c.path.endsWith('/settings/sources') && c.method === 'PATCH').body).toEqual({ sources: [{source_id:'source-1',enabled:false,language_codes:['en','fr']}] });
 });
 
-test("account presentation preferences persist and change history and search density", async ({ page }) => {
+test("account presentation preferences persist locally and change search density", async ({ page }) => {
   await mockApi(page);
   await login(page);
   await goTo(page, "Settings");
   await page.getByRole("button", { name: /^Account/ }).click();
   await expect(page.getByRole("switch", { name: "Weekly research summary" })).toBeDisabled();
   await expect(page.getByRole("switch", { name: "Product research participation" })).toBeDisabled();
-  await page.getByRole("switch", { name: "Personal search history" }).uncheck();
   await page.getByRole("switch", { name: "Compact result density" }).check();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Changes saved." })).toHaveText("Changes saved.");
   await page.reload();
-  await expect(page.getByRole("switch", { name: "Personal search history" })).not.toBeChecked();
   await expect(page.getByRole("switch", { name: "Compact result density" })).toBeChecked();
-  await goTo(page,"Home");
-  await expect(page.getByText("Nigerian banking sector")).toHaveCount(0);
   await page.goto('/search?q=MTN');
   await expect(page.locator('.search-page')).toHaveClass(/compact-results/);
 });
@@ -1114,15 +1107,29 @@ test("deleting the last monitor on a later page returns to the previous page", a
   expect(calls.find(call => call.method === 'DELETE').path).toBe('/workspaces/w-1/monitors/m-2');
 });
 
-test("live web search shows external results without saving them", async ({ page }) => {
-  const calls = await mockApi(page);
+test("empty search results offer creating a monitor for the query", async ({ page }) => {
+  await mockApi(page);
   await login(page);
-  await page.goto("/search?q=MTN");
-  await page.getByRole("tab", { name: /Live web/ }).click();
-  await expect(page.getByText("Live MTN result")).toBeVisible();
-  await expect(page.getByText(/not saved to this workspace/)).toBeVisible();
-  expect(calls.some((call) => call.path.endsWith("/search/live"))).toBe(true);
-  expect(page.url()).not.toContain("live-1");
+  await page.route("**/api/v1/workspaces/w-1/search?*", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], meta: { total: 0 } }),
+    }),
+  );
+  await page.goto("/search?q=Unknown%20topic");
+  await expect(
+    page.getByText(
+      "No results match this search. Try another topic or adjust your filters.",
+    ),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Create a monitor for “Unknown topic”" })
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page.getByLabel("Person, organisation, topic or keyword"),
+  ).toHaveValue("Unknown topic");
 });
 
 test("intelligence most mentioned uses ranked monitors and pulse metrics", async ({ page }) => {

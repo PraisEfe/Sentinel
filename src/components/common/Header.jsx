@@ -1,4 +1,5 @@
-import { Bell, Globe, Menu } from "lucide-react";
+import { useState } from "react";
+import { Bell, Globe, Menu, Search } from "lucide-react";
 import { relativeTime } from "../../lib/format";
 export default function Header({
   onToggleSidebar,
@@ -6,7 +7,13 @@ export default function Header({
   sourcesCount,
   lastScan,
   onAlerts,
+  onSearch,
 }) {
+  const [query, setQuery] = useState("");
+  function submit(event) {
+    event.preventDefault();
+    if (query.trim()) onSearch(query.trim());
+  }
   return (
     <header className="app-header">
       <div className="header-status">
@@ -24,6 +31,18 @@ export default function Header({
         </span>
       </div>
       <div className="header-actions">
+        {onSearch && (
+          <form className="header-search" role="search" onSubmit={submit}>
+            <Search size={14} />
+            <input
+              aria-label="Search collected mentions"
+              placeholder="Search collected mentions…"
+              maxLength={500}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </form>
+        )}
         {sourcesCount !== undefined && (
           <span className="source-count">
             <Globe size={14} /> {sourcesCount} sources available

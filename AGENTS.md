@@ -20,6 +20,10 @@ Component rules. The umbrella `../AGENTS.md` also applies.
 - Gate authenticated users in this order before tenant requests: email verification, active roster, registration approval, then workspace assignment. Verification and roster gates preserve the session and refresh `/auth/me` without loading workspaces until eligible.
 - Google/Microsoft sign-in uses same-origin social redirect endpoints and the public `/auth/callback` route. It exchanges a single-use code once, removes callback query parameters, and accepts sessions through Zustand. Only an explicit provider-verified email claim marks the local email verified; missing/false claims do not bypass Sentinel verification for an unverified account. Follow `docs/social-auth.md`; provider secrets stay on the backend.
 
+- `/search` is a utility over mentions the workspace's monitors have already collected, not a discovery trigger and not a live web search. It is deliberately absent from the primary navigation; it is reached from the header field, the sidebar utility link, and contextual drill-downs. Search results never cause a new scan.
+- The home screen is monitor-first: the monitored-topic card grid is the dominant surface, with a compact collection pulse below it. Emerging stories belong to Intelligence, not home.
+- `/search` also exposes the standard filters, story grouping, oversight scope, and a "Create a monitor for this query" empty-state action. Do not reintroduce Live web, Sources/Monitors result tabs, or saved-search UI; monitors are the single saved-search concept.
+
 ## Commands
 
 ```bash

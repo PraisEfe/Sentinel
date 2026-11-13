@@ -726,7 +726,7 @@ test("invitation success clears an earlier boot failure", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Join Research workspace" })).toBeVisible();
   await page.getByRole("button", { name: "Accept invitation" }).click();
   await expect(
-    page.getByRole("heading", { name: "Discover what’s happening online." }),
+    page.getByRole("heading", { name: "What Sentinel found for you." }),
   ).toBeVisible();
   expect(accountCalls).toBe(2);
 });
@@ -820,7 +820,7 @@ test("no-workspace status refreshes on focus and opens a newly assigned workspac
   );
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(
-    page.getByRole("heading", { name: "Discover what’s happening online." }),
+    page.getByRole("heading", { name: "What Sentinel found for you." }),
   ).toBeVisible();
 });
 
@@ -923,7 +923,7 @@ test("inactive roster focus refresh opens workspaces after reactivation", async 
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
 
   await expect(
-    page.getByRole("heading", { name: "Discover what’s happening online." }),
+    page.getByRole("heading", { name: "What Sentinel found for you." }),
   ).toBeVisible();
   expect(calls.some((call) => call.path === "/workspaces")).toBe(true);
 });

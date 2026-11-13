@@ -71,3 +71,11 @@ Reason: the owner-approved test-phase reset created the pre-UAT window to remove
 Alternatives: retain fallbacks through UAT (rejected because UAT would validate a contract scheduled for removal); infer access from owner/admin labels (rejected because scopes and direct membership grant different capabilities).
 
 Rollout: backend code `fb3b221` is deployed with migration skipped. Matching admin/frontend releases are owner-approved; backend migration `2026_11_13_000001` remains a separate approval gate after client deployment confirmation, backup confirmation, and the redacted audit.
+
+## 2026-11-13 — Search is a contextual utility over collected mentions
+
+Decision: make Home monitor-first, led by glanceable monitor cards and a compact collection pulse. Keep Search out of primary navigation and reach it from the header, a sidebar utility link and contextual drill-downs. Search only queries already-collected mentions and never triggers collection. Remove client use of live-web search, source/monitor result tabs, saved-search UI, recent searches on Home and the personal-history preference. Empty corpus results offer monitor creation.
+
+Reason: scheduled monitors are Sentinel's durable collection mechanism. A search-first home and live/saved-search surfaces frame an autonomous monitoring product as a pull-based search tool, duplicate monitors and distract from daily triage.
+
+Alternatives: deleting Search was rejected because verification and drill-down flows need it; keeping Search primary or retaining a Live web tab was rejected because both contradict the monitor-driven product model.
