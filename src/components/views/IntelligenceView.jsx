@@ -201,7 +201,7 @@ export default function IntelligenceView({ onSelectCluster, onInspectTopic = () 
             />
             {emerging.data?.data?.slice(0, 4).map((item, i) => (
               <button
-                className="emerging-row"
+                className="emerging-row emerging-story-row"
                 key={item.cluster_id}
                 onClick={() =>
                   onSelectCluster({
@@ -211,11 +211,11 @@ export default function IntelligenceView({ onSelectCluster, onInspectTopic = () 
                   })
                 }
               >
-                <small>{String(i + 1).padStart(2, "0")}</small>
-                <span>{item.title}</span>
-                <b>
-                  <Activity size={10} />
-                  {number(item.velocity)}/hr
+                <small className="emerging-index">{String(i + 1).padStart(2, "0")}</small>
+                <span className="emerging-title">{item.title}</span>
+                <b className="emerging-velocity">
+                  <Activity size={12} aria-hidden="true" />
+                  <span>{number(item.velocity)}/hr</span>
                 </b>
               </button>
             ))}

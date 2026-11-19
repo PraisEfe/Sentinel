@@ -912,36 +912,53 @@ body:has(dialog[open]) {
   font-weight: 500;
   color: #31533d;
 }
-.emerging-row {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+/* Keep this layout on the component rather than depending on the load order
+   of the shared responsive overrides and older generic row styles. */
+.emerging-row.emerging-story-row {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  grid-template-areas: "index title" ". velocity";
+  align-items: start;
+  gap: 6px 10px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 16px 0;
   text-align: left;
-  font-size: 14px;
-  padding: 12px 0;
+  white-space: normal;
   border-bottom: 1px solid #e2eae5;
 }
-.emerging-row:last-child {
-  border: 0;
-}
-.emerging-row > small {
+.emerging-row.emerging-story-row:last-child { border-bottom: 0; }
+.emerging-story-row > .emerging-index {
+  grid-area: index;
+  padding-top: 2px;
   font-size: 13px;
-  color: #94a89b;
+  color: #60756a;
 }
-.emerging-row > span {
-  flex: 1;
-  color: #55745e;
-  line-height: 1.5;
+.emerging-story-row > .emerging-title {
+  grid-area: title;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #486353;
 }
-.emerging-row > b {
+.emerging-story-row > .emerging-velocity {
+  grid-area: velocity;
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #469b70;
+  min-width: 0;
+  max-width: 100%;
+  color: #38845b;
   font-size: 13px;
   font-weight: 500;
 }
+.emerging-velocity > svg { flex-shrink: 0; }
+.emerging-velocity > span { min-width: 0; overflow-wrap: anywhere; }
 .analytics-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.8fr 1fr;

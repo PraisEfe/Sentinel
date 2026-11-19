@@ -63,16 +63,11 @@ button, input, select, textarea { line-height: 1.5; }
 .pulse-card > span, .pulse-card > small { font-size: 13px; color: #60756a; overflow-wrap: anywhere; }
 .pulse-card > strong { font-size: clamp(1.5rem, 2.2vw, 1.875rem); overflow-wrap: anywhere; }
 
-/* Titles and rates get separate lines rather than fighting for sidebar width. */
+/* Keep side panels beside the story list only when there is room for both. */
 .intelligence-layout { grid-template-columns: minmax(0, 1fr) minmax(17rem, 20rem); gap: 24px; align-items: start; }
 .intelligence-aside { min-width: 0; gap: 20px; }
 .insight-card { min-width: 0; padding: 20px; }
 .insight-card h2 { font-size: 16px; line-height: 1.5; }
-.emerging-row { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: 6px 10px; padding: 16px 0; align-items: start; }
-.emerging-row > small { font-size: 13px; padding-top: 2px; }
-.emerging-row > span { min-width: 0; font-size: 15px; line-height: 1.6; overflow-wrap: anywhere; color: #486353; }
-.emerging-row > b { grid-column: 2; min-width: 0; flex-wrap: wrap; font-size: 13px; overflow-wrap: anywhere; }
-.emerging-row > b svg { flex-shrink: 0; }
 .pulse-row { gap: 16px; font-size: 14px; color: #60756a; }
 .pulse-row > span { min-width: 0; overflow-wrap: anywhere; }
 .pulse-row > strong { max-width: 50%; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
