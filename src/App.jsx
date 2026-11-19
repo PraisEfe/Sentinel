@@ -36,6 +36,7 @@ import AlertsView from "./components/views/AlertsView";
 import SettingsView from "./components/views/SettingsView";
 import { workspacePathFor } from "./routing/paths";
 import "./App.css";
+import "./responsive.css";
 
 function IntelligencePage() {
   const navigate = useNavigate();

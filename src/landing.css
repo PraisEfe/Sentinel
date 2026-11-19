@@ -90,7 +90,7 @@
   border-radius: 999px;
   background: #1b3126;
   color: #b0d5c2;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .landing-hero h1 {
@@ -148,7 +148,7 @@
   display: block;
   margin-top: 6px;
   color: #7f9187;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -201,7 +201,7 @@
   padding: 26px clamp(24px, 6vw, 64px);
   background: #0e1915;
   color: #7f9187;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .landing-footer a {
@@ -242,7 +242,7 @@
 
 .legal-updated {
   color: #8a948e;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .legal-intro {
