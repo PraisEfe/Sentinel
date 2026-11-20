@@ -131,3 +131,16 @@ button, input, select, textarea { line-height: 1.5; }
   .intelligence-page > .workspace-tabs { flex-wrap: wrap; gap: 0 20px; overflow-x: visible; }
   .intelligence-feed { gap: 20px; }
 }
+
+/* Keep the chart large enough to read without squeezing its side cards. */
+.analytics-page .volume-number { flex-wrap: wrap; }
+@media (max-width: 1100px) {
+  .analytics-page .analytics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .analytics-page .volume-card, .analytics-page .analytics-side,
+  .analytics-page .analytics-grid > .chart-card:last-child { grid-column: 1 / -1; }
+  .analytics-page .analytics-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .analytics-page .analytics-grid, .analytics-page .analytics-side { grid-template-columns: minmax(0, 1fr); }
+  .analytics-page .analytics-recharts { flex-basis: 240px; min-height: 240px; }
+}
