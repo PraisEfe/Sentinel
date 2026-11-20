@@ -109,3 +109,25 @@ button, input, select, textarea { line-height: 1.5; }
   .dashboard-pulse-heading > button { width: 100%; justify-content: center; }
   .auth-main { padding-inline: 20px; }
 }
+
+/* Intelligence: the feed and its emerging stories share one reading column. */
+.intelligence-feed { display: grid; gap: 24px; min-width: 0; }
+.intelligence-page .intelligence-aside { display: block; }
+.intelligence-page .cluster-row { padding-block: 24px; }
+.intelligence-page .cluster-copy > strong { font-size: 17px; }
+.story-pagination { padding: 18px; margin: 0; border-top: 1px solid #e0e9e3; gap: 12px; flex-wrap: wrap; }
+.intelligence-availability { margin: 0; padding: 0 18px 18px; color: #60756a; font-size: 14px; line-height: 1.6; }
+.intelligence-section-description { margin: -6px 0 18px; color: #60756a; font-size: 14px; line-height: 1.6; }
+.emerging-stories { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 0 24px; min-width: 0; }
+.emerging-stories > .emerging-story-row { height: 100%; align-content: start; }
+.discovery-metrics { display: grid; margin: 0; }
+.discovery-metric { display: flex; flex-direction: column; gap: 6px; padding: 20px 0; border-bottom: 1px solid #e0e9e3; min-width: 0; }
+.discovery-metric:first-child { padding-top: 4px; }
+.discovery-metric:last-child { border-bottom: 0; padding-bottom: 0; }
+.discovery-metric dt { color: #486353; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.discovery-metric dd { order: -1; margin: 0; font-size: clamp(1.75rem, 2.5vw, 2.25rem); line-height: 1.2; font-weight: 650; color: #25362c; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  .intelligence-page .cluster-copy > strong { font-size: 16px; }
+  .intelligence-page > .workspace-tabs { flex-wrap: wrap; gap: 0 20px; overflow-x: visible; }
+  .intelligence-feed { gap: 20px; }
+}

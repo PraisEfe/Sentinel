@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Activity, ArrowRight, Layers3, Sparkles } from "lucide-react";
 import {
   PageMotion,
-  Pagination,
   ResourceState,
   Tabs,
 } from "../common/WorkspaceUI";
 import { number, useResource } from "../../lib/workspace";
+import { useIntelligencePages } from "../../lib/useIntelligencePages";
 import { relativeTime } from "../../lib/format";
 export default function IntelligenceView({ onSelectCluster, onInspectTopic = () => {} }) {
   const [tab, setTab] = useState("Latest");
@@ -18,15 +18,15 @@ export default function IntelligenceView({ onSelectCluster, onInspectTopic = () 
         ? "/intelligence/most-mentioned"
         : tab === "Emerging"
           ? "/intelligence/emerging"
-          : `/explore?page=${page}`;
-  const resource = useResource(path, { list: true });
+          : "/explore";
+  const resource = useIntelligencePages(path, page, tab === "Latest");
   const emerging = useResource("/intelligence/emerging", { list: true });
   const pulse = useResource("/intelligence/pulse");
   const rows = resource.data?.data || [];
   const pulseData = pulse.data?.data;
   const monitorView = tab === "Most Mentioned";
   return (
-    <PageMotion className="research-page">
+    <PageMotion className="research-page intelligence-page">
       <div className="research-heading">
         <div>
           <h1>Intelligence</h1>
@@ -46,7 +46,8 @@ export default function IntelligenceView({ onSelectCluster, onInspectTopic = () 
         }}
       />
       <div className="intelligence-layout">
-        <section className="cluster-panel">
+        <div className="intelligence-feed">
+        <section className="cluster-panel" aria-label={monitorView ? "Most mentioned monitors" : "Stories"}>
           <div className="cluster-note">
             <Sparkles size={15} />
             <div>
@@ -162,43 +163,23 @@ export default function IntelligenceView({ onSelectCluster, onInspectTopic = () 
                 </button>
               );
             })}
-          {!monitorView && (
-            <Pagination
-              page={page}
-              lastPage={resource.data?.meta?.last_page || 1}
-              onChange={setPage}
-              loading={resource.loading}
-            />
+          {!resource.loading && !resource.error && rows.length > 0 && (
+            <nav className="monitor-pagination story-pagination" aria-label="Story pages">
+              <button className="outline-button" disabled={resource.data.page <= 1} onClick={() => setPage(resource.data.page - 1)}>Previous</button>
+              <span>Page {resource.data.page}{resource.data.lastPage !== null && <> of {resource.data.lastPage}</>}</span>
+              <button className="outline-button" disabled={!resource.data.hasNext} onClick={() => setPage(resource.data.page + 1)}>Next</button>
+            </nav>
           )}
+          {!resource.loading && !resource.error && rows.length > 0 && rows.length < 3 && <p className="intelligence-availability">{rows.length === 1 ? "Only one item is" : "Only two items are"} available in this view right now.</p>}
         </section>
-        <aside className="intelligence-aside">
-          <section className="insight-card">
-            <h2>Discovery pulse</h2>
-            <div className="pulse-row">
-              <span>New in the last hour</span>
-              <strong>
-                {pulseData ? number(pulseData.new_mentions) : "—"}
-              </strong>
-            </div>
-            <div className="pulse-row">
-              <span>New story clusters</span>
-              <strong>
-                {pulseData ? number(pulseData.new_clusters) : "—"}
-              </strong>
-            </div>
-            <div className="pulse-row">
-              <span>Sources scanned</span>
-              <strong>
-                {pulseData ? number(pulseData.sources_scanned) : "—"}
-              </strong>
-            </div>
-          </section>
-          <section className="insight-card">
-            <h2>Emerging now</h2>
+          <section className="insight-card emerging-panel" aria-labelledby="emerging-heading">
+            <h2 id="emerging-heading">Emerging now</h2>
+            <p className="intelligence-section-description">Stories gaining momentum across your monitored topics.</p>
             <ResourceState
               resource={emerging}
               empty={!emerging.data?.data?.length}
             />
+            <div className="emerging-stories">
             {emerging.data?.data?.slice(0, 4).map((item, i) => (
               <button
                 className="emerging-row emerging-story-row"
@@ -219,6 +200,22 @@ export default function IntelligenceView({ onSelectCluster, onInspectTopic = () 
                 </b>
               </button>
             ))}
+            </div>
+          </section>
+        </div>
+        <aside className="intelligence-aside">
+          <section className="insight-card discovery-pulse" aria-labelledby="discovery-heading">
+            <h2 id="discovery-heading">Discovery pulse</h2>
+            <p className="intelligence-section-description">Collection activity in the last hour.</p>
+            <dl className="discovery-metrics">
+              {[["New in the last hour", "new_mentions"], ["New story clusters", "new_clusters"], ["Sources scanned", "sources_scanned"]].map(([label, field]) => (
+                <div className="discovery-metric" key={field}>
+                  <dt>{label}</dt>
+                  <dd>{pulseData ? number(pulseData[field]) : "—"}</dd>
+                </div>
+              ))}
+            </dl>
+            <ResourceState resource={pulse} />
           </section>
         </aside>
       </div>
