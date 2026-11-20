@@ -1,8 +1,9 @@
 /* Shared sizing and reflow rules follow the view styles so narrow screens keep
    the same readable type scale instead of shrinking text to fit. */
 :root {
-  --page-gutter: clamp(1rem, 3vw, 2.5rem);
-  --section-gap: clamp(1.25rem, 2.5vw, 2rem);
+  --page-gutter: clamp(1rem, 1vw, 1.5rem);
+  --page-top: clamp(1.25rem, 1.2vw, 1.5rem);
+  --section-gap: clamp(1rem, 1.25vw, 1.5rem);
 }
 body { line-height: 1.5; }
 button, input, select, textarea { line-height: 1.5; }
@@ -10,7 +11,9 @@ button, input, select, textarea { line-height: 1.5; }
 .dashboard-page, .research-page,
 .search-layout > *, .intelligence-layout > *, .analytics-grid > *,
 .settings-layout > *, .analytics-side > * { min-width: 0; }
-.research-page { width: 100%; padding-inline: var(--page-gutter); }
+.research-page { width: 100%; max-width: none; margin: 0; padding: var(--page-top) var(--page-gutter) 40px; }
+.app-header { padding-inline: var(--page-gutter); }
+.research-heading { margin-bottom: 20px; }
 .research-heading, .section-heading, .section-actions,
 .results-toolbar, .analytics-context { flex-wrap: wrap; }
 .research-heading > div, .section-heading > div,
@@ -29,16 +32,17 @@ button, input, select, textarea { line-height: 1.5; }
 
 /* The hero and the card sections share the same content edges at every size. */
 .dashboard-pulse {
-  padding-block: clamp(1.5rem, 4vw, 3rem);
-  padding-inline: max(var(--page-gutter), calc((100% - 1280px) / 2 + var(--page-gutter)));
+  padding-block: var(--page-top);
+  padding-inline: var(--page-gutter);
 }
-.dashboard-pulse-heading { margin: 16px 0 0; align-items: center; flex-direction: row; flex-wrap: wrap; }
+.dashboard-pulse-heading { max-width: none; margin: 16px 0 0; align-items: center; flex-direction: row; flex-wrap: wrap; }
 .dashboard-pulse-heading > div { min-width: 0; flex: 1 1 22rem; }
 .dashboard-pulse-heading > button { flex-shrink: 0; }
 .dashboard-pulse h1 { font-size: clamp(1.5rem, 2.2vw, 2rem); overflow-wrap: anywhere; }
 .dashboard-pulse-heading p { line-height: 1.65; color: #60756a; }
-.dashboard-content { width: 100%; padding: var(--section-gap) var(--page-gutter) 3.5rem; gap: var(--section-gap); }
+.dashboard-content { width: 100%; max-width: none; margin: 0; padding: var(--section-gap) var(--page-gutter) 40px; gap: var(--section-gap); }
 .dashboard-content > section { min-width: 0; }
+.dashboard-glance, .pulse-grid { max-width: none; }
 .section-heading { align-items: flex-start; gap: 12px 20px; margin-bottom: 14px; }
 .section-actions { gap: 12px; }
 .monitor-card-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 18px; }
@@ -64,7 +68,7 @@ button, input, select, textarea { line-height: 1.5; }
 .pulse-card > strong { font-size: clamp(1.5rem, 2.2vw, 1.875rem); overflow-wrap: anywhere; }
 
 /* Keep side panels beside the story list only when there is room for both. */
-.intelligence-layout { grid-template-columns: minmax(0, 1fr) minmax(17rem, 20rem); gap: 24px; align-items: start; }
+.intelligence-layout { grid-template-columns: minmax(0, 1fr) minmax(17rem, 20rem); gap: 20px; align-items: start; }
 .intelligence-aside { min-width: 0; gap: 20px; }
 .insight-card { min-width: 0; padding: 20px; }
 .insight-card h2 { font-size: 16px; line-height: 1.5; }
@@ -111,7 +115,7 @@ button, input, select, textarea { line-height: 1.5; }
 }
 
 /* Intelligence: the feed and its emerging stories share one reading column. */
-.intelligence-feed { display: grid; gap: 24px; min-width: 0; }
+.intelligence-feed { display: grid; gap: 20px; min-width: 0; }
 .intelligence-page .intelligence-aside { display: block; }
 .intelligence-page .cluster-row { padding-block: 24px; }
 .intelligence-page .cluster-copy > strong { font-size: 17px; }
@@ -144,3 +148,18 @@ button, input, select, textarea { line-height: 1.5; }
   .analytics-page .analytics-grid, .analytics-page .analytics-side { grid-template-columns: minmax(0, 1fr); }
   .analytics-page .analytics-recharts { flex-basis: 240px; min-height: 240px; }
 }
+
+/* Public page shells share the same gutters; forms and long prose retain
+   bounded reading widths rather than stretching individual lines. */
+.auth-story { padding-inline: var(--page-gutter); }
+.auth-main { padding: clamp(32px, 3vw, 48px) var(--page-gutter) 80px; }
+.auth-legal { left: var(--page-gutter); right: var(--page-gutter); }
+.workspace-gate { padding: 40px var(--page-gutter); }
+.landing-header, .legal-header { padding: 20px var(--page-gutter); }
+.landing-hero { padding: clamp(40px, 4vw, 72px) var(--page-gutter) 48px; }
+.landing-signals { margin-top: 40px; }
+.landing-features { padding: clamp(32px, 3vw, 48px) var(--page-gutter); }
+.landing-card { padding: 20px; min-width: 0; }
+.landing-card p { max-width: 65ch; }
+.landing-footer { padding: 20px var(--page-gutter); }
+.legal-shell { padding: clamp(32px, 3vw, 48px) var(--page-gutter) 48px; }
